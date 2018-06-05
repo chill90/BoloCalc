@@ -7,10 +7,12 @@
 *src/atmFiles/*/TXT/
 
 #Latex temporary files
-*.aux
-*.synctex.gz
-*.log
-*.toc
+*README/*.tex
+*README/*.aux
+*README/*.synctex.gz
+*README/*.log
+*README/*.toc
+*README/*.png
 
 #All output files
 *sensitivity.txt
