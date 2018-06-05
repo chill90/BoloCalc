@@ -28,3 +28,6 @@
 *Experiments/*
 !*Experiments/ExampleExperiment/
 !*Experiments/ExampleExperiment/*
+
+#OSX style files
+*.DS_Store

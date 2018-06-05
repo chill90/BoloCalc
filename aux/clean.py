@@ -2,7 +2,7 @@
 #python Version 2.7.2
 import os
 
-targets = ('log_', 'sensitivity.txt', 'opticalpower.txt', '~', '.pyc')
+targets = ('log_', 'sensitivity.txt', 'opticalpower.txt', '~', '.pyc', '.ds_store', 'mappingspeedvary')
 
 for root, dirs, files in os.walk(os.getcwd()):
     for file in files:
