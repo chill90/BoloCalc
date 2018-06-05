@@ -1,0 +1,30 @@
+#Temporary files
+*~
+#Python library files
+*.pyc
+
+#Atmosphere profile text files
+*src/atmFiles/*/TXT/
+
+#Latex temporary files
+*.aux
+*.synctex.gz
+*.log
+*.toc
+
+#All output files
+*sensitivity.txt
+*opticalPower.txt
+*paramVary/*.txt
+
+#All logging files
+*log/*.txt
+
+#Auxiliary scripts
+*overplotATM.py
+*plotATM.py
+
+#Ignore non-example directories
+*Experiments/*
+!*Experiments/ExampleExperiment/
+!*Experiments/ExampleExperiment/*

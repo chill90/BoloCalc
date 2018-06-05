@@ -1,0 +1,20 @@
+#Unit conversions
+GHzToHz       = 1.e+09
+HzToGHz       = 1.e-09
+mmToM         = 1.e-03
+mToMm         = 1.e+03
+aWrtHzToWrtHz = 1.e-18
+WrtHzToaWrtHz = 1.e+18
+pArtHzToArtHz = 1.e-12
+ArtHzTopArtHz = 1.e+12
+pWtoW         = 1.e-12
+WtoPw         = 1.e+12
+umToM         = 1.e-06
+mToUm         = 1.e+06
+decToPct      = 1.e+02
+pctToDec      = 1.e-02
+KTouK         = 1.e+06
+uKToK         = 1.e-06
+K2TouK2       = 1.e+12
+uK2ToK2       = 1.e-12
+yrToSec       = 365.25*24.*60.*60.
