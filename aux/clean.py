@@ -1,4 +1,4 @@
-#Run this script from the top-most directory of the tree you want to clean
+#Run this script from the top-most directory of the tree you want to clean.
 #python Version 2.7.2
 import os
 
