@@ -27,7 +27,7 @@ class Camera:
         #Store camera parameters into a dictionary
         paramArr, valArr = np.loadtxt(self.configDir+'/camera.txt', dtype=np.str, unpack=True, usecols=[0,2], delimiter='|')
         dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
-        self.params = {'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-90.0, max=90.0  )),
+        self.params = {'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  )),
                        'Optical Coupling':    self.__paramSamp(pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   )),
                        'F Number':            self.__paramSamp(pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf)),
                        'Bath Temp':           self.__paramSamp(pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf))}
