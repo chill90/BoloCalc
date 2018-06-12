@@ -27,5 +27,9 @@
 !*Experiments/ExampleExperiment/
 !*Experiments/ExampleExperiment/*
 
+#Take anything intended to be offline offline
+*OFFLINE/
+*OFFLINE/*
+
 #OSX style files
 *.DS_Store
