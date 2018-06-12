@@ -43,6 +43,7 @@ class Channel:
                        'Carrier Index':     pr.Parameter(self.log, 'Carrier Index',   self.dict['Carrier Index'],               min=0.0, max=np.inf),
                        'Tc':                pr.Parameter(self.log, 'Tc',              self.dict['Tc'],                          min=0.0, max=np.inf),
                        'Tc Fraction':       pr.Parameter(self.log, 'Tc Fraction',     self.dict['Tc Fraction'],                 min=0.0, max=np.inf),
+                       'Flink':             pr.Parameter(self.log, 'Flink',           self.dict['Flink'],                       min=0.0, max=np.inf),
                        'SQUID NEI':         pr.Parameter(self.log, 'SQUID NEI',       self.dict['SQUID NEI'], un.pArtHzToArtHz, min=0.0, max=np.inf),
                        'Bolo Resistance':   pr.Parameter(self.log, 'Bolo Resistance', self.dict['Bolo Resistance'],             min=0.0, max=np.inf),
                        'Read Noise Frac':   pr.Parameter(self.log, 'Read Noise Frac', self.dict['Read Noise Frac'],             min=0.0, max=1.0   )}
