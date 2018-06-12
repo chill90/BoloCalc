@@ -7,12 +7,8 @@
 *src/atmFiles/*/TXT/
 
 #Latex temporary files
-*MANUAL/*.tex
-*MANUAL/*.aux
-*MANUAL/*.synctex.gz
-*MANUAL/*.log
-*MANUAL/*.toc
-*MANUAL/*.png
+*MANUAL/*
+!*MANUAL/BoloCalc_UserManual.pdf
 
 #All output files
 *sensitivity.txt
