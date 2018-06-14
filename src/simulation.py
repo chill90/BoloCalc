@@ -44,7 +44,7 @@ class Simulation:
         self.barLen = 100
 
         #Set up multiprocessing
-        self.p = mp.Pool(self.cores)
+        if self.mp: self.p = mp.Pool(self.cores)
 
     #**** Public Methods ****
     #Generate experiments

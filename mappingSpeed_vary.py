@@ -11,8 +11,8 @@ try:
     expFiles = sy.argv[1]
 except:
     print
-    print 'Usage:   python mappingSpeed.py [Experiment Directory]'
-    print 'Example: python mappingSpeed.py Experiments/SimonsObservatory/V3/'
+    print 'Usage:   python mappingSpeed_vary.py [Experiment Directory]'
+    print 'Example: python mappingSpeed_vary.py Experiments/SimonsObservatory/V3/'
     print
     sy.exit(1)
 #Simulation input parameter file
@@ -37,3 +37,4 @@ sim = sm.Simulation(expFiles, simFile, logFile, verbosity, genTables=False)
 #Vary parameters
 var = vr.Vary(sim, paramVaryFile)
 var.vary()
+var.save()
