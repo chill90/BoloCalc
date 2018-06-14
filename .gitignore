@@ -8,6 +8,7 @@
 
 #Latex temporary files
 *MANUAL/*
+!*MANUAL/
 !*MANUAL/BoloCalc_UserManual.pdf
 
 #All output files
@@ -23,7 +24,7 @@
 *plotATM.py
 
 #Ignore non-example directories
-*Experiments/*
+#*Experiments/*
 !*Experiments/ExampleExperiment/
 !*Experiments/ExampleExperiment/*
 

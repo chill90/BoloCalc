@@ -206,9 +206,9 @@ class Vary:
                 paramString += ("_%s" % (params[i]))
         paramString += "_"
         savedir = "paramVary/"
-        fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'  % (experiments[0].dir, savedir, paramString))
-        fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt' % (experiments[0].dir, savedir, paramString))
-        fname_net   = ('%s/%s/mappingSpeedVary_NET%s.txt'   % (experiments[0].dir, savedir, paramString))
+        fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'   % (experiments[0].dir, savedir, paramString))
+        fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt'  % (experiments[0].dir, savedir, paramString))
+        fname_net   = ('%s/%s/mappingSpeedVary_NETarr%s.txt' % (experiments[0].dir, savedir, paramString))
 
         #Write optical power file
         f = open(fname_popt, 'w')

@@ -79,7 +79,8 @@ class Channel:
 
         #Frequencies to integrate over -- wider than nominal band by 30% to cover tolerances/errors
         self.fres          = self.specRes
-        self.freqs         = np.arange(self.params['Band Center'].getAvg()*(1. - 0.65*self.params['Fractional BW'].getAvg()), self.params['Band Center'].getAvg()*(1. + 0.65*self.params['Fractional BW'].getAvg()), self.fres)
+        self.freqs         = np.arange(self.params['Band Center'].getAvg()*(1. - 0.65*self.params['Fractional BW'].getAvg()), self.params['Band Center'].getAvg()*(1. + 0.65*self.params['Fractional BW'].getAvg())+self.fres, self.fres)
+        self.nfreq         = len(self.freqs)
         self.deltaF        = self.freqs[-1] - self.freqs[0]
         
         #Band mask
