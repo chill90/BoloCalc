@@ -33,8 +33,8 @@ class Vary:
         self.log.log("Processing %d parameters" % (self.numParams))
         #Length of each parameter array
         lenArr   = [len(paramArr[i]) for i in range(len(paramArr))]
-        numEntries = np.prod(lenArr)
-        self.log.log("Processing %d combinations of parameters" % (numEntries))
+        self.numEntries = np.prod(lenArr)
+        self.log.log("Processing %d combinations of parameters" % (self.numEntries))
 
         #Store the telescope, camera, channels, and optic name information for each parameter
         telsArr  = [[self.tels[i] for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
@@ -95,7 +95,7 @@ class Vary:
         self.sim.verbosity = 0
         self.sim.generateExps()
         self.sim.verbosity = None
-        experiments = self.sim.experiments
+        self.experiments = self.sim.experiments
         
         #At which level to regenerate each parameter
         exR = False; tlR = False; cmR = False
@@ -118,11 +118,11 @@ class Vary:
         nepph_final = []; nepphstd_final = []
         net_final = []; netstd_final = []
 
-        self.totIters = len(experiments)*len(self.setArr[0])
+        self.totIters = len(self.experiments)*len(self.setArr[0])
         print "Calculating %d mapping speeds..." % (int(self.totIters))
         
-        for n in range(len(experiments)):
-            experiment = experiments[n]
+        for n in range(len(self.experiments)):
+            experiment = self.experiments[n]
             popt  = []; poptstd  = []
             nepph = []; nepphstd = []
             net   = []; netstd   = []
@@ -184,7 +184,13 @@ class Vary:
             nepphstd_final.append(nepphstd)
             net_final.append(net)
             netstd_final.append(netstd)
-            
+
+        #Store the names of the telescopes, cameras, and channels
+        self.expNames = expNames
+        self.telNames = telNames
+        self.camNames = camNames
+        self.chnNames = chnNames
+        
         #Calculate average and standard deviation across experiments
         self.popt_final  = np.mean(popt_final, axis=0);  self.poptstd_final  = np.sqrt(np.mean(np.array(poptstd_final)**2, axis=0)  + np.var(np.array(popt_final),  axis=0))
         self.nepph_final = np.mean(nepph_final, axis=0); self.nepphstd_final = np.sqrt(np.mean(np.array(nepphstd_final)**2, axis=0) + np.var(np.array(nepph_final), axis=0))
@@ -195,85 +201,100 @@ class Vary:
         #Save parameters to files
         #Crate string for file names
         paramString = ""
-        for i in range(len(params)):
-            if not tels[i] == '':
-                paramString += ("_%s" % (tels[i]))
-            if not cams[i] == '':
-                paramString += ("_%s" % (cams[i]))
-            if not chs[i] == '':
-                paramString += ("_%s" % (chs[i]))
-            if not opts[i] == '':
-                paramString += ("_%s" % (params[i]))
-        paramString += "_"
+        for i in range(len(self.params)):
+            if not self.tels[i] == '':
+                paramString += ("_%s" % (self.tels[i]))
+            if not self.cams[i] == '':
+                paramString += ("_%s" % (self.cams[i]))
+            if not self.chs[i] == '':
+                paramString += ("_%s" % (self.chs[i]))
+            if not self.opts[i] == '':
+                paramString += ("_%s" % (self.opts[i]))
+            if not self.params[i] == '':
+                paramString += ("_%s" % (self.params[i]))
+        #paramString += "_"
         savedir = "paramVary/"
-        fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'   % (experiments[0].dir, savedir, paramString))
-        fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt'  % (experiments[0].dir, savedir, paramString))
-        fname_net   = ('%s/%s/mappingSpeedVary_NETarr%s.txt' % (experiments[0].dir, savedir, paramString))
+        fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'   % (self.experiments[0].dir, savedir, paramString))
+        fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt'  % (self.experiments[0].dir, savedir, paramString))
+        fname_net   = ('%s/%s/mappingSpeedVary_NETarr%s.txt' % (self.experiments[0].dir, savedir, paramString))
+        #print '%s/%s/mappingSpeedVary_Popt%s.txt'   % (self.experiments[0].dir, savedir, paramString)
 
         #Write optical power file
         f = open(fname_popt, 'w')
         #Line 1
         for i in range(self.numParams):
-            f.write('%-15s' % (tels[i]))
+            f.write('%-15s' % (self.tels[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(telNames)):
-            f.write('%-17s' % (telNames[i]))
-            if i < len(telNames)-1:
+        for i in range(len(self.telNames)):
+            f.write('%-17s' % (self.telNames[i]))
+            if i < len(self.telNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 2
         for i in range(self.numParams):
-            f.write('%-15s' % (cams[i]))
+            f.write('%-15s' % (self.cams[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(camNames)):
-            f.write('%-17s' % (camNames[i]))
-            if i < len(camNames)-1:
+        for i in range(len(self.camNames)):
+            f.write('%-17s' % (self.camNames[i]))
+            if i < len(self.camNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 3
         for i in range(self.numParams):
-            f.write('%-15s' % (chs[i]))
+            f.write('%-15s' % (self.chs[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(chnNames)):
-            f.write('%-17s' % (chnNames[i]))
-            if i < len(chnNames)-1:
+        for i in range(len(self.chnNames)):
+            f.write('%-17s' % (self.chnNames[i]))
+            if i < len(self.chnNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 4
         for i in range(self.numParams):
-            f.write('%-15s' % (opts[i]))
+            f.write('%-15s' % (self.opts[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(chnNames)):
+        for i in range(len(self.chnNames)):
            f.write(' '*17)
-           if i < len(chnNames)-1:
+           if i < len(self.chnNames)-1:
                f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')        
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
+        #Line 5
+        for i in range(self.numParams):
+            f.write('%-15s' % (self.params[i]))
+            if i < self.numParams-1:
+                f.write(' | ')
+        f.write(' ||| ')
+        for i in range(len(self.chnNames)):
+           f.write(' '*17)
+           if i < len(self.chnNames)-1:
+               f.write(' | ')
+        f.write('\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')        
         #Write the rest of the lines
-        for i in range(numEntries):
+        for i in range(self.numEntries):
             for j in range(self.numParams):
-                f.write('%-15f' % (setArr[j][i]))
+                f.write('%-15f' % (self.setArr[j][i]))
                 if j < self.numParams-1:
                     f.write(' | ')
             f.write(' ||| ')
-            for j in range(len(popt_final[i])):
-                f.write('%6.2f +/- %-6.2f' % (popt_final[i][j], poptstd_final[i][j]))
-                if j < len(popt_final[i])-1:
+            for j in range(len(self.popt_final[i])):
+                f.write('%6.2f +/- %-6.2f' % (self.popt_final[i][j], self.poptstd_final[i][j]))
+                if j < len(self.popt_final[i])-1:
                     f.write(' | ')
             f.write('\n')
-            f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3))+'\n')
+            f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Close file
         f.close()
 
@@ -281,66 +302,78 @@ class Vary:
         f = open(fname_nepph, 'w')
         #Line 1
         for i in range(self.numParams):
-            f.write('%-15s' % (tels[i]))
+            f.write('%-15s' % (self.tels[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(telNames)):
-            f.write('%-17s' % (telNames[i]))
-            if i < len(telNames)-1:
+        for i in range(len(self.telNames)):
+            f.write('%-17s' % (self.telNames[i]))
+            if i < len(self.telNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 2
         for i in range(self.numParams):
-            f.write('%-15s' % (cams[i]))
+            f.write('%-15s' % (self.cams[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(camNames)):
-            f.write('%-17s' % (camNames[i]))
-            if i < len(camNames)-1:
+        for i in range(len(self.camNames)):
+            f.write('%-17s' % (self.camNames[i]))
+            if i < len(self.camNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 3
         for i in range(self.numParams):
-            f.write('%-15s' % (chs[i]))
+            f.write('%-15s' % (self.chs[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(chnNames)):
-            f.write('%-17s' % (chnNames[i]))
-            if i < len(chnNames)-1:
+        for i in range(len(self.chnNames)):
+            f.write('%-17s' % (self.chnNames[i]))
+            if i < len(self.chnNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 4
         for i in range(self.numParams):
-            f.write('%-15s' % (opts[i]))
+            f.write('%-15s' % (self.opts[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(chnNames)):
+        for i in range(len(self.chnNames)):
            f.write(' '*17)
-           if i < len(chnNames)-1:
+           if i < len(self.chnNames)-1:
                f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')        
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
+        #Line 5
+        for i in range(self.numParams):
+            f.write('%-15s' % (self.params[i]))
+            if i < self.numParams-1:
+                f.write(' | ')
+        f.write(' ||| ')
+        for i in range(len(self.chnNames)):
+           f.write(' '*17)
+           if i < len(self.chnNames)-1:
+               f.write(' | ')
+        f.write('\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')        
         #Write the rest of the lines
-        for i in range(numEntries):
+        for i in range(self.numEntries):
             for j in range(self.numParams):
-                f.write('%-15f' % (setArr[j][i]))
+                f.write('%-15f' % (self.setArr[j][i]))
                 if j < self.numParams-1:
                     f.write(' | ')
             f.write(' ||| ')
-            for j in range(len(nepph_final[i])):
-                f.write('%6.2f +/- %-6.2f' % (nepph_final[i][j], nepphstd_final[i][j]))
-                if j < len(nepph_final[i])-1:
+            for j in range(len(self.nepph_final[i])):
+                f.write('%6.2f +/- %-6.2f' % (self.nepph_final[i][j], self.nepphstd_final[i][j]))
+                if j < len(self.nepph_final[i])-1:
                     f.write(' | ')
             f.write('\n')
-            f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3))+'\n')
+            f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Close file
         f.close()
 
@@ -348,66 +381,78 @@ class Vary:
         f = open(fname_net, 'w')
         #Line 1
         for i in range(self.numParams):
-            f.write('%-15s' % (tels[i]))
+            f.write('%-15s' % (self.tels[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(telNames)):
-            f.write('%-17s' % (telNames[i]))
-            if i < len(telNames)-1:
+        for i in range(len(self.telNames)):
+            f.write('%-17s' % (self.telNames[i]))
+            if i < len(self.telNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 2
         for i in range(self.numParams):
-            f.write('%-15s' % (cams[i]))
+            f.write('%-15s' % (self.cams[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(camNames)):
-            f.write('%-17s' % (camNames[i]))
-            if i < len(camNames)-1:
+        for i in range(len(self.camNames)):
+            f.write('%-17s' % (self.camNames[i]))
+            if i < len(self.camNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 3
         for i in range(self.numParams):
-            f.write('%-15s' % (chs[i]))
+            f.write('%-15s' % (self.chs[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(chnNames)):
-            f.write('%-17s' % (chnNames[i]))
-            if i < len(chnNames)-1:
+        for i in range(len(self.chnNames)):
+            f.write('%-17s' % (self.chnNames[i]))
+            if i < len(self.chnNames)-1:
                 f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Line 4
         for i in range(self.numParams):
-            f.write('%-15s' % (opts[i]))
+            f.write('%-15s' % (self.opts[i]))
             if i < self.numParams-1:
                 f.write(' | ')
         f.write(' ||| ')
-        for i in range(len(chnNames)):
+        for i in range(len(self.chnNames)):
            f.write(' '*17)
-           if i < len(chnNames)-1:
+           if i < len(self.chnNames)-1:
                f.write(' | ')
         f.write('\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')
-        f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3 + 5))+'\n')        
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
+        #Line 5
+        for i in range(self.numParams):
+            f.write('%-15s' % (self.params[i]))
+            if i < self.numParams-1:
+                f.write(' | ')
+        f.write(' ||| ')
+        for i in range(len(self.chnNames)):
+           f.write(' '*17)
+           if i < len(self.chnNames)-1:
+               f.write(' | ')
+        f.write('\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
+        f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')        
         #Write the rest of the lines
-        for i in range(numEntries):
+        for i in range(self.numEntries):
             for j in range(self.numParams):
-                f.write('%-15f' % (setArr[j][i]))
+                f.write('%-15f' % (self.setArr[j][i]))
                 if j < self.numParams-1:
                     f.write(' | ')
             f.write(' ||| ')
-            for j in range(len(ms_final[i])):
-                f.write('%6.2f +/- %-6.2f' % (ms_final[i][j], msstd_final[i][j]))
-                if j < len(ms_final[i])-1:
+            for j in range(len(self.net_final[i])):
+                f.write('%6.2f +/- %-6.2f' % (self.net_final[i][j], self.netstd_final[i][j]))
+                if j < len(self.net_final[i])-1:
                     f.write(' | ')
             f.write('\n')
-            f.write(('-'*(self.numParams*15 + len(telNames)*17 + (self.numParams-1)*3 + (len(telNames)-1)*3))+'\n')
+            f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Close file
         f.close()
     
