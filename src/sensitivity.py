@@ -58,8 +58,8 @@ class Sensitivity:
         if 'NA' in NEPrdArr: NEPrdArr = np.array([[np.sqrt((1. + ch.detArray.detectors[j].readN)**2 - 1.)*np.sqrt(NEPPhArr[i][j]**2 + NEPboloArr[i][j]**2) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
         NEP        = np.sqrt(NEPPhArr**2    + NEPboloArr**2 + NEPrdArr**2)
         NEParr     = np.sqrt(NEPPhArrArr**2 + NEPboloArr**2 + NEPrdArr**2)
-        NET        = np.array([[self.nse.NETfromNEP(NEP[i][j],    ch.freqs, np.prod(ch.effic[i][j], axis=0)) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
-        NETar      = np.array([[self.nse.NETfromNEP(NEParr[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0)) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
+        NET        = np.array([[self.nse.NETfromNEP(NEP[i][j],    ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
+        NETar      = np.array([[self.nse.NETfromNEP(NEParr[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
         NETarr     = self.ph.invVar(NETar)*np.sqrt(float(ch.nobs))*np.sqrt(float(ch.clcDet)/float(ch.params['Yield']*ch.numDet))
         NETarrStd  = np.std(NET)*np.sqrt(1./ch.numDet)
         MS         = 1./np.power(NETarr,    2.)
@@ -68,30 +68,6 @@ class Sensitivity:
         Sens       = self.nse.sensitivity(NETarr,    tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
         SensStd    = self.nse.sensitivity(NETarrStd, tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
         
-        '''
-        means = {'StopEff': ch.apEff,
-                 'Popt':    np.mean(PoptArr.flatten()),
-                 'NEPph':   np.mean(NEPPhArr.flatten()),  
-                 'NEPbolo': np.mean(NEPboloArr.flatten()),
-                 'NEPrd':   np.mean(NEPrdArr.flatten()),  
-                 'NEP':     np.mean(NEP.flatten()),        
-                 'NET':     np.mean(NET),                 
-                 'NETarr':  NETarr,
-                 'MS':      MS, 
-                 'Sens':    Sens}
-
-        stds = {'StopEff': 0.,
-                'Popt':    np.std(PoptArr.flatten()),
-                'NEPph':   np.std(NEPPhArr.flatten()),    
-                'NEPbolo': np.std(NEPboloArr.flatten()),  
-                'NEPrd':   np.std(NEPrdArr.flatten()),   
-                'NEP':     np.std(NEP.flatten()),     
-                'NET':     np.std(NET),          
-                'NETarr':  NETarrStd,
-                'MS':      MSStd,
-                'Sens':    SensStd}
-        '''
-
         means = [ch.apEff,
                  np.mean(PoptArr.flatten()),
                  np.mean(NEPPhArr.flatten()),  

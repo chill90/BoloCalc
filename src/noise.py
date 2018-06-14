@@ -100,8 +100,8 @@ class Noise:
         dpdt = self.dPdT(skyEff, freq, fbw)
         return nep/(np.sqrt(2.)*dpdt)
     #Total noise equivalent temperature [K-rt(s)]
-    def NETfromNEP(self, nep, freqs, skyEff):
-        dpdt = self.dPdT(skyEff, freqs)
+    def NETfromNEP(self, nep, freqs, skyEff, optCouple=1.0):
+        dpdt = optCouple*self.dPdT(skyEff, freqs)
         return nep/(np.sqrt(2.)*dpdt)
     #Array noise equivalent temperature [K-rt(s)]
     def NETarr(self, net, nDet, detYield=1.0):

@@ -2,25 +2,42 @@
 import numpy     as np
 import glob      as gb
 import telescope as tp
+import              os
 
 class Experiment:
     def __init__(self, log, dir, nrealize=1, nobs=1, clcDet=1, specRes=1.e9, foregrounds=False):
         #Store passed parameters
         self.log       = log
-        self.dir       = dir
-        self.nrealize  = nrealize
-        self.nobs      = nobs
-        self.clcDet    = clcDet
-        self.specRes   = specRes
-        self.fgnds     = foregrounds
+        self.dir       = str(dir)
+        self.nrealize  = int(nrealize)
+        self.nobs      = int(nobs)
+        self.clcDet    = int(clcDet)
+        self.specRes   = float(specRes)
+        self.fgnds     = bool(foregrounds)
+
+        #Log parameters being saved
+        self.log.log(("Experiment in %s defined using the following inputs:\n" % (self.dir),
+                     "Input directory: %s --> %s" % (str(dir), self.dir),
+                     "Number of experiment realizations: %s --> %s" % (str(nrealize), self.nrealize),
+                     "Number of observations: %s --> %d" % (str(nobs), self.nobs),
+                     "Number of detectors to calculate: %s --> %d" % (str(clcDet), self.clcDet),
+                     "Spectral resolution to calculate over: %s --> %f" % (str(specRes), self.specRes),
+                     "Whether to use foregrounds: %s --> %r" % (str(foregrounds), self.fgnds)), 2)
+        
+        #Check whether experiment exists
+        if not os.path.isdir(self.dir): raise Exception('Experiment directory %s does not exist' % (self.dir))
 
         #Generate global parameters
         self.configDir = self.dir+'/config'
-        self.name      = self.dir.rstrip('/').split('/')[-1]
+        #Check whether configuration directory exists
+        if not os.path.isdir(self.configDir): raise Exception('Experiment configuration directory %s does not exist' % (self.configDir))
 
+        #Name the experiment
+        self.name      = self.dir.rstrip('/').split('/')[-1]
         self.log.log("Instantiating experiment %s" % (self.name), 1)
 
         #Store foreground parameters
+        
         try:
             params, vals  = np.loadtxt(self.configDir+'/foregrounds.txt', unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
             self.fgndDict = {params[i].strip(): vals[i].strip() for i in range(len(params))}

@@ -36,7 +36,7 @@ class Optic:
     #Generate element, temperature, emissivity, and efficiency
     def generate(self, ch):
         #Temperature
-        temp = self.__paramSamp(self.params['Temperature'], ch.bandID); temp  = [temp for f in ch.freqs]
+        temp = self.__paramSamp(self.params['Temperature'], ch.bandID); temp  = np.ones(ch.nfreq)*temp
 
         #Efficiency from a band file?
         if self.bandFile is not None:
@@ -48,37 +48,37 @@ class Optic:
         else: 
             eff = None
 
-        #Reflection
+        #Reflection -- use only if no band file
         if eff is None:
-            if not self.params['Reflection'].isEmpty():                                 refl = self.__paramSamp(self.params['Reflection'], ch.bandID); refl = np.array([refl for f in ch.freqs])
-            elif 'Mirror' in self.params['Element'] or 'Primary' in self.params['Element']: refl = 1. - self.__ph.ruzeEff(ch.freqs, self.__paramSamp(self.params['Surface Rough'], ch.bandID))
-            else:                                                       refl = 0.; refl = np.array([refl for f in ch.freqs])
+            if not self.params['Reflection'].isEmpty(): refl = self.__paramSamp(self.params['Reflection'], ch.bandID); refl = np.ones(ch.nfreq)*refl
+            else:                                       refl = np.zeros(ch.nfreq)
 
         #Spillover
-        if not self.params['Spillover'].isEmpty():     spill     = self.__paramSamp(self.params['Spillover'], ch.bandID);
-        else:                            spill     = 0.
-        spill = np.array([spill for f in ch.freqs])
-        if not self.params['Spillover Temp'].isEmpty(): spillTemp = self.__paramSamp(self.params['Spillover Temp'], ch.bandID); spillTemp = np.array([spillTemp for f in ch.freqs])
-        else:                            spillTemp = np.array([temp for f in ch.freqs])
+        if not self.params['Spillover'].isEmpty():      spill     = self.__paramSamp(self.params['Spillover'], ch.bandID); spill = np.ones(ch.nfreq)*spill
+        else:                                           spill     = np.zeros(ch.nfreq)
+        if not self.params['Spillover Temp'].isEmpty(): spillTemp = self.__paramSamp(self.params['Spillover Temp'], ch.bandID); spillTemp = np.ones(ch.nfreq)*spillTemp
+        else:                                           spillTemp = temp
 
         #Scattering
-        if not self.params['Scatter Frac'].isEmpty(): scatt     = self.__paramSamp(self.params['Scatter Frac'], ch.bandID)
-        else:                            scatt     = 0.
-        scatt = np.array([scatt for f in ch.freqs])
-        if not self.params['Scatter Temp'].isEmpty(): scattTemp = self.__paramSamp(self.params['Scatter Temp'], ch.bandID); scattTemp = np.array([scattTemp for f in ch.freqs])
-        else:                            scattTemp = np.array([temp for f in ch.freqs])
+        if   not self.params['Surface Rough'].isEmpty(): scatt     = 1. - self.__ph.ruzeEff(ch.freqs, self.__paramSamp(self.params['Surface Rough']), ch.bandID)
+        elif not self.params['Scatter Frac'].isEmpty():  scatt     = self.__paramSamp(self.params['Scatter Frac'], ch.bandID); scatt = np.ones(ch.nfreq)*scatt
+        else:                                            scatt     = np.zeros(ch.nfreq)
+        if not self.params['Scatter Temp'].isEmpty():    scattTemp = self.__paramSamp(self.params['Scatter Temp'], ch.bandID); scattTemp = np.ones(ch.nfreq)*scattTemp
+        else:                                            scattTemp = temp
 
         #Absorption
         if 'Aperture' in self.params['Element']:
             if not eff: 
-                if not self.params['Absorption'].isEmpty(): abso = self.__paramSamp(self.params['Absorption'], ch.bandID); abso = np.array([abso for f in ch.freqs])
-                else:                         abso = 1. - self.__ph.spillEff(ch.freqs, ch.params['Pixel Size'], ch.Fnumber, ch.params['Waist Factor'])
+                if not self.params['Absorption'].isEmpty(): abso = self.__paramSamp(self.params['Absorption'], ch.bandID); abso = np.ones(ch.nfreq)*abso
+                else:                                       abso = 1. - self.__ph.spillEff(ch.freqs, ch.params['Pixel Size'], ch.Fnumber, ch.params['Waist Factor'])
             else:       
                 abso = 1. - eff
         else:
-            if not self.params['Absorption'].isEmpty():                               abso = self.__paramSamp(self.params['Absorption'], ch.bandID); abso = np.array([abso for f in ch.freqs])
+            if not self.params['Absorption'].isEmpty():                                     abso = self.__paramSamp(self.params['Absorption'], ch.bandID); abso = np.ones(ch.nfreq)*abso
             elif 'Mirror' in self.params['Element'] or 'Primary' in self.params['Element']: abso = 1. - self.__ph.ohmicEff(ch.freqs, self.__paramSamp(self.params['Conductivity'], ch.bandID))
-            else:                                                       abso = self.__ph.dielectricLoss(ch.freqs, self.__paramSamp(self.params['Thickness'], ch.bandID), self.__paramSamp(self.params['Index'], ch.bandID), self.__paramSamp(self.params['Loss Tangent'], ch.bandID))
+            else:                                                                           
+                try:                                                                        abso = self.__ph.dielectricLoss(ch.freqs, self.__paramSamp(self.params['Thickness'], ch.bandID), self.__paramSamp(self.params['Index'], ch.bandID), self.__paramSamp(self.params['Loss Tangent'], ch.bandID))
+                except:                                                                     abso = np.zeros(ch.nfreq)
         
         #Reflection from band file?
         if eff is not None: 
@@ -89,12 +89,16 @@ class Optic:
         
         #Element, absorption, efficiency, and temperature
         elem  = self.params['Element']
-        if not scatt is None and not spill is None: emiss = abso + scatt*refl*self.__powFrac(scattTemp, temp, ch.freqs) + spill*self.__powFrac(spillTemp, temp, ch.freqs)
-        elif not spill is None:                     emiss = abso + spill*self.__powFrac(     spillTemp, temp, ch.freqs) 
-        elif not scatt is None:                     emiss = abso + scatt*refl*self.__powFrac(scattTemp, temp, ch.freqs)
+        #if not scatt is None and not spill is None: emiss = abso + scatt*refl*self.__powFrac(scattTemp, temp, ch.freqs) + spill*self.__powFrac(spillTemp, temp, ch.freqs)
+        #elif not spill is None:                     emiss = abso + spill*self.__powFrac(     spillTemp, temp, ch.freqs) 
+        #elif not scatt is None:                     emiss = abso + scatt*refl*self.__powFrac(scattTemp, temp, ch.freqs)
+        #else:                                       emiss = abso
+        if not scatt is None and not spill is None: emiss = abso + scatt*self.__powFrac(scattTemp, temp, ch.freqs) + spill*self.__powFrac(spillTemp, temp, ch.freqs)
+        elif not spill is None:                     emiss = abso + spill*self.__powFrac(spillTemp, temp, ch.freqs) 
+        elif not scatt is None:                     emiss = abso + scatt*self.__powFrac(scattTemp, temp, ch.freqs)
         else:                                       emiss = abso
-        if not eff is None: effic = eff - spill
-        else:               effic = 1. - refl - abso - spill
+        if not eff is None: effic = eff
+        else:               effic = 1. - refl - abso - spill - scatt
 
         #Store channel pixel parameters
         if elem == 'Aperture':
