@@ -30,7 +30,8 @@ class Band:
             self.log.log('Unable to parse band file %s.' % (bandFile), 0)
             self.freqs = None;  self.eff = None; self.err = None
 
-        #Calculate integral of efficiency across all frequency
+        #Not allowed to have a standard deviation of zero or negative
+        self.err[(self.err <= 0.)] = 1.e-6
 
     #***** Public Methods *****
     #Sample the band
