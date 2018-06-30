@@ -11,7 +11,7 @@ try:
 except:
     print
     print 'Usage:   python mappingSpeed.py [Experiment Directory]'
-    print 'Example: python mappingSpeed.py Experiments/SimonsObservatory/V3/'
+    print 'Example: python mappingSpeed.py Experiments/ExampleExperiment/V0/'
     print
     sy.exit(1)
 #Simulation input parameter file

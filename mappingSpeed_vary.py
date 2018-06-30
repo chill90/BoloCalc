@@ -8,11 +8,30 @@ import src.vary        as vr
 
 #Experiment Input files
 try:
-    expFiles = sy.argv[1]
+    args = sy.argv[1:]
+    expFiles = args[0]
+    args.remove(expFiles)
+    if '-vt' in args: 
+        varyTogether = True
+        args.remove('-vt')
+    else:             
+        varyTogether = False
+    if '-fh' in args: 
+        fileHandle = sy.argv[sy.argv.index('-fh')+1]
+        args.remove('-fh')
+        args.remove(fileHandle)
+    else:             
+        fileHandle = None
+    if not len(args) == 0:
+        print 'Unrecognized arguments:', args
+        raise Exception
 except:
     print
     print 'Usage:   python mappingSpeed_vary.py [Experiment Directory]'
-    print 'Example: python mappingSpeed_vary.py Experiments/SimonsObservatory/V3/'
+    print 'Example: python mappingSpeed_vary.py Experiments/ExampleExperiment/V0/'
+    print 'Other options:'
+    print '-fh [File Handle] (Example: -fh paramVary_20180629)'
+    print '-vt [Vary parameters together] (Example: -vt)'
     print
     sy.exit(1)
 #Simulation input parameter file
@@ -35,6 +54,6 @@ if not os.path.isfile(paramVaryFile):
 #Generate simulation object
 sim = sm.Simulation(expFiles, simFile, logFile, verbosity, genTables=False)
 #Vary parameters
-var = vr.Vary(sim, paramVaryFile)
+var = vr.Vary(sim, paramVaryFile, fileHandle=fileHandle, varyTogether=varyTogether)
 var.vary()
 var.save()

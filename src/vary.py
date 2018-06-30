@@ -4,11 +4,13 @@ import sys   as sy
 import os
 
 class Vary:
-    def __init__(self, sim, paramFile):
+    def __init__(self, sim, paramFile, fileHandle=None, varyTogether=False):
         #For logging
-        self.sim       = sim
-        self.log       = self.sim.log
-        self.paramFile = paramFile
+        self.sim          = sim
+        self.log          = self.sim.log
+        self.paramFile    = paramFile
+        self.fileHandle   = fileHandle
+        self.varyTogether = varyTogether
 
         #Status bar length
         self.barLen = 100
@@ -33,8 +35,6 @@ class Vary:
         self.log.log("Processing %d parameters" % (self.numParams))
         #Length of each parameter array
         lenArr   = [len(paramArr[i]) for i in range(len(paramArr))]
-        self.numEntries = np.prod(lenArr)
-        self.log.log("Processing %d combinations of parameters" % (self.numEntries))
 
         #Store the telescope, camera, channels, and optic name information for each parameter
         telsArr  = [[self.tels[i] for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
@@ -42,53 +42,67 @@ class Vary:
         chsArr   = [[self.chs[i]  for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
         optsArr  = [[self.opts[i] for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
         
-        #In order to loop over all possible combinations of the parameters, the arrays need to be rebuilt
-        telArr = []
-        camArr = []
-        chArr  = []
-        optArr = []
-        setArr = []
-        #Construct one array for each parameter
-        for i in range(self.numParams):
-            #For storing names
-            telArrArr = []
-            camArrArr = []
-            chArrArr  = []
-            optArrArr = []
-            #For storing values
-            setArrArr = []
-            #Number of values to be calculated for this parameter
-            if i < self.numParams-1:
-                for j in range(lenArr[i]):
-                    telArrArr = telArrArr + [telsArr[i][j]]*np.prod(lenArr[i+1:])
-                    camArrArr = camArrArr + [camsArr[i][j]]*np.prod(lenArr[i+1:])
-                    chArrArr  = chArrArr +  [chsArr[i][j]]*np.prod(lenArr[i+1:])
-                    optArrArr = optArrArr + [optsArr[i][j]]*np.prod(lenArr[i+1:])
-                    setArrArr = setArrArr + [paramArr[i][j]]*np.prod(lenArr[i+1:])
-            else:
-                telArrArr = telArrArr + telsArr[i]
-                camArrArr = camArrArr + camsArr[i]
-                chArrArr  = chArrArr  +  chsArr[i]
-                optArrArr = optArrArr + optsArr[i]
-                setArrArr = setArrArr + paramArr[i]
-            if i > 0:
-                telArr.append(telArrArr*np.prod(lenArr[:i]))
-                camArr.append(camArrArr*np.prod(lenArr[:i]))
-                chArr.append( chArrArr*np.prod( lenArr[:i]))
-                optArr.append(optArrArr*np.prod(lenArr[:i]))
-                setArr.append(setArrArr*np.prod(lenArr[:i]))
-            else:
-                telArr.append(telArrArr)
-                camArr.append(camArrArr)
-                chArr.append( chArrArr)
-                optArr.append(optArrArr)
-                setArr.append(setArrArr)
-
-        self.telArr = np.array(telArr)
-        self.camArr = np.array(camArr)
-        self.chArr  = np.array(chArr)
-        self.optArr = np.array(optArr)
-        self.setArr = np.array(setArr)
+        if varyTogether:
+            #Vary the parameters together. All arrays need to be the same length
+            if not len(np.shape(np.array(paramArr))) == 2: raise Exception('FATAL: When all parameters are varied together, all parameter arrays must have the same length. Array length is set by np.arange(min, max+step, step)')
+            self.numEntries = lenArr[0]
+            self.log.log("Processing %d combinations of parameters" % (self.numEntries))
+            self.telArr = np.array(telsArr)
+            self.camArr = np.array(camsArr)
+            self.chArr  = np.array(chsArr)
+            self.optArr = np.array(optsArr)
+            self.setArr = np.array(paramArr)
+        else:
+            self.numEntries = np.prod(lenArr)
+            self.log.log("Processing %d combinations of parameters" % (self.numEntries))
+            #In order to loop over all possible combinations of the parameters, the arrays need to be rebuilt
+            telArr = []
+            camArr = []
+            chArr  = []
+            optArr = []
+            setArr = []
+            #Construct one array for each parameter
+            for i in range(self.numParams):
+                #For storing names
+                telArrArr = []
+                camArrArr = []
+                chArrArr  = []
+                optArrArr = []
+                #For storing values
+                setArrArr = []
+                #Number of values to be calculated for this parameter
+                if i < self.numParams-1:
+                    for j in range(lenArr[i]):
+                        telArrArr = telArrArr + [telsArr[i][j]]*np.prod(lenArr[i+1:])
+                        camArrArr = camArrArr + [camsArr[i][j]]*np.prod(lenArr[i+1:])
+                        chArrArr  = chArrArr +  [chsArr[i][j]]*np.prod(lenArr[i+1:])
+                        optArrArr = optArrArr + [optsArr[i][j]]*np.prod(lenArr[i+1:])
+                        setArrArr = setArrArr + [paramArr[i][j]]*np.prod(lenArr[i+1:])
+                else:
+                    telArrArr = telArrArr + telsArr[i]
+                    camArrArr = camArrArr + camsArr[i]
+                    chArrArr  = chArrArr  +  chsArr[i]
+                    optArrArr = optArrArr + optsArr[i]
+                    setArrArr = setArrArr + paramArr[i]
+                if i > 0:
+                    telArr.append(telArrArr*np.prod(lenArr[:i]))
+                    camArr.append(camArrArr*np.prod(lenArr[:i]))
+                    chArr.append( chArrArr*np.prod( lenArr[:i]))
+                    optArr.append(optArrArr*np.prod(lenArr[:i]))
+                    setArr.append(setArrArr*np.prod(lenArr[:i]))
+                else:
+                    telArr.append(telArrArr)
+                    camArr.append(camArrArr)
+                    chArr.append( chArrArr)
+                    optArr.append(optArrArr)
+                    setArr.append(setArrArr)
+                    
+            self.telArr = np.array(telArr)
+            self.camArr = np.array(camArr)
+            self.chArr  = np.array(chArr)
+            self.optArr = np.array(optArr)
+            self.setArr = np.array(setArr)
+            print np.shape(self.setArr)
 
     #**** Public Methods ****
     def vary(self):
@@ -150,7 +164,7 @@ class Vary:
                 dsp = self.sim.calculate()
                 #Store new sensitivity values
                 valDict = dsp.dict
-                #Write the names and values to the file
+                #Write the names and values
                 poptArr  = []
                 nepPhArr = []
                 netArr    = []
@@ -200,19 +214,22 @@ class Vary:
     def save(self):
         #Save parameters to files
         #Crate string for file names
-        paramString = ""
-        for i in range(len(self.params)):
-            if not self.tels[i] == '':
-                paramString += ("_%s" % (self.tels[i]))
-            if not self.cams[i] == '':
-                paramString += ("_%s" % (self.cams[i]))
-            if not self.chs[i] == '':
-                paramString += ("_%s" % (self.chs[i]))
-            if not self.opts[i] == '':
-                paramString += ("_%s" % (self.opts[i]))
-            if not self.params[i] == '':
-                paramString += ("_%s" % (self.params[i]))
-        #paramString += "_"
+        if not self.fileHandle is None: 
+            paramString = '_'+self.fileHandle.rstrip('_').lstrip('_')
+        else:
+            paramString = ""
+            for i in range(len(self.params)):
+                if not self.tels[i] == '':
+                    paramString += ("_%s" % (self.tels[i]))
+                if not self.cams[i] == '':
+                    paramString += ("_%s" % (self.cams[i]))
+                if not self.chs[i] == '':
+                    paramString += ("_%s" % (self.chs[i]))
+                if not self.opts[i] == '':
+                    paramString += ("_%s" % (self.opts[i]))
+                if not self.params[i] == '':
+                    paramString += ("_%s" % (self.params[i]))
+        
         savedir = "paramVary/"
         fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'   % (self.experiments[0].dir, savedir, paramString))
         fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt'  % (self.experiments[0].dir, savedir, paramString))
@@ -455,7 +472,8 @@ class Vary:
             f.write(('-'*(self.numParams*15 + len(self.telNames)*17 + (self.numParams-1)*3 + (len(self.telNames)-1)*3 + 5))+'\n')
         #Close file
         f.close()
-    
+
+    # ***** Private Methods *****
     #Status bar
     def __status(self, rel):
         frac = float(rel)/float(self.totIters)
