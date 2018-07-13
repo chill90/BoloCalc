@@ -58,11 +58,11 @@ class Parameter:
 
     def change(self, newAvg, newStd=None, bandID=1):
         if 'array' in str(type(self.avg)): 
-            self.avg[bandID-1] = newAvg
-            if not newStd == None: self.std[bandID-1] = newStd
+            self.avg[bandID-1] = newAvg*self.unit
+            if not newStd == None: self.std[bandID-1] = newStd*self.unit
         else:
-            self.avg = newAvg
-            if not newStd == None: self.std = newStd
+            self.avg = newAvg*self.unit
+            if not newStd == None: self.std = newStd*self.unit
 
     def getAvg(self, bandID=1):
         return self.fetch(bandID)[0]
