@@ -5,8 +5,8 @@
 #Python library files
 *.pyc
 
-#Atmosphere profile text files
-*src/atmFiles/*/TXT/
+#Atmosphere profile files
+*src/atmFiles/*
 
 #Latex temporary files
 *MANUAL/*
