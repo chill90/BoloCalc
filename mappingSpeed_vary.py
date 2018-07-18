@@ -35,17 +35,17 @@ except:
     print
     sy.exit(1)
 #Simulation input parameter file
-simFile = os.path.dirname(os.path.realpath(__file__))+'/config/simulationInputs.txt'
+simFile = os.path.join(os.path.dirname(os.path.normpath(__file__)), 'config', 'simulationInputs.txt')
 if not os.path.isfile(simFile):
     print 
     print 'Could not find simulation input parameter file %s' % (simFile)
     print
     sy.exit(1)
 #Logging file
-logFile = os.path.dirname(os.path.realpath(__file__))+('/log/log_%d.txt' % (int(tm.time())))
+logFile = os.path.join(os.path.dirname(os.path.normpath(__file__)), 'log', ('log_%d.txt' % (int(tm.time()))))
 verbosity = None
 #Parameter vary file
-paramVaryFile = os.path.dirname(os.path.realpath(__file__))+'/config/paramsToVary.txt'
+paramVaryFile = os.path.join(os.path.dirname(os.path.normpath(__file__)), 'config', 'paramsToVary.txt')
 if not os.path.isfile(paramVaryFile):
     print
     print 'Could not find parameter vary file %s' % (paramVaryFile)

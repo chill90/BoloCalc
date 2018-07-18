@@ -2,6 +2,12 @@ import sys     as sy
 import            os
 import getpass as gp
 
+#Remove command is different on Windows
+if sy.platform in ['win32']:
+    rm_cmd = 'del'
+else:
+    rm_cmd = 'rm'
+
 def exit():
     print 
     print 'Usage: python importExperiments.py [ExperimentToImport]'
@@ -26,35 +32,43 @@ def check(dir):
                 print
     else:
         return True
-    
+
+def get(dir, rem_dir, file, pwd=False):
+    ch = check(dir)
+    if ch:
+        if os.path.exists(file): os.system("%s %s" % (rm_cmd, file))
+        if pwd:
+            uname = raw_input( "Username: ")
+            os.system("wget --user=%s --ask-password http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s" % (uname, rem_dir, file))
+        else:
+            os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s" % (rem_dir, file))
+        os.system("unzip %s" % (file))
+        os.system("%s %s" % (rm_cmd, file))
+    return
+
 args = sy.argv[1:]
 if len(args) == 0:
     exit()
 else:
     while len(args) > 0:
         if 'EX' in args[0].upper():
-            ch = check("ExampleExperiment/")
-            if ch:
-                os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/EX/ex.zip")
-                os.system("unzip ex.zip")
-                os.system("rm ex.zip")
+            dir = "ExampleExperiment"
+            rem_dir = "EX"
+            file = "ex.zip"
+            get(dir, rem_dir, file, pwd=False)
             del args[0]            
         elif 'SA' in args[0].upper():
-            ch = check("SimonsArray/")
-            if ch:
-                uname = raw_input( "Username: ")
-                os.system("wget --user=%s --ask-password http://pbfs.physics.berkeley.edu/BoloCalc/SA/sa.zip" % (uname))
-                os.system("unzip sa.zip")
-                os.system("rm sa.zip")
-            del args[0]
+            dir = "SimonsArray"
+            rem_dir = "SA"
+            file = "sa.zip"
+            get(dir, rem_dir, file, pwd=True)
+            del args[0]            
         elif 'SO' in args[0].upper():
-            ch = check("SimonsObservatory/")
-            if ch:
-                uname = raw_input( "Username: ")
-                os.system("wget --user=%s --ask-password http://pbfs.physics.berkeley.edu/BoloCalc/SO/so.zip" % (uname))
-                os.system("unzip so.zip")
-                os.system("rm so.zip")
-            del args[0]
+            dir = "SimonsObservatory"
+            rem_dir = "SO"
+            file = "so.zip"
+            get(dir, rem_dir, file, pwd=True)
+            del args[0]            
         else:
             print ('Could not understand argument "%s"' % (args[0]))
             exit()

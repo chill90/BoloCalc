@@ -1,7 +1,7 @@
 #python Version 2.7.2
 import numpy as np
 import sys   as sy
-import os
+import          os
 
 class Vary:
     def __init__(self, sim, paramFile, fileHandle=None, varyTogether=False):
@@ -16,7 +16,7 @@ class Vary:
         self.barLen = 100
         
         #Load parameters to vary
-        self.log.log("Loading parameters to vary from %s" % (os.path.dirname(sy.argv[0])+'config/paramsToVary.txt'))
+        self.log.log("Loading parameters to vary from %s" % (os.path.join(os.path.dirname(sy.argv[0]), 'config', 'paramsToVary.txt')))
         self.tels, self.cams, self.chs, self.opts, self.params, self.mins, self.maxs, self.stps = np.loadtxt(self.paramFile, delimiter='|', dtype=np.str, unpack=True)
         self.tels   = [tel.strip('\t ')   for tel   in self.tels] 
         self.cams   = [cam.strip('\t ')   for cam   in self.cams] 
@@ -102,7 +102,6 @@ class Vary:
             self.chArr  = np.array(chArr)
             self.optArr = np.array(optArr)
             self.setArr = np.array(setArr)
-            print np.shape(self.setArr)
 
     #**** Public Methods ****
     def vary(self):
@@ -230,11 +229,17 @@ class Vary:
                 if not self.params[i] == '':
                     paramString += ("_%s" % (self.params[i]))
         
-        savedir = "paramVary/"
-        fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'   % (self.experiments[0].dir, savedir, paramString))
-        fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt'  % (self.experiments[0].dir, savedir, paramString))
-        fname_net   = ('%s/%s/mappingSpeedVary_NETarr%s.txt' % (self.experiments[0].dir, savedir, paramString))
-        #print '%s/%s/mappingSpeedVary_Popt%s.txt'   % (self.experiments[0].dir, savedir, paramString)
+        savedir = "paramVary"
+        id      = "mappingSpeedVary"
+        #fname_popt  = ('%s/%s/mappingSpeedVary_Popt%s.txt'   % (self.experiments[0].dir, savedir, paramString))
+        #fname_nepph = ('%s/%s/mappingSpeedVary_NEPph%s.txt'  % (self.experiments[0].dir, savedir, paramString))
+        #fname_net   = ('%s/%s/mappingSpeedVary_NETarr%s.txt' % (self.experiments[0].dir, savedir, paramString))
+        fname_popt  = os.path.join(self.experiments[0].dir, savedir, ('%s_Popt%s.txt'   % (id, paramString)))
+        fname_nepph = os.path.join(self.experiments[0].dir, savedir, ('%s_NEPph%s.txt'  % (id, paramString)))
+        fname_net   = os.path.join(self.experiments[0].dir, savedir, ('%s_NETarr%s.txt' % (id, paramString)))
+        print fname_popt
+        print fname_nepph
+        print fname_net
 
         #Write optical power file
         f = open(fname_popt, 'w')

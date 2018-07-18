@@ -1,10 +1,11 @@
 #python Version 2.7.2
 import numpy          as np
 import detectorArray  as da
-import observationSet as os
+import observationSet as ob
 import parameter      as pr
 import units          as un
 import glob           as gb
+import                   os
 
 class Channel:
     def __init__(self, log, channelDict, camera, optChain, sky, scn, detBandDict=None, nrealize=1, nobs=1, clcDet=1, specRes=1.e9):
@@ -54,7 +55,7 @@ class Channel:
         self.Tb        = camera.params['Bath Temp']        
 
         #Elevation distribution for pixels in the camera
-        elvFile = sorted(gb.glob(camera.configDir+'/elevation.txt'))
+        elvFile = sorted(gb.glob(os.path.join(camera.configDir, 'elevation.txt')))
         if len(elvFile) == 0:
             self.log.log("No elevation distribution for pixels within camera %s" % (camera.name), 2)
             self.elvDict = None
@@ -98,7 +99,7 @@ class Channel:
         else:                                                         self.detArray = da.DetectorArray(self.log, self)
 
         #Store the observation set object
-        self.obsSet = os.ObservationSet(self.log, self.detArray, self.sky, self.scn, belv=self.camElv, nobs=self.nobs, elvDict=self.elvDict)
+        self.obsSet = ob.ObservationSet(self.log, self.detArray, self.sky, self.scn, belv=self.camElv, nobs=self.nobs, elvDict=self.elvDict)
         
         #Build the element, emissivity, efficiency, and temperature arrays
         optElem, optEmiss, optEffic, optTemp = self.optChain.generate(self)

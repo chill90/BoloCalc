@@ -7,6 +7,7 @@ import units        as un
 import sky          as sk
 import scanStrategy as sc
 import sys          as sy
+import                 os
 
 class Telescope:
     def __init__(self, log, dir, fgndDict=None, nrealize=1, nobs=1, clcDet=1, specRes=1.e9, foregrounds=False):
@@ -21,13 +22,13 @@ class Telescope:
         self.fgnds      = foregrounds
 
         #Storing global parameters
-        self.configDir  = dir+'config/'
-        self.name       = dir.rstrip('/').split('/')[-1]
+        self.configDir  = os.path.join(self.dir, 'config')
+        self.name       = os.path.split(self.dir)[-1]
 
         self.log.log("Instantiating telescope %s" % (self.name), 1)
 
         #Store the telescope parameters in a dictionary
-        paramArr, valArr = np.loadtxt(self.configDir+'/telescope.txt', unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
+        paramArr, valArr = np.loadtxt(os.path.join(self.configDir, 'telescope.txt'), unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
         dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
         self.params = {'Site':                   self.__paramSamp(pr.Parameter(self.log, 'Site',                   dict['Site'])),
                        'Elevation':              self.__paramSamp(pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   )),
@@ -44,7 +45,7 @@ class Telescope:
     def generate(self):
         #Store sky and elevation objects
         self.log.log("Generating sky for telescope %s" % (self.name), 1)
-        atmFile = sorted(gb.glob(self.configDir+'/atm*.txt'))
+        atmFile = sorted(gb.glob(os.path.join(self.configDir, 'atm*.txt')))
         if len(atmFile) == 0:
             self.atmFile = None
             self.log.log("No custom atmosphere provided.", 2)
@@ -55,7 +56,7 @@ class Telescope:
             #Obtain PWV
             if self.params['PWV'] == 'NA':
                 self.params['PWV'] = None
-                pwvFile = sorted(gb.glob(self.configDir+'/pwv.txt'))
+                pwvFile = sorted(gb.glob(os.path.join(self.configDir, 'pwv.txt')))
                 if len(pwvFile) == 0:
                     self.log.log("No pwv distribution or value provided for telescope %s" % (self.name), 0)
                     sy.exit(1)
@@ -72,7 +73,7 @@ class Telescope:
             #Obtain elevation
             if self.params['Elevation'] == 'NA':
                 self.params['Elevation'] = None
-                elvFile = sorted(gb.glob(self.configDir+'/elevation.txt'))
+                elvFile = sorted(gb.glob(os.path.join(self.configDir, 'elevation.txt')))
                 if len(elvFile) == 0:
                     self.log.log("No elevation distribution or value provided for telescope %s" % (self.name), 0)
                     sy.exit(1)
@@ -104,7 +105,7 @@ class Telescope:
         self.scn = sc.ScanStrategy(self.log, elv=self.params['Elevation'], elvDict=self.elvDict)
         #Store camera objects
         self.log.log("Generating cameras for telescope %s" % (self.name), 1)
-        cameraDirs   = sorted(gb.glob(self.dir+'/*/')); cameraDirs = [x for x in cameraDirs if 'config' not in x]; cameraNames  = [cameraDir.split('/')[-2] for cameraDir in cameraDirs]
+        cameraDirs   = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep))); cameraDirs = [x for x in cameraDirs if 'config' not in x]; cameraNames  = [cameraDir.split(os.sep)[-2] for cameraDir in cameraDirs]
         self.cameras = {cameraNames[i]: cm.Camera(self.log, cameraDirs[i], self.sky, self.scn, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for i in range(len(cameraNames))}
 
     #***** Private Methods *****

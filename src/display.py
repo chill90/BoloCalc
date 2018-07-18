@@ -3,6 +3,7 @@ import numpy             as np
 import physics           as ph
 import units             as un
 import matplotlib.pyplot as pt
+import                      os
 
 class Display:
     def __init__(self, log, calcs):
@@ -55,7 +56,7 @@ class Display:
         #Full experiment
         experiment = self.exp
         if genTables:
-            fE = open(experiment.dir+'/sensitivity.txt', 'w')
+            fE = open(os.path.join(experiment.dir, 'sensitivity.txt'), 'w')
             fE.write(self.titleStrTE)
             fE.write(self.breakStrTE)
             fE.write(self.unitStrTE)
@@ -76,7 +77,7 @@ class Display:
 
             telescope = experiment.telescopes.values()[i]
             if genTables:
-                fT = open(telescope.dir+'/sensitivity.txt', "w")
+                fT = open(os.path.join(telescope.dir, 'sensitivity.txt'), "w")
                 fT.write(self.titleStrTE)
                 fT.write(self.breakStrTE)
                 fT.write(self.unitStrTE)
@@ -97,7 +98,7 @@ class Display:
 
                 camera = telescope.cameras.values()[j]
                 if genTables:
-                    fC = open(camera.dir+'/sensitivity.txt', 'w')
+                    fC = open(os.path.join(camera.dir, 'sensitivity.txt'), 'w')
                     fC.write(self.titleStrC)
                     fC.write(self.breakStrC)
                     fC.write(self.unitStrC)
@@ -350,7 +351,7 @@ class Display:
             telescope = self.exp.telescopes.values()[i]
             for j in range(len(telescope.cameras)):
                 camera = telescope.cameras.values()[j]
-                fi = open(camera.dir+'/opticalPower.txt', 'w')
+                fi = open(os.path.join(camera.dir, 'opticalPower.txt'), 'w')
                 for k in range(len(camera.channels)):
                     #ind = i*len(telescope.cameras) + j*len(camera.channels) + k
                     ch = camera.channels.values()[k]

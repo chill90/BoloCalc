@@ -4,7 +4,7 @@ import glob        as gb
 import pickle      as pk
 import foregrounds as fg
 import units       as un
-import os
+import                os
 
 class Sky:
     def __init__(self, log, nrealize=1, fgndDict=None, atmFile=None, site=None, pwv=None, pwvDict=None, foregrounds=False):
@@ -24,9 +24,10 @@ class Sky:
         self.medianPwv = 0.934 #Atacama, as defined by the MERRA-2 dataset
         self.maxPWV    = 8.0
         self.minPWV    = 0.0
-        self.atmDir    = '/'.join(os.path.abspath(__file__).split('/')[:-1])+'/atmFiles/'
-        self.siteDirs  = sorted(gb.glob(self.atmDir+'/*/'))
-        self.siteNames = np.array([siteDir.split('/')[-2] for siteDir in self.siteDirs])
+        #self.atmDir    = '/'.join(os.path.abspath(__file__).split('/')[:-1])+'/atmFiles/'
+        self.atmDir    = os.path.join(os.path.split(__file__)[0], 'atmFiles')
+        self.siteDirs  = sorted(gb.glob(os.path.join(self.atmDir, '*'+os.sep)))
+        self.siteNames = np.array([siteDir.split(os.sep)[-2] for siteDir in self.siteDirs])
         self.siteDirs  = {self.siteNames[i]: self.siteDirs[i] for i in range(len(self.siteNames))}
 
         self.__initATM(create=False)
@@ -83,19 +84,19 @@ class Sky:
     #Initialize atmosphere. If "create" is True, then create pickle files from text files of spectra
     def __initATM(self, create=False):
         if create:
-            atmFileArrs    = {site: np.array(sorted(gb.glob(self.siteDirs[site]+"/TXT/atm*.txt")))        for site in self.siteNames}
-            self.elevArrs  = {site: np.array([float(atmFile.split('/')[-1].split('_')[1][:2])         for atmFile in atmFileArrs[site]]) for site in self.siteNames}
-            self.pwvArrs   = {site: np.array([float(atmFile.split('/')[-1].split('_')[2][:4])*1e-3    for atmFile in atmFileArrs[site]]) for site in self.siteNames}
+            atmFileArrs    = {site: np.array(sorted(gb.glob(os.path.join(self.siteDirs[site], 'TXT', 'atm*.txt'))))        for site in self.siteNames}
+            self.elevArrs  = {site: np.array([float(os.path.split(atmFile)[-1].split('_')[1][:2])                          for atmFile in atmFileArrs[site]]) for site in self.siteNames}
+            self.pwvArrs   = {site: np.array([float(os.path.split(atmFile)[-1].split('_')[2][:4])*1e-3                     for atmFile in atmFileArrs[site]]) for site in self.siteNames}
             self.atmDicts = {}
             for site in self.siteNames:
                 freqArr, tempArr, tranArr = np.hsplit(np.array([np.loadtxt(atmFile, usecols=[0, 2, 3], unpack=True) for atmFile in atmFileArrs[site]]), 3)
                 self.atmDicts[site] = {(int(round(self.elevArrs[site][i])), round(self.pwvArrs[site][i],1)): (freqArr[i][0], tempArr[i][0], tranArr[i][0]) for i in range(len(atmFileArrs[site]))}
                 for i in range(self.nfiles):        
                     sub_dict = self.atmDicts[site].items()[i::self.nfiles]
-                    pk.dump(sub_dict, open((self.siteDirs[site]+'/PKL/atmDict_%d.pkl' % (i)), 'wb'))
+                    pk.dump(sub_dict, open(os.path.join(self.siteDirs[site], 'PKL', ('atmDict_%d.pkl' % (i))), 'wb'))
             self.atmDict = self.atmDicts[self.site]
         else:
             self.atmDict = {}
             for i in range(self.nfiles):
-                sub_dict = pk.load(open((self.siteDirs[self.site]+'/PKL/atmDict_%d.pkl' % (i)), 'rb'))
+                sub_dict = pk.load(open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'))
                 self.atmDict.update(sub_dict)
