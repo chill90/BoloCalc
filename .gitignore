@@ -26,9 +26,10 @@
 *plotATM.py
 
 #Ignore non-example directories
-#*Experiments/*
-!*Experiments/ExampleExperiment/
-!*Experiments/ExampleExperiment/*
+*Experiments/*
+!*Experiments/importExperiment.py
+#!*Experiments/ExampleExperiment/
+#!*Experiments/ExampleExperiment/*
 
 #Take anything intended to be offline offline
 *OFFLINE/
