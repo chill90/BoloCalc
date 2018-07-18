@@ -13,10 +13,10 @@ def exit():
     sy.exit(1)
 
 def check(dir):
-    isdir = os.system.isdir(dir)
+    isdir = os.path.isdir(dir)
     if isdir:
         while True:
-            answer = raw_input("Directory %s already exists. Overwrite data? Y/N? [N]")
+            answer = raw_input("Directory '%s' already exists. Overwrite data? [Y/N]: " % (dir))
             if answer == "" or answer.upper() == "N":
                 return False
             elif answer.upper() == "Y":
@@ -48,7 +48,7 @@ else:
                 os.system("rm sa.zip")
             del args[0]
         elif 'SO' in args[0].upper():
-            ch = check("SimonsObservatory")
+            ch = check("SimonsObservatory/")
             if ch:
                 uname = raw_input( "Username: ")
                 os.system("wget --user=%s --ask-password http://pbfs.physics.berkeley.edu/BoloCalc/SO/so.zip" % (uname))
