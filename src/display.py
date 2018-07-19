@@ -2,7 +2,6 @@
 import numpy             as np
 import physics           as ph
 import units             as un
-import matplotlib.pyplot as pt
 import                      os
 
 class Display:

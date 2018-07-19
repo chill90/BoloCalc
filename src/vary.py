@@ -237,9 +237,6 @@ class Vary:
         fname_popt  = os.path.join(self.experiments[0].dir, savedir, ('%s_Popt%s.txt'   % (id, paramString)))
         fname_nepph = os.path.join(self.experiments[0].dir, savedir, ('%s_NEPph%s.txt'  % (id, paramString)))
         fname_net   = os.path.join(self.experiments[0].dir, savedir, ('%s_NETarr%s.txt' % (id, paramString)))
-        print fname_popt
-        print fname_nepph
-        print fname_net
 
         #Write optical power file
         f = open(fname_popt, 'w')
