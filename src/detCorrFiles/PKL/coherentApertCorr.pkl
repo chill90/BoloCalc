@@ -11,7 +11,7 @@ p3
 tp4
 Rp5
 (I1
-(I100
+(L100L
 tp6
 cnumpy
 dtype
@@ -41,7 +41,7 @@ g3
 tp16
 Rp17
 (I1
-(I100
+(L100L
 tp18
 g7
 (S'c16'
