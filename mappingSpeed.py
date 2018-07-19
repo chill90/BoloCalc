@@ -1,7 +1,7 @@
 #python Version 2.7.2
 import time                as tm
 import sys                 as sy
-import os
+import                        os
 
 import src.simulation      as sm
 
@@ -11,7 +11,7 @@ try:
 except:
     print
     print 'Usage:   python mappingSpeed.py [Experiment Directory]'
-    print 'Example: python mappingSpeed.py Experiments/ExampleExperiment/V0/'
+    print 'Example: python mappingSpeed.py Experiments'+os.sep+'ExampleExperiment'+os.sep+'V0'+os.sep
     print
     sy.exit(1)
 #Simulation input parameter file

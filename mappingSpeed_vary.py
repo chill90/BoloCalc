@@ -1,7 +1,7 @@
 #python Version 2.7.2
 import time            as tm
 import sys             as sy
-import os
+import                    os
 
 import src.simulation  as sm
 import src.vary        as vr
@@ -28,7 +28,7 @@ try:
 except:
     print
     print 'Usage:   python mappingSpeed_vary.py [Experiment Directory]'
-    print 'Example: python mappingSpeed_vary.py Experiments/ExampleExperiment/V0/'
+    print 'Example: python mappingSpeed_vary.py Experiments'+os.sep+'ExampleExperiment'+os.sep+'V0'+os.sep
     print 'Other options:'
     print '-fh [File Handle] (Example: -fh paramVary_20180629)'
     print '-vt [Vary parameters together] (Example: -vt)'
