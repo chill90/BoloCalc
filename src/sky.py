@@ -24,7 +24,6 @@ class Sky:
         self.medianPwv = 0.934 #Atacama, as defined by the MERRA-2 dataset
         self.maxPWV    = 8.0
         self.minPWV    = 0.0
-        #self.atmDir    = '/'.join(os.path.abspath(__file__).split('/')[:-1])+'/atmFiles/'
         self.atmDir    = os.path.join(os.path.split(__file__)[0], 'atmFiles')
         self.siteDirs  = sorted(gb.glob(os.path.join(self.atmDir, '*'+os.sep)))
         self.siteNames = np.array([siteDir.split(os.sep)[-2] for siteDir in self.siteDirs])
