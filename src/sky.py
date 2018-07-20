@@ -1,11 +1,17 @@
 import numpy           as np
 import glob            as gb
 import collections     as cl
+import sys             as sy
 import                    os
 import                    io
 import pickle          as pk
 import src.foregrounds as fg
 import src.units       as un
+
+#Pickling is different between Python 2 and 3
+PY2 = (sy.version_info[0] == 2)
+if PY2: import cPickle as pk
+else:   import pickle  as pk
 
 class Sky:
     def __init__(self, log, nrealize=1, fgndDict=None, atmFile=None, site=None, pwv=None, pwvDict=None, foregrounds=False):

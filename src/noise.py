@@ -2,10 +2,11 @@ import numpy       as np
 import sys         as sy
 import                os
 import                io
+import src.physics as ph
+
 PY2 = (sy.version_info[0] == 2)
 if PY2: import cPickle as pk
 else:   import pickle  as pk
-import src.physics as ph
 
 class Noise:
     def __init__(self):     
