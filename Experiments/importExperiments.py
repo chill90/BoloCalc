@@ -38,7 +38,7 @@ def get(dir, rem_dir, file, pwd=False):
     if ch:
         if os.path.exists(file): os.system("%s %s" % (rm_cmd, file))
         if pwd:
-            uname = raw_input( "Username: ")
+            uname = raw_input("Username: ")
             os.system("wget --user=%s --ask-password http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s" % (uname, rem_dir, file))
         else:
             os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s" % (rem_dir, file))
