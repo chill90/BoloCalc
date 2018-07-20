@@ -1,4 +1,3 @@
-#python Version 2.7.2
 import numpy as np
 
 class Observation:

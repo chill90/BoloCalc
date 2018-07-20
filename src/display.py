@@ -1,8 +1,8 @@
-#python version 2.7.2
-import numpy             as np
-import physics           as ph
-import units             as un
-import                      os
+import numpy                 as np
+import collections           as cl
+import                          os
+import src.physics           as ph
+import src.units             as un
 
 class Display:
     def __init__(self, log, calcs):
@@ -27,7 +27,7 @@ class Display:
         self.optstds  = [[[(np.mean([optstds[m][i][j][k]  for m in range(len(optstds))],  axis=0) + np.std([optmeans[m][i][j][k]  for m in range(len(optmeans))], axis=0)).tolist() for k in range(len(optstds[0][i][j]))]  for j in range(len(optstds[0][i]))]  for i in range(len(optstds[0] ))]
         
         #Dictionaries to hold values for look-up
-        self.dict = {}
+        self.dict = cl.OrderedDict({})
 
         self.name   = []
         self.freq   = []; self.freqStd = []
@@ -64,7 +64,7 @@ class Display:
         #Loop over telescopes
         for i in range(len(experiment.telescopes)):
             #Telescope dictionary
-            dictT = {}
+            dictT = cl.OrderedDict({})
             
             nameT   = []
             freqT   = []; freqStdT   = []
@@ -74,7 +74,7 @@ class Display:
             sensT   = []; sensStdT   = []
             msT     = []; msStdT     = []
 
-            telescope = experiment.telescopes.values()[i]
+            telescope = list(experiment.telescopes.values())[i]
             if genTables:
                 fT = open(os.path.join(telescope.dir, 'sensitivity.txt'), "w")
                 fT.write(self.titleStrTE)
@@ -85,7 +85,7 @@ class Display:
             #Loop over cameras
             for j in range(len(telescope.cameras)):
                 #Camera dictionary
-                dictC = {}
+                dictC = cl.OrderedDict({})
                 
                 nameC   = []
                 freqC   = []; freqStdC   = []
@@ -95,7 +95,7 @@ class Display:
                 sensC   = []; sensStdC   = []
                 msC     = []; msStdC     = []
 
-                camera = telescope.cameras.values()[j]
+                camera = list(telescope.cameras.values())[j]
                 if genTables:
                     fC = open(os.path.join(camera.dir, 'sensitivity.txt'), 'w')
                     fC.write(self.titleStrC)
@@ -106,9 +106,9 @@ class Display:
                 #Loop over channels
                 for k in range(len(camera.channels)):
                     #Channel dictionary
-                    dictCh = {}
+                    dictCh = cl.OrderedDict({})
                     
-                    ch  = camera.channels.values()[k]
+                    ch  = list(camera.channels.values())[k]
                     #Write channel values to camera file
                     if genTables:
                         printStr = str("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-6.1f +/- %-6.1f | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n"
@@ -130,20 +130,19 @@ class Display:
                         fC.write(self.breakStrC)
                     
                     #Store the channel values for dictionary lookup
-                    dictCh = {'Frequency':       [ch.params['Band Center'].getAvg()*un.HzToGHz, ch.params['Band Center'].getStd()*un.HzToGHz],
-                              'Frac Bandwidth':  [ch.params['Fractional BW'].getAvg(),          ch.params['Fractional BW'].getStd()],
-                              'Num Det':         [ch.numDet,                                    0.],
-                              'Stop Efficiency': [self.snsmeans[i][j][k][0]*un.decToPct,        self.snsstds[i][j][k][0]*un.decToPct],
-                              'Optical Power':   [self.snsmeans[i][j][k][1]*un.WtoPw,           self.snsstds[i][j][k][1]*un.WtoPw],
-                              'Photon NEP':      [self.snsmeans[i][j][k][2]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][2]*un.WrtHzToaWrtHz],
-                              'Bolometer NEP':   [self.snsmeans[i][j][k][3]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][3]*un.WrtHzToaWrtHz],
-                              'Readout NEP':     [self.snsmeans[i][j][k][4]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][4]*un.WrtHzToaWrtHz],
-                              'Detector NEP':    [self.snsmeans[i][j][k][5]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][5]*un.WrtHzToaWrtHz],
-                              'Detector NET':    [self.snsmeans[i][j][k][6]*un.KTouK,           self.snsstds[i][j][k][6]*un.KTouK],
-                              'Array NET':       [self.snsmeans[i][j][k][7]*un.KTouK,           self.snsstds[i][j][k][7]*un.KTouK],
-                              'Mapping Speed':   [self.snsmeans[i][j][k][8]*un.uK2ToK2,         self.snsstds[i][j][k][8]*un.uK2ToK2],
-                              'Map Depth':       [self.snsmeans[i][j][k][9]*un.KTouK,           self.snsstds[i][j][k][9]*un.KTouK]}
-
+                    dictCh = cl.OrderedDict({'Frequency':       [ch.params['Band Center'].getAvg()*un.HzToGHz, ch.params['Band Center'].getStd()*un.HzToGHz],
+                                             'Frac Bandwidth':  [ch.params['Fractional BW'].getAvg(),          ch.params['Fractional BW'].getStd()],
+                                             'Num Det':         [ch.numDet,                                    0.],
+                                             'Stop Efficiency': [self.snsmeans[i][j][k][0]*un.decToPct,        self.snsstds[i][j][k][0]*un.decToPct],
+                                             'Optical Power':   [self.snsmeans[i][j][k][1]*un.WtoPw,           self.snsstds[i][j][k][1]*un.WtoPw],
+                                             'Photon NEP':      [self.snsmeans[i][j][k][2]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][2]*un.WrtHzToaWrtHz],
+                                             'Bolometer NEP':   [self.snsmeans[i][j][k][3]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][3]*un.WrtHzToaWrtHz],
+                                             'Readout NEP':     [self.snsmeans[i][j][k][4]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][4]*un.WrtHzToaWrtHz],
+                                             'Detector NEP':    [self.snsmeans[i][j][k][5]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][5]*un.WrtHzToaWrtHz],
+                                             'Detector NET':    [self.snsmeans[i][j][k][6]*un.KTouK,           self.snsstds[i][j][k][6]*un.KTouK],
+                                             'Array NET':       [self.snsmeans[i][j][k][7]*un.KTouK,           self.snsstds[i][j][k][7]*un.KTouK],
+                                             'Mapping Speed':   [self.snsmeans[i][j][k][8]*un.uK2ToK2,         self.snsstds[i][j][k][8]*un.uK2ToK2],
+                                             'Map Depth':       [self.snsmeans[i][j][k][9]*un.KTouK,           self.snsstds[i][j][k][9]*un.KTouK]})
                     #Store channel values in camera arrays for averaging later
                     nameC.append(ch.name)
                     freqC.append(ch.params['Band Center'].getAvg());  freqStdC.append(ch.params['Band Center'].getStd())
@@ -208,8 +207,8 @@ class Display:
                         netArrStdTv = np.mean([netArrStdT[m], netArrStdT[n]])
                         sensTv      = self.__ph.invVar([sensT[m],      sensT[n]])
                         sensStdTv   = np.mean([sensStdT[m],   sensStdT[n]])
-                        msTv        = 1./np.power(netArrTv,   2.)
-                        msStdTv     = np.mean([msStdT[m]*(msT/msT[m]) + msStdT[n]*(msT/msT[n])])
+                        msTv        = 1./(np.power(netArrTv,   2.))
+                        msStdTv     = np.mean([msStdT[m]*(msT/float(msT[m])) + msStdT[n]*(msT/float(msT[n]))])
                         
                         netArrT[m]    = netArrTv
                         netArrStdT[m] = netArrStdTv
@@ -293,8 +292,8 @@ class Display:
                     netArrStd = np.mean([self.netArrStd[m], self.netArrStd[n]])
                     sens      = self.__ph.invVar([self.sens[m],      self.sens[n]])
                     sensStd   = np.mean([self.sensStd[m],   self.sensStd[n]])
-                    ms        = 1./np.power(netArr,   2.)
-                    msStd     = np.mean([self.msStd[m]*(ms/self.ms[m]) + self.msStd[n]*(ms/self.ms[n])])
+                    ms        = 1./float(np.power(netArr,   2.))
+                    msStd     = np.mean([self.msStd[m]*(ms/float(self.ms[m])) + self.msStd[n]*(ms/float(self.ms[n]))])
 
                     self.netArr[m]     = netArr
                     self.netArrStd[m]  = netArrStd
@@ -347,13 +346,12 @@ class Display:
         units     = "| %-15s | %-15s | %-15s | %-15s |\n" % ("",        "[pW]",           "[pW]",            ""              )      
         row       = ("-"*73)+"\n"
         for i in range(len(self.exp.telescopes)):
-            telescope = self.exp.telescopes.values()[i]
+            telescope = list(self.exp.telescopes.values())[i]
             for j in range(len(telescope.cameras)):
-                camera = telescope.cameras.values()[j]
+                camera = list(telescope.cameras.values())[j]
                 fi = open(os.path.join(camera.dir, 'opticalPower.txt'), 'w')
                 for k in range(len(camera.channels)):
-                    #ind = i*len(telescope.cameras) + j*len(camera.channels) + k
-                    ch = camera.channels.values()[k]
+                    ch = list(camera.channels.values())[k]
                     bandName = ch.bandID
                     bandTitle = ("*"*24)+(" %11s %-12s " % (camera.name, bandName))+("*"*23)+"\n"
                     fi.write(bandTitle)

@@ -1,13 +1,14 @@
-#python Version 2.7.2
-import numpy        as np
-import parameter    as pr
-import camera       as cm
-import glob         as gb
-import units        as un
-import sky          as sk
-import scanStrategy as sc
-import sys          as sy
-import                 os
+import numpy            as np
+import glob             as gb
+import sys              as sy
+import collections      as cl
+import                     os
+
+import src.parameter    as pr
+import src.camera       as cm
+import src.units        as un
+import src.sky          as sk
+import src.scanStrategy as sc
 
 class Telescope:
     def __init__(self, log, dir, fgndDict=None, nrealize=1, nobs=1, clcDet=1, specRes=1.e9, foregrounds=False):
@@ -29,14 +30,14 @@ class Telescope:
 
         #Store the telescope parameters in a dictionary
         paramArr, valArr = np.loadtxt(os.path.join(self.configDir, 'telescope.txt'), unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
-        dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
-        self.params = {'Site':                   self.__paramSamp(pr.Parameter(self.log, 'Site',                   dict['Site'])),
-                       'Elevation':              self.__paramSamp(pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   )),
-                       'PWV':                    self.__paramSamp(pr.Parameter(self.log, 'PWV',                    dict['PWV'],                          min=0.0, max=8.0   )),
-                       'Observation Time':       self.__paramSamp(pr.Parameter(self.log, 'Observation Time',       dict['Observation Time'], un.yrToSec, min=0.0, max=np.inf)),
-                       'Sky Fraction':           self.__paramSamp(pr.Parameter(self.log, 'Sky Fraction',           dict['Sky Fraction'],                 min=0.0, max=1.0   )),
-                       'Observation Efficiency': self.__paramSamp(pr.Parameter(self.log, 'Observation Efficiency', dict['Observation Efficiency'],       min=0.0, max=1.0   )),
-                       'NET Margin':             self.__paramSamp(pr.Parameter(self.log, 'NET Margin',             dict['NET Margin'],                   min=0.0, max=np.inf))}
+        dict             = cl.OrderedDict({paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))})
+        self.params = cl.OrderedDict({'Site':                   self.__paramSamp(pr.Parameter(self.log, 'Site',                   dict['Site'])),
+                                      'Elevation':              self.__paramSamp(pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   )),
+                                      'PWV':                    self.__paramSamp(pr.Parameter(self.log, 'PWV',                    dict['PWV'],                          min=0.0, max=8.0   )),
+                                      'Observation Time':       self.__paramSamp(pr.Parameter(self.log, 'Observation Time',       dict['Observation Time'], un.yrToSec, min=0.0, max=np.inf)),
+                                      'Sky Fraction':           self.__paramSamp(pr.Parameter(self.log, 'Sky Fraction',           dict['Sky Fraction'],                 min=0.0, max=1.0   )),
+                                      'Observation Efficiency': self.__paramSamp(pr.Parameter(self.log, 'Observation Efficiency', dict['Observation Efficiency'],       min=0.0, max=1.0   )),
+                                      'NET Margin':             self.__paramSamp(pr.Parameter(self.log, 'NET Margin',             dict['NET Margin'],                   min=0.0, max=np.inf))})
 
         #Generate the telescope
         self.generate()
@@ -66,7 +67,7 @@ class Telescope:
                 else:
                     pwvFile = pwvFile[0]
                     params, vals = np.loadtxt(pwvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-                    self.pwvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
+                    self.pwvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
                     self.log.log("Using pwv distribution defined in %s" % (pwvFile), 2)
             else:
                 self.pwvDict = None
@@ -83,7 +84,7 @@ class Telescope:
                 else:
                     elvFile = elvFile[0]
                     params, vals = np.loadtxt(elvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-                    self.elvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
+                    self.elvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
                     self.log.log("Using elevation distribution defined in %s" % (elvFile), 2)
             else:
                 self.elvDict = None            
@@ -106,10 +107,10 @@ class Telescope:
         #Store camera objects
         self.log.log("Generating cameras for telescope %s" % (self.name), 1)
         cameraDirs   = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep))); cameraDirs = [x for x in cameraDirs if 'config' not in x]; cameraNames  = [cameraDir.split(os.sep)[-2] for cameraDir in cameraDirs]
-        self.cameras = {cameraNames[i]: cm.Camera(self.log, cameraDirs[i], self.sky, self.scn, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for i in range(len(cameraNames))}
+        self.cameras = cl.OrderedDict({cameraNames[i]: cm.Camera(self.log, cameraDirs[i], self.sky, self.scn, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for i in range(len(cameraNames))})
 
     #***** Private Methods *****
     def __paramSamp(self, param):
-        if not 'instance' in str(type(param)): return np.float(param)
+        if not ('instance' in str(type(param)) or 'class' in str(type(param))): return np.float(param)
         if self.nrealize == 1: return param.getAvg()
         else:                  return param.sample(nsample=1)

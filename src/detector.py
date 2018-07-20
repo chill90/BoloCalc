@@ -1,8 +1,7 @@
-#python Version 2.7.2
-import numpy     as np
-import parameter as pr
-import units     as un
-import physics   as ph
+import numpy         as np
+import src.parameter as pr
+import src.units     as un
+import src.physics   as ph
 
 class Detector:
     def __init__(self, log, ch, band=None):
@@ -44,6 +43,6 @@ class Detector:
 
     #***** Private Methods *****
     def __paramSamp(self, param, bandID): 
-        if not 'instance' in str(type(param)): return np.float(param)
+        if not ('instance' in str(type(param)) or 'class' in str(type(param))): return np.float(param)
         if self.ch.clcDet == 1: return param.getAvg(bandID=bandID)
         else:                   return param.sample(bandID=bandID, nsample=1)

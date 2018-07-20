@@ -1,6 +1,5 @@
-#python Version 2.7.2
-import detector  as dt
-import band      as bd
+import src.detector  as dt
+import src.band      as bd
 
 class DetectorArray:
     def __init__(self, log, ch, bandFile=None):

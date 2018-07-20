@@ -1,6 +1,5 @@
-#python Version 2.7.2
-import numpy as np
-import units as un
+import numpy     as np
+import src.units as un
 
 class ScanStrategy:
     def __init__(self, log, elv=None, elvDict=None):
@@ -20,7 +19,7 @@ class ScanStrategy:
     #Sample elevation distribution
     def elvSample(self):
         if self.elv is not None: return self.elv
-        else:                    return np.random.choice(self.elVals, size=1, p=self.elFrac/np.sum(self.elFrac))[0]
+        else:                    return np.random.choice(self.elVals, size=1, p=self.elFrac/float(np.sum(self.elFrac)))[0]
     #Retrieve user-defined elevation
     def getElv(self):
         return self.elv

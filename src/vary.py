@@ -1,4 +1,3 @@
-#python Version 2.7.2
 import numpy as np
 import sys   as sy
 import          os
@@ -132,7 +131,7 @@ class Vary:
         net_final = []; netstd_final = []
 
         self.totIters = len(self.experiments)*len(self.setArr[0])
-        print "Calculating %d mapping speeds..." % (int(self.totIters))
+        print ("Calculating %d mapping speeds..." % (int(self.totIters)))
         
         for n in range(len(self.experiments)):
             experiment = self.experiments[n]

@@ -23,22 +23,22 @@ try:
     else:             
         fileHandle = None
     if not len(args) == 0:
-        print 'Unrecognized arguments:', args
+        print ('Unrecognized arguments:', args)
         raise Exception
 except:
     print
-    print 'Usage:   python mappingSpeed_vary.py [Experiment Directory]'
-    print 'Example: python mappingSpeed_vary.py Experiments'+os.sep+'ExampleExperiment'+os.sep+'V0'+os.sep
-    print 'Other options:'
-    print '-fh [File Handle] (Example: -fh paramVary_20180629)'
-    print '-vt [Vary parameters together] (Example: -vt)'
+    print ('Usage:   python mappingSpeed_vary.py [Experiment Directory]')
+    print ('Example: python mappingSpeed_vary.py Experiments'+os.sep+'ExampleExperiment'+os.sep+'V0'+os.sep)
+    print ('Other options:')
+    print ('-fh [File Handle] (Example: -fh paramVary_20180629)')
+    print ('-vt [Vary parameters together] (Example: -vt)')
     print
     sy.exit(1)
 #Simulation input parameter file
 simFile = os.path.join(os.path.dirname(os.path.normpath(__file__)), 'config', 'simulationInputs.txt')
 if not os.path.isfile(simFile):
     print 
-    print 'Could not find simulation input parameter file %s' % (simFile)
+    print ('Could not find simulation input parameter file %s' % (simFile))
     print
     sy.exit(1)
 #Logging file
@@ -48,7 +48,7 @@ verbosity = None
 paramVaryFile = os.path.join(os.path.dirname(os.path.normpath(__file__)), 'config', 'paramsToVary.txt')
 if not os.path.isfile(paramVaryFile):
     print
-    print 'Could not find parameter vary file %s' % (paramVaryFile)
+    print ('Could not find parameter vary file %s' % (paramVaryFile))
     print
     sy.exit(1)
 #Generate simulation object

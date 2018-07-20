@@ -1,6 +1,5 @@
-#python Version 2.7.2
-import numpy as np
-import units as un
+import numpy     as np
+import src.units as un
 
 #Class for handling general physics constants and equations
 class Physics:
@@ -39,19 +38,19 @@ class Physics:
     #Convert physical thickness [m] to phase [rad]
     def thickToPhase(self, freq, thick, index=1.0):
         freq, thick, index = self.__checkInputs(freq, [thick, index])
-        return (2*np.pi)*(thick/self.lamb(freq, index))
+        return (2*np.pi)*(thick/(self.lamb(freq, index)))
     #Angle rotation by a birefringent material [deg]
     def birefringentRot(self, freq, thick, oN, eN):
         freq, thick, oN, eN = self.__checkInputs(freq, [thick, oN, eN])
-        return 360.*(eN - oN)*thick/self.lamb(freq)
+        return 360.*(eN - oN)*thick/(self.lamb(freq))
     #Stokes vector
     def Stokes(self, polFrac, polAngle):
         polAngle = self.degToRad(polAngle)        
         return np.matrix([[1.],[polFrac*np.cos(2.*polAngle)],[polFrac*np.sin(2.*polAngle)],[0]])
     #Convert from central frequncy and fractional bandwidth to band edges
     def bandEdges(self, freqCent, fracBw):
-        freqLo = freqCent - (freqCent*fracBw)/2
-        freqHi = freqCent + (freqCent*fracBw)/2
+        freqLo = freqCent - (freqCent*fracBw)/2.
+        freqHi = freqCent + (freqCent*fracBw)/2.
         return freqLo, freqHi
     #Convert from a central frequency and fractional bandwidth to a band [Hz]
     def band(self, freqCent, fracBw, freqStep=1.e9):
@@ -99,22 +98,22 @@ class Physics:
         return antennaTemp*thermoFact
     #Convert from degrees to radians
     def degToRad(self, deg):
-        return (float(deg)/360.)*2*self.PI
+        return (deg/360.)*2*self.PI
     #Convert radian to degree
     def radToDeg(self, rad):
-        return (rad/(2*self.PI))*360.
+        return (rad/(2.*self.PI))*360.
     #Inverse variance weight
     def invVar(self, errArr):
         np.seterr(divide='ignore')
-        return 1./np.sqrt(np.sum(1./np.power(np.array(errArr), 2.)))
+        return 1./(np.sqrt(np.sum(1./(np.power(np.array(errArr), 2.)))))
     #Dielectric loss coefficient with thickness [m] and freq [GHz]
     def dielectricLoss(self, freq, thick, index, lossTan):
         freq, thick, index, lossTan = self.__checkInputs(freq, [thick, index, lossTan])
-        return 1.0 - np.exp((-2*self.PI*index*lossTan*thick)/self.lamb(freq))
+        return 1.0 - np.exp((-2*self.PI*index*lossTan*thick)/(self.lamb(freq)))
     #Integrate dielectric loss accross a frequency band to obtain emissivity
     def dielectricBandAvgLoss(self, freq, thick, index, lossTan):
         freq, thick, index, lossTan = self.__checkInputs(freq, [thick, index, lossTan])
-        return np.trapz(dielectricLoss(freq, thick, index, lossTan), freq)/(freq[-1] - freq[0])
+        return np.trapz(dielectricLoss(freq, thick, index, lossTan), freq)/float(freq[-1] - freq[0])
     #Rayleigh-Jeans Temperature [K]
     def rjTemp(self, pow, deltaF, eff=1.0):
         return pow/(kB*deltaF*eff)
@@ -127,7 +126,7 @@ class Physics:
     #Throughput for a diffraction-limited detector [m^2]
     def AOmega(self, freq):
         freq = self.__checkInputs(freq)
-        return (self.c/freq)**2
+        return (self.c/(freq))**2
     #Blackbody spectral radiance [W/(m^2-Hz)]
     def bbSpecRad(self, freq, temp, emissivity=1.0):
         freq, temp, emissivity = self.__checkInputs(freq, [temp, emissivity])
@@ -143,7 +142,7 @@ class Physics:
     #Blackbody power equivalent CMB temperature spectrum on a diffraction-limited detector [K/s]
     def bbPowCMBTempSpec(self, freq, temp, emissivity=1.0):
         freq, temp, emissivity, Tcmb = self.__checkInputs(freq, [temp, emissivity, self.Tcmb])
-        return self.bbPowSpec(freq, temp, emissivity)/self.aniPowSpec(freq, Tcmb, emissivity)
+        return self.bbPowSpec(freq, temp, emissivity)/(self.aniPowSpec(freq, Tcmb, emissivity))
     #Blackbody power equivalent CMB temperature on a diffraction-limited detector [K/s]
     def bbPowCMBTemp(self, freq, temp, emissivity=1.0):
         freq, temp, emissivity = self.__checkInputs(freq, [temp, emissivity])
@@ -162,28 +161,28 @@ class Physics:
     def __checkInputs(self, x, inputs=None):
         retArr = []
         if isinstance(x, np.ndarray) or isinstance(x, list):
-            x = np.array(x)
+            x = np.array(x).astype(np.float)
             if inputs is None:
                 return x
             retArr.append(x)
             for input in inputs:
                 if callable(input): 
-                    retArr.append(input(x))
+                    retArr.append(input(x).astype(np.float))
                 elif isinstance(input, np.ndarray) or isinstance(input, list):
-                    retArr.append(np.array(input))
+                    retArr.append(np.array(input).astype(np.float))
                 elif isinstance(input, int) or isinstance(input, float):
-                    retArr.append(np.array([input for i in x]))
+                    retArr.append(np.array([input for i in x]).astype(np.float))
                 else:
                     raise Exception("Non-numeric value %s passed in Physics" % (str(x)))
         elif isinstance(x, int) or isinstance(x, float):
             if inputs is None:
                 return x
-            retArr.append(x)
+            retArr.append(float(x))
             for input in inputs:
                 if callable(input):
-                    retArr.append(input(x))
+                    retArr.append(float(input(x)))
                 elif isinstance(input, int) or isinstance(input, float):
-                    retArr.append(input)
+                    retArr.append(float(input))
                 else:
                     retArr.append(input)
         else:

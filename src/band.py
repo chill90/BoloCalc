@@ -1,6 +1,5 @@
-#python Version 2.7.2
-import numpy as np
-import units as un
+import numpy     as np
+import src.units as un
 
 class Band:
     def __init__(self, log, bandFile, freqArr=None):

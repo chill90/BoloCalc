@@ -1,8 +1,8 @@
-#python Version 2.7.2
-import numpy   as np
-import physics as ph
-import noise   as ns
-import units   as un
+import numpy       as np
+import functools   as ft
+import src.physics as ph
+import src.noise   as ns
+import src.units   as un
 
 class Sensitivity:
     def __init__(self, log, exp, corr=True):
@@ -25,7 +25,7 @@ class Sensitivity:
         if ch: corrs = True
         else:  corrs = False
         powInts = np.array([self.ph.bbPowSpec(freqs, tempArr[i], emissArr[i]*np.prod(effArr[i+1:], axis=0)) for i in range(len(elemArr))])
-        if corrs: NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs, elemArr, (ch.params['Pixel Size']/(ch.Fnumber*self.ph.lamb(ch.params['Band Center'].getAvg()))))
+        if corrs: NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs, elemArr, (ch.params['Pixel Size']/float(ch.Fnumber*self.ph.lamb(ch.params['Band Center'].getAvg()))))
         else:     NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs)
         return NEP_ph, NEP_pharr
     #Thermal carrier NEP given some optical power on the bolometer
@@ -62,8 +62,8 @@ class Sensitivity:
         NETar      = np.array([[self.nse.NETfromNEP(NEParr[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
         NETarr     = self.ph.invVar(NETar)*np.sqrt(float(ch.nobs))*np.sqrt(float(ch.clcDet)/float(ch.params['Yield']*ch.numDet))
         NETarrStd  = np.std(NET)*np.sqrt(1./ch.numDet)
-        MS         = 1./np.power(NETarr,    2.)
-        MSStd      = abs(1./np.power(NETarr+NETarrStd, 2.) - 1./np.power(NETarr-NETarrStd, 2.))/2.
+        MS         = 1./(np.power(NETarr,    2.))
+        MSStd      = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.)/(np.power(NETarr-NETarrStd, 2.)))/2.
         
         Sens       = self.nse.sensitivity(NETarr,    tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
         SensStd    = self.nse.sensitivity(NETarrStd, tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
@@ -109,18 +109,18 @@ class Sensitivity:
                 #Store efficiency towards sky and towards detector
                 for k in range(len(ch.elem[i][j])):
                     effArr = np.vstack([ch.effic[i][j], np.array([1. for f in ch.freqs])])
-                    cumEffDet = reduce(lambda x, y: x*y, effArr[k+1:])
+                    cumEffDet = ft.reduce(lambda x, y: x*y, effArr[k+1:])
                     effDetSide2.append(cumEffDet)
                     if   k == 0: cumEffSky = [[0. for f in ch.freqs]]                         #Nothing sky-side
                     elif k == 1: cumEffSky = [[1. for f in ch.freqs], [0. for f in ch.freqs]] #Only one element sky-side
-                    else:        cumEffSky = [reduce(lambda x, y: x*y, effArr[m+1:k]) if m < k-2 else effArr[m+1] for m in range(k-1)] + [[1. for f in ch.freqs], [0. for f in ch.freqs]]
+                    else:        cumEffSky = [ft.reduce(lambda x, y: x*y, effArr[m+1:k]) if m < k-2 else effArr[m+1] for m in range(k-1)] + [[1. for f in ch.freqs], [0. for f in ch.freqs]]
                     effSkySide2.append(np.array(cumEffSky))
                     pow = self.ph.bbPowSpec(ch.freqs, ch.temp[i][j][k], ch.emiss[i][j][k])
                     powers.append(pow)
                 #Store power from sky and power on detector
                 for k in range(len(ch.elem[i][j])):
                     powOut = np.trapz(powers[k]*effDetSide2[k]*ch.bandMask, ch.freqs)
-                    effDetSide2[k] = np.trapz(effDetSide2[k]*ch.bandMask, ch.freqs)/ch.bandDeltaF
+                    effDetSide2[k] = np.trapz(effDetSide2[k]*ch.bandMask, ch.freqs)/float(ch.bandDeltaF)
                     powDetSide2.append(powOut)
                     powIn = sum([np.trapz(powers[m]*effSkySide2[k][m]*ch.bandMask, ch.freqs) for m in range(k+1)])
                     powSkySide2.append(powIn)

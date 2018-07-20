@@ -1,15 +1,14 @@
-#python Version 2.7.2
 import numpy               as np
 import glob                as gb
 import multiprocessing     as mp
 import time                as tm
 import sys                 as sy
-import os
-
-import experiment      as ex
-import calculate       as cl
-import display         as dp
-import log             as lg
+import collections         as co
+import                        os
+import src.experiment      as ex
+import src.calculate       as cl
+import src.display         as dp
+import src.log             as lg
 
 class Simulation:
     def __init__(self, expFile, simFile, logFile, verbosity=0, genTables=True):
@@ -22,7 +21,7 @@ class Simulation:
         
         #Simulation Input Parameters
         params, vals   = np.loadtxt(simFile, unpack=True, skiprows=1, usecols=[0,1], dtype=np.str, delimiter='|')
-        self.inputDict = {params[i].strip(): vals[i].strip() for i in range(len(params))}
+        self.inputDict = co.OrderedDict({params[i].strip(): vals[i].strip() for i in range(len(params))})
         self.mp        = self.__bool(self.inputDict['Multiprocess'])
         self.cores     = int(        self.inputDict['Cores'])
         self.verbose   = int(        self.inputDict['Verbosity'])

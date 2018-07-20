@@ -1,8 +1,8 @@
-#python Version 2.7.2
-import numpy   as np
-import pickle  as pk
-import physics as ph
-import            os
+import numpy       as np
+import                os
+import                io
+import pickle      as pk
+import src.physics as ph
 
 class Noise:
     def __init__(self):     
@@ -13,16 +13,17 @@ class Noise:
         self.ph = ph.Physics()
 
         #Correlation files
-        #dir = '/'.join(__file__.split('/')[:-1])+'/detCorrFiles/PKL/'
         dir = os.path.join(os.path.split(__file__)[0], 'detCorrFiles', 'PKL')
-        #self.p_c_apert, self.c_apert = pk.load(open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'))
-        #self.p_c_stop,  self.c_stop  = pk.load(open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'))
-        #self.p_i_apert, self.i_apert = pk.load(open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'))
-        #self.p_i_stop,  self.i_stop  = pk.load(open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'))
-        self.p_c_apert, self.c_apert = pk.load(open(os.path.join(dir, 'coherentApertCorr.pkl'),   'r'))
-        self.p_c_stop,  self.c_stop  = pk.load(open(os.path.join(dir, 'coherentStopCorr.pkl'),    'r'))
-        self.p_i_apert, self.i_apert = pk.load(open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'r'))
-        self.p_i_stop,  self.i_stop  = pk.load(open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'r'))
+        try:
+            self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'r'))
+            self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'r'))
+            self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'r'))
+            self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'r'))
+        except:
+            self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'), encoding='latin1')
+            self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'), encoding='latin1')
+            self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'), encoding='latin1')
+            self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'), encoding='latin1')
         #Detector pitch array
         self.DetP = self.p_c_apert
         #Geometric pitch factor
@@ -31,7 +32,7 @@ class Noise:
     #Bose correlation factors
     def corrFactors(self, elemArr, detPitchFlamb, FlambMax=3.):
         FlambMax = 3. #Consider correlations out to this length
-        ndets = int(round(FlambMax/float(detPitchFlamb), 0))
+        ndets = int(round(FlambMax/(detPitchFlamb), 0))
         inds1 = [np.argmin(abs(np.array(self.DetP) - detPitchFlamb*(n+1)            )) for n in range(ndets)]
         inds2 = [np.argmin(abs(np.array(self.DetP) - detPitchFlamb*(n+1)*np.sqrt(3.))) for n in range(ndets)]
         inds  = np.sort(inds1 + inds2)
@@ -74,10 +75,10 @@ class Noise:
     #RJ approximation of photon noise equivalent power on a diffraction-limited detector [W/rt(Hz)]
     def photonNEPapprox(self, pow, freqs):
         deltaF = freqs[-1] - freqs[0]
-        return np.sqrt(2*(self.ph.h*freqs*pow + ((pow**2)/deltaF)))
+        return np.sqrt(2*(self.ph.h*freqs*pow + ((pow**2)/(deltaF))))
     #Bolometer noise equivalent power [W/rt(Hz)]
     def bolometerNEP(self, psat, n, Tc, Tb):
-        return np.sqrt(4*self.ph.kB*psat*Tb*(((np.power((n+1),2.)/((2*n)+3))*((np.power((Tc/Tb),((2*n)+3)) - 1)/np.power((np.power((Tc/Tb),(n+1)) - 1),2.)))))
+        return np.sqrt(4*self.ph.kB*psat*Tb*(((np.power((n+1),2.)/((2.*n)+3.))*((np.power(Tc/float(Tb),((2.*n)+3.)) - 1)/float(np.power((np.power(Tc/float(Tb),(n+1)) - 1),2.))))))
     #Readout noise equivalent power [W/rt(Hz)]
     def readoutNEP(self, pelec, boloR, nei):
         return np.sqrt(boloR*pelec)*nei
@@ -111,10 +112,10 @@ class Noise:
         return nep/(np.sqrt(2.)*dpdt)
     #Array noise equivalent temperature [K-rt(s)]
     def NETarr(self, net, nDet, detYield=1.0):
-        return net/np.sqrt(nDet*detYield)
+        return net/(np.sqrt(nDet*detYield))
     #Sky sensitivity [K-arcmin]
     def sensitivity(self, netArr, fsky, tobs):
-        return np.sqrt((4.*self.ph.PI*fsky*2.*np.power(netArr, 2.))/tobs)*(10800./self.ph.PI)
+        return np.sqrt((4.*self.ph.PI*fsky*2.*np.power(netArr, 2.))/float(tobs))*(10800./(self.ph.PI))
     #Mapping speed [(K^2*s)^-1]
     def mappingSpeed(self, net, nDet, detYield=1.0):
-        return detYield/np.power(self.NETarr(net, nDet), 2.)
+        return detYield/(np.power(self.NETarr(net, nDet), 2.))

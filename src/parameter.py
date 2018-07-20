@@ -1,4 +1,3 @@
-#python Version 2.7.2
 import numpy as np
 import sys   as sy
 
@@ -27,7 +26,6 @@ class Parameter:
         #Check that the value is within the allowed range. If not, terminate the program
         if not isinstance(self.avg, str):
             if np.any(self.avg < self.min):
-                print self.avg
                 self.log.log("Passed value %f for parameter %s lower than the mininum allowed value %f" % (self.avg, self.name, self.min), 0)
                 sy.exit(1)
             elif np.any(self.avg > self.max):

@@ -1,8 +1,7 @@
-#python Version 2.7.2
-import numpy        as np
-import observation  as ob
-import scanStrategy as sc
-import units        as un
+import numpy            as np
+import src.observation  as ob
+import src.scanStrategy as sc
+import src.units        as un
 
 class ObservationSet:
     def __init__(self, log, detArray, sky, scn, belv=0., nobs=1, elvDict=None):
@@ -31,5 +30,5 @@ class ObservationSet:
     # ***** Pubic Methods *****
     #Sample elevation distribution
     def pixElvSample(self):
-        if self.elVals is not None and self.elFrac is not None: return np.random.choice(self.elVals, size=1, p=self.elFrac/np.sum(self.elFrac))[0]
+        if self.elVals is not None and self.elFrac is not None: return np.random.choice(self.elVals, size=1, p=self.elFrac/float(np.sum(self.elFrac)))[0]
         else:                                                   return 0.

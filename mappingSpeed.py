@@ -10,15 +10,15 @@ try:
     expFiles = sy.argv[1]
 except:
     print
-    print 'Usage:   python mappingSpeed.py [Experiment Directory]'
-    print 'Example: python mappingSpeed.py Experiments'+os.sep+'ExampleExperiment'+os.sep+'V0'+os.sep
+    print ('Usage:   python mappingSpeed.py [Experiment Directory]')
+    print ('Example: python mappingSpeed.py Experiments'+os.sep+'ExampleExperiment'+os.sep+'V0'+os.sep)
     print
     sy.exit(1)
 #Simulation input parameter file
 simFile = os.path.join(os.path.dirname(os.path.normpath(__file__)), 'config', 'simulationInputs.txt')
 if not os.path.isfile(simFile):
     print 
-    print 'Could not find simulation input parameter file %s' % (simFile)
+    print ('Could not find simulation input parameter file %s' % (simFile))
     print
     sy.exit(1)
 #Logging file

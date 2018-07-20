@@ -1,8 +1,8 @@
-#python Version 2.7.2
-import numpy     as np
-import physics   as ph
-import units     as un
-import parameter as pr
+import numpy         as np
+import collections   as cl
+import src.physics   as ph
+import src.units     as un
+import src.parameter as pr
 
 class Foregrounds:
     def __init__(self, log, fgndDict=None, nrealize=1):
@@ -16,20 +16,20 @@ class Foregrounds:
 
         #Store foreground parameters
         if self.fgndDict:
-            self.params = {'Dust Temperature':       self.__paramSamp(pr.Parameter(self.log, 'Dust Temperature',       self.fgndDict['Dust Temperature'],       min=0.0,     max=np.inf)),
-                           'Dust Spec Index':        self.__paramSamp(pr.Parameter(self.log, 'Dust Spec Index',        self.fgndDict['Dust Spec Index'],        min=-np.inf, max=np.inf)),
-                           'Dust Amplitude':         self.__paramSamp(pr.Parameter(self.log, 'Dust Amplitude',         self.fgndDict['Dust Amplitude'],         min=0.0,     max=np.inf)),
-                           'Dust Scale Frequency':   self.__paramSamp(pr.Parameter(self.log, 'Dust Scale Frequency',   self.fgndDict['Dust Scale Frequency'],   min=0.0,     max=np.inf)),
-                           'Synchrotron Spec Index': self.__paramSamp(pr.Parameter(self.log, 'Synchrotron Spec Index', self.fgndDict['Synchrotron Spec Index'], min=-np.inf, max=np.inf)),
-                           'Synchrotron Amplitude':  self.__paramSamp(pr.Parameter(self.log, 'Synchrotron Amplitude',  self.fgndDict['Synchrotron Amplitude'],  min=0.0,     max=np.inf))}
+            self.params = cl.OrderedDict({'Dust Temperature':       self.__paramSamp(pr.Parameter(self.log, 'Dust Temperature',       self.fgndDict['Dust Temperature'],       min=0.0,     max=np.inf)),
+                                          'Dust Spec Index':        self.__paramSamp(pr.Parameter(self.log, 'Dust Spec Index',        self.fgndDict['Dust Spec Index'],        min=-np.inf, max=np.inf)),
+                                          'Dust Amplitude':         self.__paramSamp(pr.Parameter(self.log, 'Dust Amplitude',         self.fgndDict['Dust Amplitude'],         min=0.0,     max=np.inf)),
+                                          'Dust Scale Frequency':   self.__paramSamp(pr.Parameter(self.log, 'Dust Scale Frequency',   self.fgndDict['Dust Scale Frequency'],   min=0.0,     max=np.inf)),
+                                          'Synchrotron Spec Index': self.__paramSamp(pr.Parameter(self.log, 'Synchrotron Spec Index', self.fgndDict['Synchrotron Spec Index'], min=-np.inf, max=np.inf)),
+                                          'Synchrotron Amplitude':  self.__paramSamp(pr.Parameter(self.log, 'Synchrotron Amplitude',  self.fgndDict['Synchrotron Amplitude'],  min=0.0,     max=np.inf))})
         else:
             #Default parameters from Planck
-            self.params = {'Dust Temperature':       19.7,
-                           'Dust Spec Index':        1.5,
-                           'Dust Amplitude':         2.e-3,
-                           'Dust Scale Frequency':   353.*un.GHzToHz,
-                           'Synchrotron Spec Index': -3.0,
-                           'Synchrotron Amplitude':  6.e3}
+            self.params = cl.OrderedDict({'Dust Temperature':       19.7,
+                                          'Dust Spec Index':        1.5,
+                                          'Dust Amplitude':         2.e-3,
+                                          'Dust Scale Frequency':   353.*un.GHzToHz,
+                                          'Synchrotron Spec Index': -3.0,
+                                          'Synchrotron Amplitude':  6.e3})
 
         #Dust angular power spectrum constants, taken from Dunkley
         self.dustAngAmp = 8.e-12
@@ -53,7 +53,7 @@ class Foregrounds:
         if dustSpecIndex == None:
             dustSpecIndex = self.params['Dust Spec Index']
 
-        return emissivity*dustAmp*((freq/self.params['Dust Scale Frequency'])**dustSpecIndex)*self.ph.bbSpecRad(freq, dustTemp)
+        return emissivity*dustAmp*((freq/float(self.params['Dust Scale Frequency']))**dustSpecIndex)*self.ph.bbSpecRad(freq, dustTemp)
 
     #Polarized galactic dust power spectrum on a diffraction-limited detector [W/Hz]
     def dustPowSpec(self, emissivity, freq, dustAmp=None, dustTemp=None, dustSpecIndex=None):
@@ -145,7 +145,7 @@ class Foregrounds:
         if syncSpecIndex == None:
             syncSpecIndex = self.params['Synchrotron Spec Index']
         
-        return self.syncPowSpec(emissivity, freq, syncAmp, syncSpecIndex)/self.ph.aniPowSpec(freq, self.ph.Tcmb, emissivity)
+        return self.syncPowSpec(emissivity, freq, syncAmp, syncSpecIndex)/(self.ph.aniPowSpec(freq, self.ph.Tcmb, emissivity))
 
     #Synchrotron power equivalent CMB temperature on a diffraction-limited detector [K]
     def syncPowTemp(self, emissivity, freq, fbw, syncAmp=None, syncSpecIndex=None):
@@ -173,7 +173,7 @@ class Foregrounds:
         if dustM == None:
             dustM = self.dustM
 
-        return emissivity*((2*self.ph.PI*dustAngAmp)/(ell*(ell + 1)))*((freq/dustNu0)**(2*dustSpecIndex))*((ell/dustEll0)**dustM)
+        return emissivity*((2*self.ph.PI*dustAngAmp)/(ell*(ell + 1.)))*((freq/float(dustNu0))**(2*dustSpecIndex))*((ell/float(dustEll0))**dustM)
 
     #For calculating the polarized synchrotron radiation angular power spectrum
     def syncAngPowSpec(self, emissivity, freq, ell, syncAngAmp=None, syncSpecIndex=None, syncEll0=None, syncNu0=None, syncM=None):
@@ -188,7 +188,7 @@ class Foregrounds:
         if syncM == None:
             syncM = self.syncM
 
-        return emissivity*((2*self.ph.PI*syncAngAmp)/(ell*(ell + 1)))*((freq/syncNu0)**(2*syncSpecIndex))*((ell/syncEll0)**syncM)
+        return emissivity*((2*self.ph.PI*syncAngAmp)/(ell*(ell + 1.)))*((freq/float(syncNu0))**(2*syncSpecIndex))*((ell/float(syncEll0))**syncM)
 
     #***** Private Methods *****
     def __paramSamp(self, param): 

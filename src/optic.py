@@ -1,9 +1,9 @@
-#python Version 2.7.2
-import numpy     as np
-import parameter as pr
-import physics   as ph
-import units     as un
-import band      as bd
+import numpy         as np
+import collections   as cl
+import src.parameter as pr
+import src.physics   as ph
+import src.units     as un
+import src.band      as bd
 
 class Optic:
     def __init__(self, log, dict, nrealize=1, bandFile=None):
@@ -13,24 +13,24 @@ class Optic:
         self.nrealize = nrealize
 
         #Store optic parameters
-        self.params = {'Element':        dict['Element'],
-                       'Temperature':    pr.Parameter(self.log, 'Temperature',    dict['Temperature'],             min=0.0, max=np.inf),
-                       'Absorption':     pr.Parameter(self.log, 'Absorption',     dict['Absorption'],              min=0.0, max=1.0   ),
-                       'Reflection':     pr.Parameter(self.log, 'Reflection',     dict['Reflection'],              min=0.0, max=1.0   ),
-                       'Thickness':      pr.Parameter(self.log, 'Thickness',      dict['Thickness'],     un.mmToM, min=0.0, max=np.inf),
-                       'Index':          pr.Parameter(self.log, 'Index',          dict['Index'],                   min=0.0, max=np.inf),
-                       'Loss Tangent':   pr.Parameter(self.log, 'Loss Tangent',   dict['Loss Tangent'],  1.e-04,   min=0.0, max=np.inf),
-                       'Conductivity':   pr.Parameter(self.log, 'Conductivity',   dict['Conductivity'],  1.e+06,   min=0.0, max=np.inf),
-                       'Surface Rough':  pr.Parameter(self.log, 'Surface Rough',  dict['Surface Rough'], un.umToM, min=0.0, max=np.inf),
-                       'Spillover':      pr.Parameter(self.log, 'Spillover',      dict['Spillover'],               min=0.0, max=1.0   ),
-                       'Spillover Temp': pr.Parameter(self.log, 'Spillover Temp', dict['Spillover Temp'],          min=0.0, max=np.inf),
-                       'Scatter Frac':   pr.Parameter(self.log, 'Scatter Frac',   dict['Scatter Frac'],            min=0.0, max=1.0   ),
-                       'Scatter Temp':   pr.Parameter(self.log, 'Scatter Temp',   dict['Scatter Temp'],            min=0.0, max=np.inf)}
+        self.params = cl.OrderedDict({'Element':        dict['Element'],
+                                      'Temperature':    pr.Parameter(self.log, 'Temperature',    dict['Temperature'],             min=0.0, max=np.inf),
+                                      'Absorption':     pr.Parameter(self.log, 'Absorption',     dict['Absorption'],              min=0.0, max=1.0   ),
+                                      'Reflection':     pr.Parameter(self.log, 'Reflection',     dict['Reflection'],              min=0.0, max=1.0   ),
+                                      'Thickness':      pr.Parameter(self.log, 'Thickness',      dict['Thickness'],     un.mmToM, min=0.0, max=np.inf),
+                                      'Index':          pr.Parameter(self.log, 'Index',          dict['Index'],                   min=0.0, max=np.inf),
+                                      'Loss Tangent':   pr.Parameter(self.log, 'Loss Tangent',   dict['Loss Tangent'],  1.e-04,   min=0.0, max=np.inf),
+                                      'Conductivity':   pr.Parameter(self.log, 'Conductivity',   dict['Conductivity'],  1.e+06,   min=0.0, max=np.inf),
+                                      'Surface Rough':  pr.Parameter(self.log, 'Surface Rough',  dict['Surface Rough'], un.umToM, min=0.0, max=np.inf),
+                                      'Spillover':      pr.Parameter(self.log, 'Spillover',      dict['Spillover'],               min=0.0, max=1.0   ),
+                                      'Spillover Temp': pr.Parameter(self.log, 'Spillover Temp', dict['Spillover Temp'],          min=0.0, max=np.inf),
+                                      'Scatter Frac':   pr.Parameter(self.log, 'Scatter Frac',   dict['Scatter Frac'],            min=0.0, max=1.0   ),
+                                      'Scatter Temp':   pr.Parameter(self.log, 'Scatter Temp',   dict['Scatter Temp'],            min=0.0, max=np.inf)})
 
     #***** Private Functions *****
     #Ratio of blackbody power between two temperatures
     def __powFrac(self, T1, T2, freqs):
-        return np.trapz(self.__ph.bbPowSpec(freqs, T1), freqs)/np.trapz(self.__ph.bbPowSpec(freqs, T2), freqs)
+        return np.trapz(self.__ph.bbPowSpec(freqs, T1), freqs)/float(np.trapz(self.__ph.bbPowSpec(freqs, T2), freqs))
 
     #***** Public Functions *****
     #Generate element, temperature, emissivity, and efficiency
@@ -102,13 +102,13 @@ class Optic:
 
         #Store channel pixel parameters
         if elem == 'Aperture':
-            ch.apEff     = np.trapz(effic, ch.freqs)/(ch.freqs[-1] - ch.freqs[0])
+            ch.apEff     = np.trapz(effic, ch.freqs)/float(ch.freqs[-1] - ch.freqs[0])
             ch.edgeTaper = self.__ph.edgeTaper(ch.apEff)
 
         return [elem, emiss, effic, temp]
 
     #***** Private Methods *****
     def __paramSamp(self, param, bandID):
-        if not 'instance' in str(type(param)): return np.float(param)
+        if not ('instance' in str(type(param)) or 'class' in str(type(param))): return np.float(param)
         if self.nrealize == 1: return param.getAvg(bandID)
         else:                  return param.sample(bandID=bandID, nsample=1)
