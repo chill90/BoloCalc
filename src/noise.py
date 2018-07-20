@@ -2,7 +2,9 @@ import numpy       as np
 import sys         as sy
 import                os
 import                io
-import pickle      as pk
+PY2 = (sy.version_info[0] == 2)
+if PY2: import cPickle as pk
+else:   import pickle  as pk
 import src.physics as ph
 
 class Noise:
@@ -15,7 +17,7 @@ class Noise:
 
         #Correlation files
         dir = os.path.join(os.path.split(__file__)[0], 'detCorrFiles', 'PKL')
-        if sy.version_info[0] == 2: #using Python 2
+        if PY2: #using Python 2
             if sy.platform in ['win32']:
                 self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'r'))
                 self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'r'))
