@@ -19,27 +19,15 @@ class Noise:
         #Correlation files
         dir = os.path.join(os.path.split(__file__)[0], 'detCorrFiles', 'PKL')
         if PY2: #using Python 2
-            if sy.platform in ['win32']:
-                self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'))
-                self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'))
-                self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'))
-                self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'))
-            else:
-                self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'))
-                self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'))
-                self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'))
-                self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'))
+            self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'))
+            self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'))
+            self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'))
+            self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'))
         else: #using Python 3
-            if sy.platform in ['win32']:
-                self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'), encoding='latin1')
-                self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'), encoding='latin1')
-                self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'), encoding='latin1')
-                self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'), encoding='latin1')
-            else:
-                self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'), encoding='latin1')
-                self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'), encoding='latin1')
-                self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'), encoding='latin1')
-                self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'), encoding='latin1')
+            self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'), encoding='latin1')
+            self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'), encoding='latin1')
+            self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'), encoding='latin1')
+            self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'), encoding='latin1')
                 
         #Detector pitch array
         self.DetP = self.p_c_apert

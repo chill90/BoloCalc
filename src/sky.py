@@ -4,7 +4,6 @@ import collections     as cl
 import sys             as sy
 import                    os
 import                    io
-import pickle          as pk
 import src.foregrounds as fg
 import src.units       as un
 
@@ -104,8 +103,6 @@ class Sky:
         else:
             self.atmDict = cl.OrderedDict({})
             for i in range(self.nfiles):
-                try:
-                    sub_dict = pk.load(io.open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'))
-                except UnicodeDecodeError:
-                    sub_dict = pk.load(io.open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'), encoding='latin1')
+                if PY2: sub_dict = pk.load(io.open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'))
+                else:   sub_dict = pk.load(io.open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'), encoding='latin1')
                 self.atmDict.update(sub_dict)
