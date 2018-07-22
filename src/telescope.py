@@ -54,40 +54,54 @@ class Telescope:
             if self.params['Site'] == 'NA':
                 self.log.log("No site provided", 0)
                 sy.exit(1)
+            elif self.params['Site'].upper() not in ['ATACAMA', 'POLE', 'MCMURDO', 'SPACE']:
+                self.log.log("Provided site %s not understood" % (self.params['Site']), 0)
+                sy.exit(1)
             #Obtain PWV
-            if self.params['PWV'] == 'NA':
+            if self.params['Site'].upper() == 'MCMURDO':
+                self.params['PWV'] = 0
+                self.pwvDict       = None
+            elif self.params['Site'].upper() == 'SPACE':
                 self.params['PWV'] = None
-                pwvFile = sorted(gb.glob(os.path.join(self.configDir, 'pwv.txt')))
-                if len(pwvFile) == 0:
-                    self.log.log("No pwv distribution or value provided for telescope %s" % (self.name), 0)
-                    sy.exit(1)
-                elif len(pwvFile) > 1:
-                    self.log.log('More than one pwv distribution found for telescope %s' % (self.name), 0)
-                    sy.exit(1)
-                else:
-                    pwvFile = pwvFile[0]
-                    params, vals = np.loadtxt(pwvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-                    self.pwvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
-                    self.log.log("Using pwv distribution defined in %s" % (pwvFile), 2)
+                self.pwvDict       = None
             else:
-                self.pwvDict = None
+                if self.params['PWV'] == 'NA':
+                    self.params['PWV'] = None
+                    pwvFile = sorted(gb.glob(os.path.join(self.configDir, 'pwv.txt')))
+                    if len(pwvFile) == 0:
+                        self.log.log("No pwv distribution or value provided for telescope %s" % (self.name), 0)
+                        sy.exit(1)
+                    elif len(pwvFile) > 1:
+                        self.log.log('More than one pwv distribution found for telescope %s' % (self.name), 0)
+                        sy.exit(1)
+                    else:
+                        pwvFile = pwvFile[0]
+                        params, vals = np.loadtxt(pwvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
+                        self.pwvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
+                        self.log.log("Using pwv distribution defined in %s" % (pwvFile), 2)
+                else:
+                    self.pwvDict = None
             #Obtain elevation
-            if self.params['Elevation'] == 'NA':
+            if self.params['Site'].upper() == 'SPACE':
                 self.params['Elevation'] = None
-                elvFile = sorted(gb.glob(os.path.join(self.configDir, 'elevation.txt')))
-                if len(elvFile) == 0:
-                    self.log.log("No elevation distribution or value provided for telescope %s" % (self.name), 0)
-                    sy.exit(1)
-                elif len(elvFile) > 1:
-                    self.log.log('More than one elevation distribution found for telescope %s' % (self.name), 0)
-                    sy.exit(1)
-                else:
-                    elvFile = elvFile[0]
-                    params, vals = np.loadtxt(elvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-                    self.elvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
-                    self.log.log("Using elevation distribution defined in %s" % (elvFile), 2)
+                self.elvDict             = None
             else:
-                self.elvDict = None            
+                if self.params['Elevation'] == 'NA':
+                    self.params['Elevation'] = None
+                    elvFile = sorted(gb.glob(os.path.join(self.configDir, 'elevation.txt')))
+                    if len(elvFile) == 0:
+                        self.log.log("No elevation distribution or value provided for telescope %s" % (self.name), 0)
+                        sy.exit(1)
+                    elif len(elvFile) > 1:
+                        self.log.log('More than one elevation distribution found for telescope %s' % (self.name), 0)
+                        sy.exit(1)
+                    else:
+                        elvFile = elvFile[0]
+                        params, vals = np.loadtxt(elvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
+                        self.elvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
+                        self.log.log("Using elevation distribution defined in %s" % (elvFile), 2)
+                else:
+                    self.elvDict = None            
         elif len(atmFile) > 1:                
             self.log.log('More than one atmosphere file found for telescope %s' % (self.name), 0)
             sy.exit(1)

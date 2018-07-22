@@ -19,6 +19,7 @@ class ScanStrategy:
     #Sample elevation distribution
     def elvSample(self):
         if self.elv is not None: return self.elv
+        if self.elvDict is None: return None
         else:                    return np.random.choice(self.elVals, size=1, p=self.elFrac/float(np.sum(self.elFrac)))[0]
     #Retrieve user-defined elevation
     def getElv(self):

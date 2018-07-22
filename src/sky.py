@@ -35,12 +35,14 @@ class Sky:
         self.siteNames = np.array([siteDir.split(os.sep)[-2] for siteDir in self.siteDirs])
         self.siteDirs  = cl.OrderedDict({self.siteNames[i]: self.siteDirs[i] for i in range(len(self.siteNames))})
 
-        self.__initATM(create=False)
+        if not self.site.upper() == 'SPACE':
+            self.__initATM(create=False)
 
     #***** Public methods ******
     #Sample PWV distribution
     def pwvSample(self):
         if self.pwv is not None: return self.pwv
+        if self.pwvDict is None: return None
         samp = np.random.choice(np.array(self.pwvDict.keys()).astype(np.float), size=1, p=np.array(self.pwvDict.values()).astype(np.float)/np.sum(np.array(self.pwvDict.values()).astype(np.float)))[0]
         if samp < self.minPWV:
             self.log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead' % (samp, self.minPWV, self.minPWV), 2)
@@ -71,19 +73,32 @@ class Sky:
     #Generate the sky
     def generate(self, pwv, elev, freqs):
         self.Ncmb = ['CMB' for f in freqs]; self.Tcmb = [2.725 for f in freqs]; self.Ecmb = [1. for f in freqs]; self.Acmb = [1. for f in freqs]
-        self.Natm = ['ATM' for f in freqs]; freq, self.Tatm, self.Eatm = self.atmSpectrum(pwv, elev, freqs);     self.Aatm = [1. for f in freqs]
+        if not self.site.upper() == 'SPACE':
+            self.Natm = ['ATM' for f in freqs]; freq, self.Tatm, self.Eatm = self.atmSpectrum(pwv, elev, freqs);     self.Aatm = [1. for f in freqs]
         if self.inclF:
             self.Nsyn = ['SYNC' for f in freqs]; self.Tsyn = self.synSpectrum(freqs); self.Esyn = [1. for f in freqs]; self.Asyn = [1. for f in freqs]
             self.Ndst = ['DUST' for f in freqs]; self.Tdst = self.dstSpectrum(freqs); self.Edst = [1. for f in freqs]; self.Adst = [1. for f in freqs]
-            return ([self.Ncmb, self.Nsyn, self.Ndst, self.Natm],
-                    [self.Acmb, self.Asyn, self.Adst, self.Aatm],
-                    [self.Ecmb, self.Esyn, self.Edst, self.Eatm],
-                    [self.Tcmb, self.Tsyn, self.Tdst, self.Tatm])
+            if not self.site.upper() == 'SPACE':
+                return ([self.Ncmb, self.Nsyn, self.Ndst, self.Natm],
+                        [self.Acmb, self.Asyn, self.Adst, self.Aatm],
+                        [self.Ecmb, self.Esyn, self.Edst, self.Eatm],
+                        [self.Tcmb, self.Tsyn, self.Tdst, self.Tatm])
+            else:
+                return ([self.Ncmb, self.Nsyn, self.Ndst],
+                        [self.Acmb, self.Asyn, self.Adst],
+                        [self.Ecmb, self.Esyn, self.Edst],
+                        [self.Tcmb, self.Tsyn, self.Tdst])                
         else:
-            return ([self.Ncmb, self.Natm],
-                    [self.Acmb, self.Aatm],
-                    [self.Ecmb, self.Eatm],
-                    [self.Tcmb, self.Tatm])
+            if not self.site.upper() == 'SPACE':
+                return ([self.Ncmb, self.Natm],
+                        [self.Acmb, self.Aatm],
+                        [self.Ecmb, self.Eatm],
+                        [self.Tcmb, self.Tatm])
+            else:
+                return ([self.Ncmb],
+                        [self.Acmb],
+                        [self.Ecmb],
+                        [self.Tcmb])                
 
     #***** Private methods *****
     #Initialize atmosphere. If "create" is True, then create pickle files from text files of spectra

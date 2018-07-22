@@ -11,7 +11,8 @@ class Observation:
 
         #Sample PWV and Elevation for the camera
         self.pwv = self.sky.pwvSample()
-        self.elv = self.scn.elvSample()+self.belv
+        self.elv = self.scn.elvSample()
+        if self.elv is not None: self.elv += self.belv
                     
         #Sample and store sky optical parameters
         if detArray.nDet == 1:
