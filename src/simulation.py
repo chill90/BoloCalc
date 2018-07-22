@@ -4,6 +4,7 @@ import multiprocessing     as mp
 import time                as tm
 import sys                 as sy
 import collections         as co
+import exception           as ex
 import                        os
 import src.experiment      as ex
 import src.calculate       as cl
@@ -22,22 +23,20 @@ class Simulation:
         #Simulation Input Parameters
         params, vals   = np.loadtxt(simFile, unpack=True, skiprows=1, usecols=[0,1], dtype=np.str, delimiter='|')
         self.inputDict = co.OrderedDict({params[i].strip(): vals[i].strip() for i in range(len(params))})
-        self.mp        = self.__bool(self.inputDict['Multiprocess'])
-        self.cores     = int(        self.inputDict['Cores'])
-        self.verbose   = int(        self.inputDict['Verbosity'])
-        self.nrel      = int(        self.inputDict['Experiments'])
-        self.nobs      = int(        self.inputDict['Observations'])
-        self.clcDet    = int(        self.inputDict['Detectors'])
-        self.specRes   = float(      self.inputDict['Resolution'])*1.e9 #Hz
-        self.fgnd      = self.__bool(self.inputDict['Foregrounds'])
-        self.corr      = self.__bool(self.inputDict['Correlations'])
+        self.mp        = self.__bool( 'Multiprocess', self.inputDict['Multiprocess'])
+        self.cores     = self.__int(  'Cores',        self.inputDict['Cores'])      
+        self.verbose   = self.__int(  'Verbosity',    self.inputDict['Verbosity'])  
+        self.nrel      = self.__int(  'Experiments',  self.inputDict['Experiments'])
+        self.nobs      = self.__int(  'Observations', self.inputDict['Observations'])
+        self.clcDet    = self.__int(  'Detectors',    self.inputDict['Detectors'])  
+        self.specRes   = self.__float('Resolution',   self.inputDict['Resolution'])*1.e9 #Hz
+        self.fgnd      = self.__bool( 'Foregrounds',  self.inputDict['Foregrounds'])
+        self.corr      = self.__bool( 'Correlations', self.inputDict['Correlations'])
 
         #Logging
         self.log = lg.Log(self.logFile, self.verbosity)
-        if verbosity is not None:
-            self.log.log('Logging to file "%s," printing with verbosity = %d' % (logFile, self.verbosity), 1)
-        else:
-            self.log.log('Logging to file "%s,"' % (logFile), 1)
+        if verbosity is not None: self.log.log('Logging to file "%s," printing with verbosity = %d' % (logFile, self.verbosity), 1)
+        else:                     self.log.log('Logging to file "%s,"' % (logFile), 1)
 
         #Length of status bar
         self.barLen = 100
@@ -70,9 +69,20 @@ class Simulation:
 
     #**** Private methods ****
     #Convert string to bool
-    def __bool(self, str): 
-        if 'True' in str or 'true' in str: return True
-        else:                              return False
+    def __bool(self, param, str): 
+        if str.upper() == 'TRUE':    return True
+        elif str.upper() == 'FALSE': return False
+        else: raise TypeError('FATAL: Invalid boolean "%s" for parameter "%s" in BoloCalc/config/simulationInputs.txt. Must be "True" or "False."' % (str, param))
+    def __int(self, param, str):
+        try:
+            return int(str)
+        except:
+            raise TypeError('FATAL: Invalid integer "%s" for parameter "%s" in BoloCalc/config/simulationInputs.txt. Must be valid integer value."' % (str, param))
+    def __float(self, param, str):
+        try:
+            return float(str)
+        except:
+            raise TypeError(('FATAL: Invalid float "%s" for parameter "%s" in BoloCalc/config/simulationInputs.txt. Must be valid float value."' % (str, param))
     #Top-level methods for multiprocessing handling
     def __mp1(self, drr, n=None):
         if self.verbosity == 0 and n is not None:

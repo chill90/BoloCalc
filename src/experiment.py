@@ -15,15 +15,6 @@ class Experiment:
         self.specRes   = float(specRes)
         self.fgnds     = bool(foregrounds)
 
-        #Log parameters being saved
-        self.log.log(("Experiment in %s defined using the following inputs:\n" % (self.dir),
-                     "Input directory: %s --> %s" % (str(dir), self.dir),
-                     "Number of experiment realizations: %s --> %s" % (str(nrealize), self.nrealize),
-                     "Number of observations: %s --> %d" % (str(nobs), self.nobs),
-                     "Number of detectors to calculate: %s --> %d" % (str(clcDet), self.clcDet),
-                     "Spectral resolution to calculate over: %s --> %f" % (str(specRes), self.specRes),
-                     "Whether to use foregrounds: %s --> %r" % (str(foregrounds), self.fgnds)), 2)
-        
         #Check whether experiment exists
         if not os.path.isdir(self.dir): raise Exception('Experiment directory %s does not exist' % (self.dir))
 
@@ -36,8 +27,7 @@ class Experiment:
         self.name = os.path.split(self.dir)[-1]
         self.log.log("Instantiating experiment %s" % (self.name), 1)
 
-        #Store foreground parameters
-        
+        #Store foreground parameters        
         try:
             params, vals  = np.loadtxt(os.path.join(self.configDir, 'foregrounds.txt'), unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
             self.fgndDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(len(params))})

@@ -26,7 +26,7 @@ class Vary:
         if len(self.tels) == len(self.params) and len(self.params) == len(self.mins) and len(self.mins) == len(self.maxs) and len(self.maxs) == len(self.stps):
             self.numParams = len(self.params)
         else:
-            sy.exit('Number of telescopes, parameters, mins, maxes, and steps must match for parameters to be varied. Problem with parameter vary file\n')
+            raise Exception('FATAL: Number of telescopes, parameters, mins, maxes, and steps must match for parameters to be varied. Problem with parameter vary file "BoloCalc/config/paramsToVary.txt"\n')
             
         #Construct arrays of parameters
         paramArr = [np.arange(float(self.mins[i]), float(self.maxs[i])+float(self.stps[i]), float(self.stps[i])).tolist() for i in range(len(self.params))]
