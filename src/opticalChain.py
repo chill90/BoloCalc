@@ -14,16 +14,20 @@ class OpticalChain:
         self.log.log("Storing individual optics in optical chain", 1)
         output      = np.loadtxt(self.optFile, dtype=np.str, delimiter='|'); keyArr  = output[0]; elemArr = output[1:]
         opticDicts  = [cl.OrderedDict({keyArr[i].strip(): elem[i].strip() for i in range(len(keyArr))}) for elem in elemArr]
-        if self.optBands:
-            self.optics = cl.OrderedDict({})
-            for opticDict in opticDicts:
-                if opticDict['Element'] in self.optBands.keys(): 
-                    self.optics[opticDict['Element']] = op.Optic(log, opticDict, nrealize=self.nrealize, bandFile=self.optBands[opticDict['Element']])
-                    self.log.log("Using user-input spectra for optic '%s'" % (opticDict['Element']),1)
-                else:                                       
-                    self.optics[opticDict['Element']] = op.Optic(log, opticDict, nrealize=self.nrealize)
-        else:
-            self.optics = cl.OrderedDict({opticDict['Element']: op.Optic(log, opticDict, nrealize=self.nrealize) for opticDict in opticDicts})
+        #if self.optBands:
+        self.optics = cl.OrderedDict({})
+        for opticDict in opticDicts:
+            if self.optBands is not None and opticDict['Element'] in self.optBands.keys(): 
+                #self.optics[opticDict['Element']] = op.Optic(log, opticDict, nrealize=self.nrealize, bandFile=self.optBands[opticDict['Element']])
+                self.optics.update({opticDict['Element']: op.Optic(log, opticDict, nrealize=self.nrealize, bandFile=self.optBands[opticDict['Element']])})
+                self.log.log("Using user-input spectra for optic '%s'" % (opticDict['Element']),1)
+            else:                                       
+                #self.optics[opticDict['Element']] = op.Optic(log, opticDict, nrealize=self.nrealize)
+                self.optics.update({opticDict['Element']: op.Optic(log, opticDict, nrealize=self.nrealize)})
+        #else:
+            #print 'here'
+            #self.optics = cl.OrderedDict({opticDict['Element']: op.Optic(log, opticDict, nrealize=self.nrealize) for opticDict in opticDicts})
+            #print self.optics.keys()
             
     #***** Public Methods *****
     #Generate element, temperature, emissivity, and efficiency arrays

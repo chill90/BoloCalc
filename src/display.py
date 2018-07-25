@@ -362,7 +362,7 @@ class Display:
                     fi.write(row)
                     for m in range(len(ch.elem[0][0])):
                         elemName = ch.elem[0][0][m]
-                        values = ("| %-15s | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.3f +/- %-5.3f |\n" 
+                        values = ("| %-15s | %-5.3f +/- %-5.3f | %-5.3f +/- %-5.3f | %-5.3f +/- %-5.3f |\n" 
                                   % (elemName, 
                                      self.optmeans[i][j][k][0][m]*un.WtoPw, self.optstds[i][j][k][0][m]*un.WtoPw, 
                                      self.optmeans[i][j][k][1][m]*un.WtoPw, self.optstds[i][j][k][1][m]*un.WtoPw, 

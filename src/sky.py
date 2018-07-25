@@ -106,7 +106,7 @@ class Sky:
         if create:
             atmFileArrs    = cl.OrderedDict({site: np.array(sorted(gb.glob(os.path.join(self.siteDirs[site], 'TXT', 'atm*.txt'))))        for site in self.siteNames})
             self.elevArrs  = cl.OrderedDict({site: np.array([float(os.path.split(atmFile)[-1].split('_')[1][:2])                          for atmFile in atmFileArrs[site]]) for site in self.siteNames})
-            self.pwvArrs   = cl.OrderedDict({site: np.array([float(os.path.split(atmFile)[-1].split('_')[2][:4])*1e-3                     for atmFile in atmFileArrs[site]]) for site in self.siteNames})
+            self.pwvArrs   = cl.OrderedDict({site: np.array([float(os.path.split(atmFile)[-1].split('_')[2][:4])*1.e-3                    for atmFile in atmFileArrs[site]]) for site in self.siteNames})
             self.atmDicts = cl.OrderedDict({})
             for site in self.siteNames:
                 freqArr, tempArr, tranArr = np.hsplit(np.array([np.loadtxt(atmFile, usecols=[0, 2, 3], unpack=True) for atmFile in atmFileArrs[site]]), 3)
@@ -116,8 +116,10 @@ class Sky:
                     pk.dump(sub_dict, open(os.path.join(self.siteDirs[site], 'PKL', ('atmDict_%d.pkl' % (i))), 'wb'))
             self.atmDict = self.atmDicts[self.site]
         else:
-            self.atmDict = cl.OrderedDict({})
+            #self.atmDict = cl.OrderedDict({})
+            self.atmDict = {}
+            
             for i in range(self.nfiles):
-                if PY2: sub_dict = pk.load(io.open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'))
+                if PY2: sub_dict = pk.load(open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'))
                 else:   sub_dict = pk.load(io.open(os.path.join(self.siteDirs[self.site], 'PKL', ('atmDict_%d.pkl' % (i))), 'rb'), encoding='latin1')
                 self.atmDict.update(sub_dict)

@@ -47,7 +47,7 @@ class Camera:
         self.detBandDict = self.__bandDict(os.path.join(self.bandDir, 'Detectors'))
         chans            = np.loadtxt(os.path.join(self.configDir, 'channels.txt'), dtype=np.str, delimiter='|'); keyArr  = chans[0]; elemArr = chans[1:]
         self.chanDicts   = [cl.OrderedDict({keyArr[i].strip(): elem[i].strip() for i in range(len(keyArr))}) for elem in elemArr]
-        self.channels    = {chDict['Band ID']: ch.Channel(self.log, chDict, self, self.optChain, self.sky, self.scn, detBandDict=self.detBandDict, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for chDict in self.chanDicts}
+        self.channels    = cl.OrderedDict({chDict['Band ID']: ch.Channel(self.log, chDict, self, self.optChain, self.sky, self.scn, detBandDict=self.detBandDict, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for chDict in self.chanDicts})
         #Store pixel dictionary
         self.log.log("Generating pixels for camera %s" % (self.name), 2)
         self.pixels   = cl.OrderedDict({})

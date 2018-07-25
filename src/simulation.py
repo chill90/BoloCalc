@@ -4,7 +4,6 @@ import multiprocessing     as mp
 import time                as tm
 import sys                 as sy
 import collections         as co
-import exception           as ex
 import                        os
 import src.experiment      as ex
 import src.calculate       as cl
@@ -82,7 +81,7 @@ class Simulation:
         try:
             return float(str)
         except:
-            raise TypeError(('FATAL: Invalid float "%s" for parameter "%s" in BoloCalc/config/simulationInputs.txt. Must be valid float value."' % (str, param))
+            raise TypeError('FATAL: Invalid float "%s" for parameter "%s" in BoloCalc/config/simulationInputs.txt. Must be valid float value."' % (str, param))
     #Top-level methods for multiprocessing handling
     def __mp1(self, drr, n=None):
         if self.verbosity == 0 and n is not None:

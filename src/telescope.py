@@ -122,6 +122,7 @@ class Telescope:
         self.log.log("Generating cameras for telescope %s" % (self.name), 1)
         cameraDirs   = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep))); cameraDirs = [x for x in cameraDirs if 'config' not in x]; cameraNames  = [cameraDir.split(os.sep)[-2] for cameraDir in cameraDirs]
         self.cameras = cl.OrderedDict({cameraNames[i]: cm.Camera(self.log, cameraDirs[i], self.sky, self.scn, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for i in range(len(cameraNames))})
+        print self.cameras
 
     #***** Private Methods *****
     def __paramSamp(self, param):
