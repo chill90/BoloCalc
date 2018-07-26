@@ -43,7 +43,8 @@ class Sky:
     def pwvSample(self):
         if self.pwv is not None: return self.pwv
         if self.pwvDict is None: return None
-        samp = np.random.choice(np.array(self.pwvDict.keys()).astype(np.float), size=1, p=np.array(self.pwvDict.values()).astype(np.float)/np.sum(np.array(self.pwvDict.values()).astype(np.float)))[0]
+        #samp = np.random.choice(np.array(self.pwvDict.keys()).astype(np.float), size=1, p=np.array(self.pwvDict.values()).astype(np.float)/np.sum(np.array(self.pwvDict.values()).astype(np.float)))[0]
+        samp = np.random.choice(np.fromiter(self.pwvDict.keys(), dtype=np.float), size=1, p=np.fromiter(self.pwvDict.values(), dtype=np.float)/np.sum(np.fromiter(self.pwvDict.values(), dtype=np.float)))[0]
         if samp < self.minPWV:
             self.log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead' % (samp, self.minPWV, self.minPWV), 2)
             return self.minPWV

@@ -47,4 +47,3 @@ class Experiment:
         telescopeDirs   = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep))); telescopeDirs = [x for x in telescopeDirs if 'config' not in x and 'paramVary' not in x] 
         telescopeNames  = [telescopeDir.split(os.sep)[-2] for telescopeDir in telescopeDirs]
         self.telescopes = cl.OrderedDict({telescopeNames[i]: tp.Telescope(self.log, telescopeDirs[i], fgndDict=self.fgndDict, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes, foregrounds=self.fgnds) for i in range(len(telescopeNames))})
-        print self.telescopes

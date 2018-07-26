@@ -9,8 +9,8 @@ class ScanStrategy:
         self.elvDict  = elvDict
 
         if elvDict is not None:
-            self.elVals = np.array(elvDict.keys()  ).astype(np.float)
-            self.elFrac = np.array(elvDict.values()).astype(np.float)
+            self.elVals = np.fromiter(elvDict.keys()  , dtype=np.float)
+            self.elFrac = np.fromiter(elvDict.values(), dtype=np.float)
         else:
             self.elVals = None
             self.elFrac = None
