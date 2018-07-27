@@ -1,8 +1,11 @@
 import numpy       as np
+import warnings    as wn
 import functools   as ft
 import src.physics as ph
 import src.noise   as ns
 import src.units   as un
+
+wn.simplefilter(action='ignore', category=FutureWarning)
 
 class Sensitivity:
     def __init__(self, log, exp, corr=True):

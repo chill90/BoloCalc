@@ -30,7 +30,8 @@ class Band:
             self.freqs = None;  self.eff = None; self.err = None
 
         #Not allowed to have a standard deviation of zero or negative
-        self.err[(self.err <= 0.)] = 1.e-6
+        if self.err is not None:
+            self.err[(self.err <= 0.)] = 1.e-6
 
     #***** Public Methods *****
     #Sample the band

@@ -67,7 +67,7 @@ class Optic:
         else:                                            scattTemp = temp
 
         #Absorption
-        if 'Aperture' in self.params['Element']:
+        if 'APERTURE' in self.params['Element'].upper() or 'STOP' in self.params['Element'].upper() or 'LYOT' in self.params['Element'].upper():
             if not eff: 
                 if not self.params['Absorption'].isEmpty(): abso = self.__paramSamp(self.params['Absorption'], ch.bandID); abso = np.ones(ch.nfreq)*abso
                 else:                                       abso = 1. - self.__ph.spillEff(ch.freqs, ch.params['Pixel Size'], ch.Fnumber, ch.params['Waist Factor'])
@@ -89,10 +89,6 @@ class Optic:
         
         #Element, absorption, efficiency, and temperature
         elem  = self.params['Element']
-        #if not scatt is None and not spill is None: emiss = abso + scatt*refl*self.__powFrac(scattTemp, temp, ch.freqs) + spill*self.__powFrac(spillTemp, temp, ch.freqs)
-        #elif not spill is None:                     emiss = abso + spill*self.__powFrac(     spillTemp, temp, ch.freqs) 
-        #elif not scatt is None:                     emiss = abso + scatt*refl*self.__powFrac(scattTemp, temp, ch.freqs)
-        #else:                                       emiss = abso
         if not scatt is None and not spill is None: emiss = abso + scatt*self.__powFrac(scattTemp, temp, ch.freqs) + spill*self.__powFrac(spillTemp, temp, ch.freqs)
         elif not spill is None:                     emiss = abso + spill*self.__powFrac(spillTemp, temp, ch.freqs) 
         elif not scatt is None:                     emiss = abso + scatt*self.__powFrac(scattTemp, temp, ch.freqs)
@@ -101,7 +97,7 @@ class Optic:
         else:               effic = 1. - refl - abso - spill - scatt
 
         #Store channel pixel parameters
-        if elem == 'Aperture':
+        if elem.upper() == 'APERTURE' or elem.upper() == 'LYOT' or elem.upper() == 'STOP':
             ch.apEff     = np.trapz(effic, ch.freqs)/float(ch.freqs[-1] - ch.freqs[0])
             ch.edgeTaper = self.__ph.edgeTaper(ch.apEff)
 

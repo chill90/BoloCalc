@@ -21,17 +21,19 @@ class Camera:
         #Store global parameters
         self.configDir  = os.path.join(self.dir, 'config')
         self.bandDir    = os.path.join(self.configDir, 'Bands')
-        self.name       = os.path.split(self.dir)[-1]
+        self.name       = self.dir.rstrip(os.sep).split(os.sep)[-1]
+        self.telName    = self.dir.rstrip(os.sep).split(os.sep)[-2]
+        self.expName    = self.dir.rstrip(os.sep).split(os.sep)[-3]
 
         self.log.log("Generating camera %s" % (self.name), 1)
 
         #Store camera parameters into a dictionary
         paramArr, valArr = np.loadtxt(os.path.join(self.configDir, 'camera.txt'), dtype=np.str, unpack=True, usecols=[0,2], delimiter='|')
-        dict             = cl.OrderedDict({paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))})
-        self.params = cl.OrderedDict({'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  )),
-                                      'Optical Coupling':    self.__paramSamp(pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   )),
-                                      'F Number':            self.__paramSamp(pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf)),
-                                      'Bath Temp':           self.__paramSamp(pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf))})
+        dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
+        self.params = {'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  )),
+                       'Optical Coupling':    self.__paramSamp(pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   )),
+                       'F Number':            self.__paramSamp(pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf)),
+                       'Bath Temp':           self.__paramSamp(pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf))}
         
         #Generate camera
         self.generate()
@@ -46,8 +48,12 @@ class Camera:
         self.log.log("Generating channels for camera %s" % (self.name), 1)
         self.detBandDict = self.__bandDict(os.path.join(self.bandDir, 'Detectors'))
         chans            = np.loadtxt(os.path.join(self.configDir, 'channels.txt'), dtype=np.str, delimiter='|'); keyArr  = chans[0]; elemArr = chans[1:]
-        self.chanDicts   = [cl.OrderedDict({keyArr[i].strip(): elem[i].strip() for i in range(len(keyArr))}) for elem in elemArr]
-        self.channels    = cl.OrderedDict({chDict['Band ID']: ch.Channel(self.log, chDict, self, self.optChain, self.sky, self.scn, detBandDict=self.detBandDict, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes) for chDict in self.chanDicts})
+        self.chanDicts   = [{keyArr[i].strip(): elem[i].strip() for i in range(len(keyArr))} for elem in elemArr]
+        self.channels = cl.OrderedDict({})
+        for chDict in self.chanDicts:
+            if chDict['Band ID'] in self.channels.keys():
+                raise Exception('FATAL: Multiple bands with the same name "%s" defined in camera "%s", telescope "%s", experiment "%s"' % (chDict['Band ID'], self.name, self.telName, self.expName))
+            self.channels.update({chDict['Band ID']: ch.Channel(self.log, chDict, self, self.optChain, self.sky, self.scn, detBandDict=self.detBandDict, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes)})
         #Store pixel dictionary
         self.log.log("Generating pixels for camera %s" % (self.name), 2)
         self.pixels   = cl.OrderedDict({})

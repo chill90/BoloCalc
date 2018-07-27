@@ -26,6 +26,7 @@ def check(dir):
             if answer == "" or answer.upper() == "N":
                 return False
             elif answer.upper() == "Y":
+                os.system("%s -r %s" % (rm_cmd, dir))
                 return True
             else:
                 print "Could not understand answer '%s'" % (answer)

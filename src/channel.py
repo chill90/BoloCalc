@@ -30,24 +30,24 @@ class Channel:
         self.log.log("Generating channel %s" % (self.name), 1)
         
         #Store the channel parameters in a dictionary
-        self.params = cl.OrderedDict({'Num Det per Wafer': self.__paramSamp(pr.Parameter(self.log, 'Num Det per Wafer', self.dict['Num Det per Wafer'],    min=0.0, max=np.inf), self.bandID),
-                                      'Num Waf per OT':    self.__paramSamp(pr.Parameter(self.log, 'Num Waf per OT',    self.dict['Num Waf per OT'],       min=0.0, max=np.inf), self.bandID),
-                                      'Num OT':            self.__paramSamp(pr.Parameter(self.log, 'Num OT',            self.dict['Num OT'],               min=0.0, max=np.inf), self.bandID),
-                                      'Yield':             self.__paramSamp(pr.Parameter(self.log, 'Yield',             self.dict['Yield'],                min=0.0, max=1.0   ), self.bandID),
-                                      'Pixel Size':        self.__paramSamp(pr.Parameter(self.log, 'Pixel Size',        self.dict['Pixel Size'], un.mmToM, min=0.0, max=np.inf), self.bandID),
-                                      'Waist Factor':      self.__paramSamp(pr.Parameter(self.log, 'Waist Factor',      self.dict['Waist Factor'],         min=2.0, max=np.inf), self.bandID),
-                                      'Band Center':       pr.Parameter(self.log, 'Band Center',     self.dict['Band Center'], un.GHzToHz,     min=0.0, max=np.inf),
-                                      'Fractional BW':     pr.Parameter(self.log, 'Fractional BW',   self.dict['Fractional BW'],               min=0.0, max=2.0   ),
-                                      'Det Eff':           pr.Parameter(self.log, 'Det Eff',         self.dict['Det Eff'],                     min=0.0, max=1.0   ),
-                                      'Psat':              pr.Parameter(self.log, 'Psat',            self.dict['Psat'], un.pWtoW,              min=0.0, max=np.inf),
-                                      'Psat Factor':       pr.Parameter(self.log, 'Psat Factor',     self.dict['Psat Factor'],                 min=0.0, max=np.inf),
-                                      'Carrier Index':     pr.Parameter(self.log, 'Carrier Index',   self.dict['Carrier Index'],               min=0.0, max=np.inf),
-                                      'Tc':                pr.Parameter(self.log, 'Tc',              self.dict['Tc'],                          min=0.0, max=np.inf),
-                                      'Tc Fraction':       pr.Parameter(self.log, 'Tc Fraction',     self.dict['Tc Fraction'],                 min=0.0, max=np.inf),
-                                      'Flink':             pr.Parameter(self.log, 'Flink',           self.dict['Flink'],                       min=0.0, max=np.inf),
-                                      'SQUID NEI':         pr.Parameter(self.log, 'SQUID NEI',       self.dict['SQUID NEI'], un.pArtHzToArtHz, min=0.0, max=np.inf),
-                                      'Bolo Resistance':   pr.Parameter(self.log, 'Bolo Resistance', self.dict['Bolo Resistance'],             min=0.0, max=np.inf),
-                                      'Read Noise Frac':   pr.Parameter(self.log, 'Read Noise Frac', self.dict['Read Noise Frac'],             min=0.0, max=1.0   )})
+        self.params = {'Num Det per Wafer': self.__paramSamp(pr.Parameter(self.log, 'Num Det per Wafer', self.dict['Num Det per Wafer'],    min=0.0, max=np.inf), self.bandID),
+                       'Num Waf per OT':    self.__paramSamp(pr.Parameter(self.log, 'Num Waf per OT',    self.dict['Num Waf per OT'],       min=0.0, max=np.inf), self.bandID),
+                       'Num OT':            self.__paramSamp(pr.Parameter(self.log, 'Num OT',            self.dict['Num OT'],               min=0.0, max=np.inf), self.bandID),
+                       'Yield':             self.__paramSamp(pr.Parameter(self.log, 'Yield',             self.dict['Yield'],                min=0.0, max=1.0   ), self.bandID),
+                       'Pixel Size':        self.__paramSamp(pr.Parameter(self.log, 'Pixel Size',        self.dict['Pixel Size'], un.mmToM, min=0.0, max=np.inf), self.bandID),
+                       'Waist Factor':      self.__paramSamp(pr.Parameter(self.log, 'Waist Factor',      self.dict['Waist Factor'],         min=2.0, max=np.inf), self.bandID),
+                       'Band Center':       pr.Parameter(self.log, 'Band Center',     self.dict['Band Center'], un.GHzToHz,     min=0.0, max=np.inf),
+                       'Fractional BW':     pr.Parameter(self.log, 'Fractional BW',   self.dict['Fractional BW'],               min=0.0, max=2.0   ),
+                       'Det Eff':           pr.Parameter(self.log, 'Det Eff',         self.dict['Det Eff'],                     min=0.0, max=1.0   ),
+                       'Psat':              pr.Parameter(self.log, 'Psat',            self.dict['Psat'], un.pWtoW,              min=0.0, max=np.inf),
+                       'Psat Factor':       pr.Parameter(self.log, 'Psat Factor',     self.dict['Psat Factor'],                 min=0.0, max=np.inf),
+                       'Carrier Index':     pr.Parameter(self.log, 'Carrier Index',   self.dict['Carrier Index'],               min=0.0, max=np.inf),
+                       'Tc':                pr.Parameter(self.log, 'Tc',              self.dict['Tc'],                          min=0.0, max=np.inf),
+                       'Tc Fraction':       pr.Parameter(self.log, 'Tc Fraction',     self.dict['Tc Fraction'],                 min=0.0, max=np.inf),
+                       'Flink':             pr.Parameter(self.log, 'Flink',           self.dict['Flink'],                       min=0.0, max=np.inf),
+                       'SQUID NEI':         pr.Parameter(self.log, 'SQUID NEI',       self.dict['SQUID NEI'], un.pArtHzToArtHz, min=0.0, max=np.inf),
+                       'Bolo Resistance':   pr.Parameter(self.log, 'Bolo Resistance', self.dict['Bolo Resistance'],             min=0.0, max=np.inf),
+                       'Read Noise Frac':   pr.Parameter(self.log, 'Read Noise Frac', self.dict['Read Noise Frac'],             min=0.0, max=1.0   )}
         #Store the camera parameters
         self.camElv    = camera.params['Boresight Elevation']
         self.optCouple = camera.params['Optical Coupling']
@@ -65,7 +65,7 @@ class Channel:
         else:
             elvFile = elvFile[0]
             params, vals = np.loadtxt(elvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-            self.elvDict = cl.OrderedDict({params[i].strip(): vals[i].strip() for i in range(2, len(params))})
+            self.elvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
             self.log.log("Using pixel elevation distribution for camera %s defined in %s" % (camera.name, elvFile), 2)
             
         #Generate the channel
