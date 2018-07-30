@@ -124,7 +124,7 @@ class Display:
                                           self.snsmeans[i][j][k][5]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][5]*un.WrtHzToaWrtHz,
                                           self.snsmeans[i][j][k][6]*un.KTouK,           self.snsstds[i][j][k][6]*un.KTouK,
                                           self.snsmeans[i][j][k][7]*un.KTouK,           self.snsstds[i][j][k][7]*un.KTouK,
-                                          self.snsmeans[i][j][k][8]*un.uK2ToK2,         self.snsstds[i][j][k][8]*un.uK2ToK2,
+                                          self.snsmeans[i][j][k][8]*un.uK2ToK2,         self.__ifZero(self.snsmeans[i][j][k][8], self.snsstds[i][j][k][8])*un.uK2ToK2,
                                           self.snsmeans[i][j][k][9]*un.KTouK,           self.snsstds[i][j][k][9]*un.KTouK))
                         fC.write(printStr)
                         fC.write(self.breakStrC)
@@ -141,7 +141,7 @@ class Display:
                                              'Detector NEP':    [self.snsmeans[i][j][k][5]*un.WrtHzToaWrtHz,   self.snsstds[i][j][k][5]*un.WrtHzToaWrtHz],
                                              'Detector NET':    [self.snsmeans[i][j][k][6]*un.KTouK,           self.snsstds[i][j][k][6]*un.KTouK],
                                              'Array NET':       [self.snsmeans[i][j][k][7]*un.KTouK,           self.snsstds[i][j][k][7]*un.KTouK],
-                                             'Mapping Speed':   [self.snsmeans[i][j][k][8]*un.uK2ToK2,         self.snsstds[i][j][k][8]*un.uK2ToK2],
+                                             'Mapping Speed':   [self.snsmeans[i][j][k][8]*un.uK2ToK2,         self.__ifZero(self.snsmeans[i][j][k][8], self.snsstds[i][j][k][8])*un.uK2ToK2],
                                              'Map Depth':       [self.snsmeans[i][j][k][9]*un.KTouK,           self.snsstds[i][j][k][9]*un.KTouK]})
                     #Store channel values in camera arrays for averaging later
                     nameC.append(ch.name)
@@ -149,7 +149,7 @@ class Display:
                     fbwC.append(ch.params['Fractional BW'].getAvg()); fbwStdC.append(ch.params['Fractional BW'].getStd())
                     numDetC.append(ch.numDet)
                     netArrC.append(   self.snsmeans[i][j][k][7]);     netArrStdC.append(self.snsstds[i][j][k][7])
-                    msC.append(       self.snsmeans[i][j][k][8]);     msStdC.append(    self.snsstds[i][j][k][8])
+                    msC.append(       self.snsmeans[i][j][k][8]);     msStdC.append(    self.__ifZero(self.snsmeans[i][j][k][8], self.snsstds[i][j][k][8]))
                     sensC.append(     self.snsmeans[i][j][k][9]);     sensStdC.append(  self.snsstds[i][j][k][9])
 
                     #Store channel dictionary in camera dictionary
@@ -160,7 +160,7 @@ class Display:
                     printStr = str("%-5s | %-33s | %-7d | %-125s | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                                    % ('Total', '', sum(numDetC), '', 
                                       self.__ph.invVar(netArrC)*un.KTouK, self.__ph.invVar(netArrStdC)*un.KTouK,
-                                      sum(msC)*un.uK2ToK2,                sum(msStdC)*un.uK2ToK2,
+                                      sum(msC)*un.uK2ToK2,                self.__ifZero(sum(msC), sum(msStdC))*un.uK2ToK2,
                                       self.__ph.invVar(sensC)*un.KTouK,   self.__ph.invVar(sensStdC)*un.KTouK))
                     fC.write(printStr)
                     fC.close()
@@ -209,6 +209,7 @@ class Display:
                         sensStdTv   = np.mean([sensStdT[m],   sensStdT[n]])
                         msTv        = 1./(np.power(netArrTv,   2.))
                         msStdTv     = np.mean([msStdT[m]*(msT/float(msT[m])) + msStdT[n]*(msT/float(msT[n]))])
+                        if msStdTv < (1.e-3)*msTv: msStdTv = 0
                         
                         netArrT[m]    = netArrTv
                         netArrStdT[m] = netArrStdTv
@@ -238,7 +239,7 @@ class Display:
                                    fbwT[m],             fbwStdT[m],
                                    numDetT[m],
                                    netArrT[m]*un.KTouK, netArrStdT[m]*un.KTouK,
-                                   msT[m]*un.uK2ToK2,   msStdT[m]*un.uK2ToK2,
+                                   msT[m]*un.uK2ToK2,   self.__ifZero(msT[m], msStdT[m])*un.uK2ToK2,
                                    sensT[m]*un.KTouK,   sensStdT[m]*un.KTouK))
                     fT.write(printStr)
                     fT.write(self.breakStrTE)
@@ -260,7 +261,7 @@ class Display:
                 printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                             % ('Total', '', sum(numDetT), 
                                self.__ph.invVar(netArrT)*un.KTouK, self.__ph.invVar(netArrStdT)*un.KTouK,
-                               sum(msT)*un.uK2ToK2,                sum(msStdT)*un.uK2ToK2,
+                               sum(msT)*un.uK2ToK2,                self.__ifZero(sum(msT), sum(msStdT))*un.uK2ToK2,
                                self.__ph.invVar(sensT)*un.KTouK,   self.__ph.invVar(sensStdT)*un.KTouK))
                 fT.write(printStr)
                 fT.close()
@@ -294,6 +295,7 @@ class Display:
                     sensStd   = np.mean([self.sensStd[m],   self.sensStd[n]])
                     ms        = 1./float(np.power(netArr,   2.))
                     msStd     = np.mean([self.msStd[m]*(ms/float(self.ms[m])) + self.msStd[n]*(ms/float(self.ms[n]))])
+                    if msStd < (1.e-3)*ms: msStd = 0
 
                     self.netArr[m]     = netArr
                     self.netArrStd[m]  = netArrStd
@@ -323,7 +325,7 @@ class Display:
                                self.fbw[m],             self.fbwStd[m],
                                self.numDet[m],
                                self.netArr[m]*un.KTouK, self.netArrStd[m]*un.KTouK,
-                               self.ms[m]*un.uK2ToK2,   self.msStd[m]*un.uK2ToK2,
+                               self.ms[m]*un.uK2ToK2,   self.__ifZero(self.ms[m], self.msStd[m])*un.uK2ToK2,
                                self.sens[m]*un.KTouK,   self.sensStd[m]*un.KTouK))
                 fE.write(printStr)
                 fE.write(self.breakStrTE)
@@ -333,7 +335,7 @@ class Display:
             printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                         % ('Total', '', sum(self.numDet), 
                            self.__ph.invVar(self.netArr)*un.KTouK, self.__ph.invVar(self.netArrStd)*un.KTouK,
-                           sum(self.ms)*un.uK2ToK2,                sum(self.msStd)*un.uK2ToK2,
+                           sum(self.ms)*un.uK2ToK2,                self.__ifZero(sum(self.ms), sum(self.msStd))*un.uK2ToK2,
                            self.__ph.invVar(self.sens)*un.KTouK,   self.__ph.invVar(self.sensStd)*un.KTouK))
             fE.write(printStr)
             fE.close()        
@@ -372,8 +374,11 @@ class Display:
                     fi.write("\n\n")
                 fi.close()
 
-    #Functions to flatten nested lists
+    #Function to flatten nested lists
     def __flatten(self, arr):
         return [i for sarr in arr for i in sarr]
-    #def __flatten3(arr):
-    #    return [i for sarr in arr for ssarr in sarr for i in ssarr]
+
+    #Function to force a zero for small values written in scientific notation
+    def __ifZero(self, avg, std):
+        if std < avg*1.e-3: return 0
+        else:               return std
