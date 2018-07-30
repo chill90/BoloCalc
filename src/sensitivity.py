@@ -66,7 +66,8 @@ class Sensitivity:
         NETarr     = self.ph.invVar(NETar)*np.sqrt(float(ch.nobs))*np.sqrt(float(ch.clcDet)/float(ch.params['Yield']*ch.numDet))
         NETarrStd  = np.std(NET)*np.sqrt(1./ch.numDet)
         MS         = 1./(np.power(NETarr,    2.))
-        MSStd      = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.)/(np.power(NETarr-NETarrStd, 2.)))/2.
+        #MSStd      = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.)/(np.power(NETarr-NETarrStd, 2.)))/2.
+        MSStd      = (NETarrStd/NETarr)*MS if (NETarrStd/NETarr) > 1.e-3 else 0.
         
         Sens       = self.nse.sensitivity(NETarr,    tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
         SensStd    = self.nse.sensitivity(NETarrStd, tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])

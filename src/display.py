@@ -38,15 +38,15 @@ class Display:
         self.ms     = []; self.msStd     = []
 
         #Table column titles for camera files
-        self.titleStrC  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-17s | %-15s\n" 
+        self.titleStrC  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-21s | %-15s\n" 
                               % ("Chan", "Frequency", "Frac Bandwidth", "Num Det", "Stop Efficiency", "Optical Power", "Photon NEP", "Bolometer NEP", "Readout NEP", "Detector NEP", "Detector NET", "Array NET", "Mapping Speed", "Map Depth"))
-        self.unitStrC   = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-17s | %-15s\n"
+        self.unitStrC   = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-21s | %-15s\n"
                               % ("", "[GHz]", "", "", "[%]", "[pW]", "[aW/rtHz]", "[aW/rtHz]", "[aW/rtHz]", "[aW/rtHz]", "[uK-rtSec]", "[uK-rtSec]", "[(uK^2 s)^-1]", "[uK-arcmin]"))
         self.breakStrC  = "-"*240+"\n"
         #Table column titles for telescope and experiment files
-        self.titleStrTE = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-17s | %-15s\n"
+        self.titleStrTE = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-21s | %-15s\n"
                               % ("Chan", "Frequency", "Frac Bandwidth", "Num Det", "Array NET", "Mapping Speed", "Map Depth"))
-        self.unitStrTE  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-17s | %-15s\n"
+        self.unitStrTE  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-21s | %-15s\n"
                               % ("", "[GHz]", "", "", "[uK-rtSec]", "[(uK^2 s)^-1]", "[uK-arcmin]"))
         self.breakStrTE = "-"*110+"\n"
 
@@ -111,7 +111,7 @@ class Display:
                     ch  = list(camera.channels.values())[k]
                     #Write channel values to camera file
                     if genTables:
-                        printStr = str("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-6.1f +/- %-6.1f | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n"
+                        printStr = str("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-6.1f +/- %-6.1f | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n"
                                        % (ch.name, 
                                           ch.params['Band Center'].getAvg()*un.HzToGHz, ch.params['Band Center'].getStd()*un.HzToGHz,
                                           ch.params['Fractional BW'].getAvg(),          ch.params['Fractional BW'].getStd(),
@@ -157,7 +157,7 @@ class Display:
 
                 #Write cumulative sensitivity for camera
                 if genTables:
-                    printStr = str("%-5s | %-33s | %-7d | %-125s | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n" 
+                    printStr = str("%-5s | %-33s | %-7d | %-125s | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                                    % ('Total', '', sum(numDetC), '', 
                                       self.__ph.invVar(netArrC)*un.KTouK, self.__ph.invVar(netArrStdC)*un.KTouK,
                                       sum(msC)*un.uK2ToK2,                sum(msStdC)*un.uK2ToK2,
@@ -232,7 +232,7 @@ class Display:
 
                 #Write combined telescope sensitivities for each channel
                 if genTables:
-                    printStr = ("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n" 
+                    printStr = ("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                                 % (nameT[m],
                                    freqT[m]*un.HzToGHz, freqStdT[m]*un.HzToGHz,
                                    fbwT[m],             fbwStdT[m],
@@ -257,7 +257,7 @@ class Display:
         
             #Print the total sensitivity for the telescopes
             if genTables:
-                printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n" 
+                printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                             % ('Total', '', sum(numDetT), 
                                self.__ph.invVar(netArrT)*un.KTouK, self.__ph.invVar(netArrStdT)*un.KTouK,
                                sum(msT)*un.uK2ToK2,                sum(msStdT)*un.uK2ToK2,
@@ -317,7 +317,7 @@ class Display:
 
             #Write combined experiment sensitivities for each channel
             if genTables:
-                printStr = ("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n" 
+                printStr = ("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                             % (self.name[m],
                                self.freq[m]*un.HzToGHz, self.freqStd[m]*un.HzToGHz,
                                self.fbw[m],             self.fbwStd[m],
@@ -330,7 +330,7 @@ class Display:
         
         #Print the total sensitivity for the telescopes
         if genTables:
-            printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-6.4f +/- %-6.4f | %-5.1f +/- %-5.1f\n" 
+            printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                         % ('Total', '', sum(self.numDet), 
                            self.__ph.invVar(self.netArr)*un.KTouK, self.__ph.invVar(self.netArrStd)*un.KTouK,
                            sum(self.ms)*un.uK2ToK2,                sum(self.msStd)*un.uK2ToK2,
