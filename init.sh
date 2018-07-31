@@ -3,15 +3,18 @@ if [ "$(uname)" == "Darwin" ]; then
     # Mac OSX
     OS='Linux'
     RM_CMD='rm'
-elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ] 
+then
     # Linux
     OS='Linux'
     RM_CMD='rm'
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
+elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] 
+then
     # Windows 32-bit
     OS='Windows'
     RM_CMD='del'
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ] 
+then
     # Windows 64-bit
     OS='Windows'
     RM_CMD='del'
