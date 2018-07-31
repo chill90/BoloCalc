@@ -1,19 +1,19 @@
 #Check which operating system you are on
-if [ "$(uname)" == "Darwin" ]; then
+if [ "$(uname)" -eq "Darwin" ]; then
     # Mac OSX
     OS='Linux'
     RM_CMD='rm'
-elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ] 
+elif [ "$(expr substr $(uname -s) 1 5)" -eq "Linux" ] 
 then
     # Linux
     OS='Linux'
     RM_CMD='rm'
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] 
+elif [ "$(expr substr $(uname -s) 1 10)" -eq "MINGW32_NT" ] 
 then
     # Windows 32-bit
     OS='Windows'
     RM_CMD='del'
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ] 
+elif [ "$(expr substr $(uname -s) 1 10)" -eq "MINGW64_NT" ] 
 then
     # Windows 64-bit
     OS='Windows'
@@ -21,7 +21,7 @@ then
 fi
 
 #Install wget
-if [ OS == 'Linux' ]
+if [ OS -eq 'Linux' ]
 then
     WGETLOC=$(which wget)
     if [ -z "$WGETLOC" ]
