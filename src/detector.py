@@ -19,6 +19,7 @@ class Detector:
         self.Tc            = self.__paramSamp(ch.params['Tc'],              ch.bandID)
         self.TcFrac        = self.__paramSamp(ch.params['Tc Fraction'],     ch.bandID)
         self.nei           = self.__paramSamp(ch.params['SQUID NEI'],       ch.bandID)
+        self.Flink         = self.__paramSamp(ch.params['Flink'],           ch.bandID)
         self.boloR         = self.__paramSamp(ch.params['Bolo Resistance'], ch.bandID)
         self.readN         = self.__paramSamp(ch.params['Read Noise Frac'], ch.bandID)
         self.flo, self.fhi = self.__ph.bandEdges(self.bandCenter, self.fbw)

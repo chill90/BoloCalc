@@ -81,9 +81,14 @@ class Noise:
     def photonNEPapprox(self, pow, freqs):
         deltaF = freqs[-1] - freqs[0]
         return np.sqrt(2*(self.ph.h*freqs*pow + ((pow**2)/(deltaF))))
+    def Flink(self, n, Tb, Tc):
+        return ((n+1)/(2*n+3))*(1-(Tb/Tc)**(2*n+3))/(1-(Tb/Tc)**(n+1))
+    def G(self, psat, n, Tb, Tc):
+        return psat*(n+1)*(Tc**n)/((Tc**(n+1))-(Tb**(n+1)))
     #Bolometer noise equivalent power [W/rt(Hz)]
-    def bolometerNEP(self, psat, n, Tc, Tb):
-        return np.sqrt(4*self.ph.kB*psat*Tb*(((np.power((n+1),2.)/((2.*n)+3.))*((np.power(Tc/float(Tb),((2.*n)+3.)) - 1)/float(np.power((np.power(Tc/float(Tb),(n+1)) - 1),2.))))))
+    def bolometerNEP(self, Flink, G, Tc):
+        return np.sqrt(4*self.ph.kB*Flink*(Tc**2)*G)
+        #return np.sqrt(4*self.ph.kB*psat*Tb*(((np.power((n+1),2.)/((2.*n)+3.))*((np.power(Tc/float(Tb),((2.*n)+3.)) - 1)/float(np.power((np.power(Tc/float(Tb),(n+1)) - 1),2.))))))
     #Readout noise equivalent power [W/rt(Hz)]
     def readoutNEP(self, pelec, boloR, nei):
         return np.sqrt(boloR*pelec)*nei
