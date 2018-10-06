@@ -16,7 +16,7 @@ class Vary:
         
         #Load parameters to vary
         self.log.log("Loading parameters to vary from %s" % (os.path.join(os.path.dirname(sy.argv[0]), 'config', 'paramsToVary.txt')))
-        self.tels, self.cams, self.chs, self.opts, self.params, self.mins, self.maxs, self.stps = np.loadtxt(self.paramFile, delimiter='|', dtype=np.str, unpack=True)
+        self.tels, self.cams, self.chs, self.opts, self.params, self.mins, self.maxs, self.stps = np.loadtxt(self.paramFile, delimiter='|', dtype=np.str, unpack=True, ndmin=2)
         self.tels   = [tel.strip('\t ')   for tel   in self.tels] 
         self.cams   = [cam.strip('\t ')   for cam   in self.cams] 
         self.chs    = [ch.strip('\t ')    for ch    in self.chs] 

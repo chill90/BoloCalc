@@ -37,3 +37,6 @@
 
 #OSX style files
 *.DS_Store
+
+#For now, ignore the web development directory
+*web*

@@ -12,6 +12,9 @@ PY2 = (sy.version_info[0] == 2)
 if PY2: import cPickle as pk
 else:   import pickle  as pk
 
+#Available sites
+siteOpts = ['ATACAMA', 'POLE', 'MCMURDO', 'SPACE']
+
 class Sky:
     def __init__(self, log, nrealize=1, fgndDict=None, atmFile=None, site=None, pwv=None, pwvDict=None, foregrounds=False):
         #Store passed parameters

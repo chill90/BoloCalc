@@ -33,10 +33,13 @@ class Sensitivity:
         return NEP_ph, NEP_pharr
     #Thermal carrier NEP given some optical power on the bolometer
     def NEPbolo(self, optPow, det):
-        if 'NA' in str(det.psat):  g = self.nse.G(det.psatFact*optPow, det.n, det.Tb, det.Tc)
-        else:                      g = self.nse.G(det.psat,            det.n, det.Tb, det.Tc)
-        if 'NA' in str(det.psat): return self.nse.bolometerNEP(self.nse.Flink(det.n, det.Tb, det.Tc), g, det.Tc)
-        else:                     return self.nse.bolometerNEP(det.Flink,                             g, det.Tc)
+        if 'NA' in str(det.G):
+            if 'NA' in str(det.psat):  g = self.nse.G(det.psatFact*optPow, det.n, det.Tb, det.Tc)
+            else:                      g = self.nse.G(det.psat,            det.n, det.Tb, det.Tc)
+        else:
+            g = det.G
+        if 'NA' in str(det.Flink): return self.nse.bolometerNEP(self.nse.Flink(det.n, det.Tb, det.Tc), g, det.Tc)
+        else:                      return self.nse.bolometerNEP(det.Flink,                             g, det.Tc)
     #Readout NEP given some optical power on the bolometer
     def NEPrd(self, optPow, det):
         if   'NA' in str(det.nei):   return 'NA'
@@ -55,7 +58,7 @@ class Sensitivity:
         else:    NEPPhArr = np.array([[self.NEPph(  ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j], ch.temp[i][j], ch.freqs)     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
         NEPboloArr        = np.array([[self.NEPbolo(PoptArr[i][j],                                ch.detArray.detectors[j])     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
         NEPrdArr          = np.array([[self.NEPrd(  PoptArr[i][j],                                ch.detArray.detectors[j])     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
-        
+
         NEPPhArr, NEPPhArrArr = np.split(NEPPhArr, 2, axis=2)
         NEPPhArr    = np.reshape(NEPPhArr,    np.shape(NEPPhArr)[   :2])
         NEPPhArrArr = np.reshape(NEPPhArrArr, np.shape(NEPPhArrArr)[:2])
@@ -70,30 +73,30 @@ class Sensitivity:
         MS         = 1./(np.power(NETarr,    2.))
         #MSStd      = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.)/(np.power(NETarr-NETarrStd, 2.)))/2.
         MSStd      = (NETarrStd/NETarr)*MS if (NETarrStd/NETarr) > 1.e-3 else 0.
-        
+
         Sens       = self.nse.sensitivity(NETarr,    tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
         SensStd    = self.nse.sensitivity(NETarrStd, tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
-        
+
         means = [ch.apEff,
                  np.mean(PoptArr.flatten()),
-                 np.mean(NEPPhArr.flatten()),  
+                 np.mean(NEPPhArr.flatten()),
                  np.mean(NEPboloArr.flatten()),
-                 np.mean(NEPrdArr.flatten()),  
-                 np.mean(NEP.flatten()),        
-                 np.mean(NET),                 
-                 NETarr,              
+                 np.mean(NEPrdArr.flatten()),
+                 np.mean(NEP.flatten()),
+                 np.mean(NET),
+                 NETarr,
                  MS,
-                 Sens]        
+                 Sens]
         stds  = [0.,
                  np.std(PoptArr.flatten()),
-                 np.std(NEPPhArr.flatten()),    
-                 np.std(NEPboloArr.flatten()),  
-                 np.std(NEPrdArr.flatten()),   
-                 np.std(NEP.flatten()),     
-                 np.std(NET),          
+                 np.std(NEPPhArr.flatten()),
+                 np.std(NEPboloArr.flatten()),
+                 np.std(NEPrdArr.flatten()),
+                 np.std(NEP.flatten()),
+                 np.std(NET),
                  NETarrStd,
                  MSStd,
-                 SensStd]     
+                 SensStd]
 
         return means, stds
 

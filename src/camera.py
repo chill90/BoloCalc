@@ -1,7 +1,10 @@
+#Core Python packages
 import numpy            as np
 import glob             as gb
 import collections      as cl
 import                     os
+
+#BoloCalc packages
 import src.parameter    as pr
 import src.opticalChain as oc
 import src.channel      as ch
@@ -18,8 +21,17 @@ class Camera:
         self.clcDet   = clcDet
         self.specRes  = specRes
 
+        #Check whether this camera exists
+        if not os.path.isdir(self.dir):       
+            raise Exception("BoloCalc FATAL Exception: Camera directory '%s' does not exist" % (self.dir))
+
         #Store global parameters
         self.configDir  = os.path.join(self.dir, 'config')
+        #Check whether configuration directory exists
+        if not os.path.isdir(self.configDir):
+            raise Exception("BoloCalc FATAL Exception: Camera configuration directory '%s' does not exist" % (self.configDir))
+            
+        #Name the camera
         self.bandDir    = os.path.join(self.configDir, 'Bands')
         self.name       = self.dir.rstrip(os.sep).split(os.sep)[-1]
         self.telName    = self.dir.rstrip(os.sep).split(os.sep)[-2]
@@ -28,12 +40,22 @@ class Camera:
         self.log.log("Generating camera %s" % (self.name), 1)
 
         #Store camera parameters into a dictionary
-        paramArr, valArr = np.loadtxt(os.path.join(self.configDir, 'camera.txt'), dtype=np.str, unpack=True, usecols=[0,2], delimiter='|')
-        dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
-        self.params = {'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  )),
-                       'Optical Coupling':    self.__paramSamp(pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   )),
-                       'F Number':            self.__paramSamp(pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf)),
-                       'Bath Temp':           self.__paramSamp(pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf))}
+        self.camFile = os.path.join(self.configDir, 'camera.txt')
+        if not os.path.isfile(self.camFile): 
+            raise Exception("BoloCalc FATAL Exception: Camera file '%s' does not exist" % (self.camFile))
+        try:
+            paramArr, valArr = np.loadtxt(self.camFile, dtype=np.str, unpack=True, usecols=[0,2], delimiter='|')
+            dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
+        except:
+            raise Exception("BoloCalc FATAL Exception: Failed to load parameters in '%s'. See 'camera.txt' formatting rules in the BoloCalc User Manual" % (self.camFile))
+        try:
+            self.params = {'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  )),
+                           'Optical Coupling':    self.__paramSamp(pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   )),
+                           'F Number':            self.__paramSamp(pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf)),
+                           'Bath Temp':           self.__paramSamp(pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf))}
+        except KeyError:
+            #raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s': %s" % (self.telFile, #NEED EXCEPTION MESSAGE HERE))
+            raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s'" % (self.camFile))
         
         #Generate camera
         self.generate()
@@ -47,7 +69,10 @@ class Camera:
         #Store channel objects
         self.log.log("Generating channels for camera %s" % (self.name), 1)
         self.detBandDict = self.__bandDict(os.path.join(self.bandDir, 'Detectors'))
-        chans            = np.loadtxt(os.path.join(self.configDir, 'channels.txt'), dtype=np.str, delimiter='|'); keyArr  = chans[0]; elemArr = chans[1:]
+        self.chnFile = os.path.join(self.configDir, 'channels.txt')
+        if not os.path.isdir(self.configDir): 
+            raise Exception("BoloCalc FATAL Exception: Telescope configuration directory '%s' does not exist" % (self.configDir))
+        chans            = np.loadtxt(self.chnFile, dtype=np.str, delimiter='|'); keyArr  = chans[0]; elemArr = chans[1:]
         self.chanDicts   = [{keyArr[i].strip(): elem[i].strip() for i in range(len(keyArr))} for elem in elemArr]
         self.channels = cl.OrderedDict({})
         for chDict in self.chanDicts:

@@ -1,9 +1,11 @@
+#Core Python packages
 import numpy            as np
 import glob             as gb
 import sys              as sy
 import collections      as cl
 import                     os
 
+#BoloCalc packages
 import src.parameter    as pr
 import src.camera       as cm
 import src.units        as un
@@ -22,23 +24,41 @@ class Telescope:
         self.specRes    = specRes
         self.fgnds      = foregrounds
 
-        #Storing global parameters
+        #Check whether telescope exists
+        if not os.path.isdir(self.dir):       
+            raise Exception("BoloCalc FATAL Exception: Telescope directory '%s' does not exist" % (self.dir))
+
+        #Generate global parameters
         self.configDir  = os.path.join(self.dir, 'config')
+        #Check whether configuration directory exists
+        if not os.path.isdir(self.configDir): 
+            raise Exception("BoloCalc FATAL Exception: Telescope configuration directory '%s' does not exist" % (self.configDir))
+
+        #Name the telescope
         self.name       = self.dir.rstrip(os.sep).split(os.sep)[-1]
+        self.log.log("Instantiating telescope %s" % (self.name), 1)
         self.expName    = self.dir.rstrip(os.sep).split(os.sep)[-2]
 
-        self.log.log("Instantiating telescope %s" % (self.name), 1)
-
         #Store the telescope parameters in a dictionary
-        paramArr, valArr = np.loadtxt(os.path.join(self.configDir, 'telescope.txt'), unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
-        dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
-        self.params = {'Site':                   self.__paramSamp(pr.Parameter(self.log, 'Site',                   dict['Site'])),
-                       'Elevation':              self.__paramSamp(pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   )),
-                       'PWV':                    self.__paramSamp(pr.Parameter(self.log, 'PWV',                    dict['PWV'],                          min=0.0, max=8.0   )),
-                       'Observation Time':       self.__paramSamp(pr.Parameter(self.log, 'Observation Time',       dict['Observation Time'], un.yrToSec, min=0.0, max=np.inf)),
-                       'Sky Fraction':           self.__paramSamp(pr.Parameter(self.log, 'Sky Fraction',           dict['Sky Fraction'],                 min=0.0, max=1.0   )),
-                       'Observation Efficiency': self.__paramSamp(pr.Parameter(self.log, 'Observation Efficiency', dict['Observation Efficiency'],       min=0.0, max=1.0   )),
-                       'NET Margin':             self.__paramSamp(pr.Parameter(self.log, 'NET Margin',             dict['NET Margin'],                   min=0.0, max=np.inf))}
+        self.telFile = os.path.join(self.configDir, 'telescope.txt')
+        if not os.path.isfile(self.telFile): 
+            raise Exception("BoloCalc FATAL Exception: Telescope file '%s' does not exist" % (self.telFile))
+        try :
+            paramArr, valArr = np.loadtxt(self.telFile, unpack=True, usecols=[0,2], dtype=np.str, delimiter='|')
+            dict             = {paramArr[i].strip(): valArr[i].strip() for i in range(len(paramArr))}
+        except:
+            raise Exception("BoloCalc FATAL Exception: Failed to load parameters in '%s'. See 'telescope.txt' formatting rules in the BoloCalc User Manual" % (self.telFile))
+        try:
+            self.params = {'Site':                   self.__paramSamp(pr.Parameter(self.log, 'Site',                   dict['Site'])),
+                           'Elevation':              self.__paramSamp(pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   )),
+                           'PWV':                    self.__paramSamp(pr.Parameter(self.log, 'PWV',                    dict['PWV'],                          min=0.0, max=8.0   )),
+                           'Observation Time':       self.__paramSamp(pr.Parameter(self.log, 'Observation Time',       dict['Observation Time'], un.yrToSec, min=0.0, max=np.inf)),
+                           'Sky Fraction':           self.__paramSamp(pr.Parameter(self.log, 'Sky Fraction',           dict['Sky Fraction'],                 min=0.0, max=1.0   )),
+                           'Observation Efficiency': self.__paramSamp(pr.Parameter(self.log, 'Observation Efficiency', dict['Observation Efficiency'],       min=0.0, max=1.0   )),
+                           'NET Margin':             self.__paramSamp(pr.Parameter(self.log, 'NET Margin',             dict['NET Margin'],                   min=0.0, max=np.inf))}
+        except KeyError:
+            #raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s': %s" % (self.telFile, #NEED EXCEPTION MESSAGE HERE))
+            raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s'" % (self.telFile))
 
         #Generate the telescope
         self.generate()
@@ -48,16 +68,24 @@ class Telescope:
         #Store sky and elevation objects
         self.log.log("Generating sky for telescope %s" % (self.name), 1)
         atmFile = sorted(gb.glob(os.path.join(self.configDir, 'atm*.txt')))
-        if len(atmFile) == 0:
+        if self.params['Site'] == 'NA':
+            if len(atmFile) == 0:
+                raise Exception("BoloCalc FATAL Exception: 'Site' parameter in '%s' is 'NA', but no custom atmosphere file provided in '%s'" % (self.telFile, self.configDir))
+            elif len(atmFile) > 1:
+                raise Exception("BoloCalc FATAL Exception: 'Site' parameter in '%s' is 'NA', but more than one custom atmosphere file was found in '%s'" % (self.telFile, self.configDir))
+            else:
+                self.atmFile = atmFile[0]
+                self.params['Site']      = None
+                self.params['Elevation'] = None
+                self.params['PWV']       = None
+                self.elvDict             = None
+                self.pwvDict             = None
+                self.log.log("Using custom atmosphere defined in %s" % (atmFile), 0)
+        else:
             self.atmFile = None
-            self.log.log("No custom atmosphere provided.", 2)
             #Obtain site
-            if self.params['Site'] == 'NA':
-                self.log.log("No site provided", 0)
-                sy.exit(1)
-            elif self.params['Site'].upper() not in ['ATACAMA', 'POLE', 'MCMURDO', 'SPACE']:
-                self.log.log("Provided site %s not understood" % (self.params['Site']), 0)
-                sy.exit(1)
+            if self.params['Site'].upper() not in sk.siteOpts:
+                raise Exception("BoloCalc FATAL Exception: Provided 'Site' parameter in '%s' not understood. Options are '%s'" % (self.telFile, ",' ".join(sk.siteOpts)))
             #Obtain PWV
             if self.params['Site'].upper() == 'MCMURDO':
                 self.params['PWV'] = 0
@@ -70,15 +98,16 @@ class Telescope:
                     self.params['PWV'] = None
                     pwvFile = sorted(gb.glob(os.path.join(self.configDir, 'pwv.txt')))
                     if len(pwvFile) == 0:
-                        self.log.log("No pwv distribution or value provided for telescope %s" % (self.name), 0)
-                        sy.exit(1)
+                        raise Exception("BoloCalc FATAL Exception: 'PWV' parameter in '%s' is 'NA' *and* no PWV distribution '%s' for site '%s' provided" % (self.telFile, pwvFile, self.params['Site']))
                     elif len(pwvFile) > 1:
-                        self.log.log('More than one pwv distribution found for telescope %s' % (self.name), 0)
-                        sy.exit(1)
+                        raise Exception("BoloCalc FATAL Exception: More than one PWV distribution found in '%s' -- '%s'" % (self.configDir, ",' ".join(pwvFile)))
                     else:
                         pwvFile = pwvFile[0]
-                        params, vals = np.loadtxt(pwvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-                        self.pwvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
+                        try:
+                            params, vals = np.loadtxt(pwvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
+                            self.pwvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
+                        except:
+                            raise Exception("BoloCalc FATAL Exception: Failed to load parameters in '%s'. See 'pwv.txt' formatting rules in the BoloCalc User Manual" % (pwvFile))
                         self.log.log("Using pwv distribution defined in %s" % (pwvFile), 2)
                 else:
                     self.pwvDict = None
@@ -91,29 +120,19 @@ class Telescope:
                     self.params['Elevation'] = None
                     elvFile = sorted(gb.glob(os.path.join(self.configDir, 'elevation.txt')))
                     if len(elvFile) == 0:
-                        self.log.log("No elevation distribution or value provided for telescope %s" % (self.name), 0)
-                        sy.exit(1)
+                        raise Exception("BoloCalc FATAL Exception: 'Elevation' parameter in '%s' is 'NA' *and* no elevation distribution '%s' for site '%s' provided" % (self.telFile, elvFile, self.params['Site']))
                     elif len(elvFile) > 1:
-                        self.log.log('More than one elevation distribution found for telescope %s' % (self.name), 0)
-                        sy.exit(1)
+                        raise Exception("BoloCalc FATAL Exception: More than one elevation distribution found in '%s' -- '%s'" % (self.configDir, ",' ".join(elvFile)))
                     else:
                         elvFile = elvFile[0]
-                        params, vals = np.loadtxt(elvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
-                        self.elvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
+                        try:
+                            params, vals = np.loadtxt(elvFile, unpack=True, usecols=[0,1], dtype=np.str, delimiter='|')
+                            self.elvDict = {params[i].strip(): vals[i].strip() for i in range(2, len(params))}
+                        except:
+                            raise Exception("BoloCalc FATAL Exception: Failed to load parameters in '%s'. See 'elevation.txt' formatting rules in the BoloCalc User Manual" % (pwvFile))
                         self.log.log("Using elevation distribution defined in %s" % (elvFile), 2)
                 else:
-                    self.elvDict = None            
-        elif len(atmFile) > 1:                
-            self.log.log('More than one atmosphere file found for telescope %s' % (self.name), 0)
-            sy.exit(1)
-        else:
-            self.atmFile = atmFile[0]
-            self.params['Site']      = None
-            self.params['Elevation'] = None
-            self.params['PWV']       = None
-            self.elvDict             = None
-            self.pwvDict             = None
-            self.log.log("Using custom atmosphere defined in %s" % (atmFile), 0)
+                    self.elvDict = None
         #Store sky object
         self.sky = sk.Sky(self.log, nrealize=1, fgndDict=self.fgndDict, atmFile=self.atmFile, site=self.params['Site'], pwv=self.params['PWV'], pwvDict=self.pwvDict, foregrounds=self.fgnds)
         #Store scan strategy object
@@ -121,11 +140,14 @@ class Telescope:
         self.scn = sc.ScanStrategy(self.log, elv=self.params['Elevation'], elvDict=self.elvDict)
         #Store camera objects
         self.log.log("Generating cameras for telescope %s" % (self.name), 1)
-        cameraDirs   = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep))); cameraDirs = [x for x in cameraDirs if 'config' not in x]; cameraNames  = [cameraDir.split(os.sep)[-2] for cameraDir in cameraDirs]
+        cameraDirs   = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep))); cameraDirs = [x for x in cameraDirs if 'config' not in x]
+        if len(cameraDirs) == 0:
+            raise Exception("BoloCalc FATAL Exception: Zero camera directories found in telescope directory '%s'" % (self.dir))
+        cameraNames  = [cameraDir.split(os.sep)[-2] for cameraDir in cameraDirs]
         self.cameras = cl.OrderedDict({})
         for i in range(len(cameraNames)):
             if cameraNames[i] in self.cameras.keys():
-                raise Exception('FATAL: Multiple cameras with the same name "%s" defined in telescope "%s", experiment "%s"' % (cameraNames[i], self.name, self.expName))
+                raise Exception("BoloCalc FATAL Exception: Multiple cameras with the same name '%s' defined in telescope '%s', experiment '%s'" % (cameraNames[i], self.name, self.expName))
             self.cameras.update({cameraNames[i]: cm.Camera(self.log, cameraDirs[i], self.sky, self.scn, nrealize=self.nrealize, nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes)})
 
     #***** Private Methods *****
