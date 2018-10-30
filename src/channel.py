@@ -1,7 +1,10 @@
+#Core Python packages
 import numpy              as np
 import glob               as gb
 import collections        as cl
 import                       os
+
+#BoloCalc packages
 import src.detectorArray  as da
 import src.observationSet as ob
 import src.parameter      as pr
@@ -30,33 +33,35 @@ class Channel:
         self.log.log("Generating channel %s" % (self.name), 1)
         
         #Store the channel parameters in a dictionary
-        self.params = {'Num Det per Wafer': self.__paramSamp(pr.Parameter(self.log, 'Num Det per Wafer', self.dict['Num Det per Wafer'],    min=0.0, max=np.inf), self.bandID),
-                       'Num Waf per OT':    self.__paramSamp(pr.Parameter(self.log, 'Num Waf per OT',    self.dict['Num Waf per OT'],       min=0.0, max=np.inf), self.bandID),
-                       'Num OT':            self.__paramSamp(pr.Parameter(self.log, 'Num OT',            self.dict['Num OT'],               min=0.0, max=np.inf), self.bandID),
-                       'Yield':             self.__paramSamp(pr.Parameter(self.log, 'Yield',             self.dict['Yield'],                min=0.0, max=1.0   ), self.bandID),
-                       'Pixel Size':        self.__paramSamp(pr.Parameter(self.log, 'Pixel Size',        self.dict['Pixel Size'], un.mmToM, min=0.0, max=np.inf), self.bandID),
-                       'Waist Factor':      self.__paramSamp(pr.Parameter(self.log, 'Waist Factor',      self.dict['Waist Factor'],         min=2.0, max=np.inf), self.bandID),
-                       'Band Center':       pr.Parameter(self.log, 'Band Center',     self.dict['Band Center'], un.GHzToHz,     min=0.0, max=np.inf),
-                       'Fractional BW':     pr.Parameter(self.log, 'Fractional BW',   self.dict['Fractional BW'],               min=0.0, max=2.0   ),
-                       'Det Eff':           pr.Parameter(self.log, 'Det Eff',         self.dict['Det Eff'],                     min=0.0, max=1.0   ),
-                       'Psat':              pr.Parameter(self.log, 'Psat',            self.dict['Psat'], un.pWtoW,              min=0.0, max=np.inf),
-                       'Psat Factor':       pr.Parameter(self.log, 'Psat Factor',     self.dict['Psat Factor'],                 min=0.0, max=np.inf),
-                       'Carrier Index':     pr.Parameter(self.log, 'Carrier Index',   self.dict['Carrier Index'],               min=0.0, max=np.inf),
-                       'Tc':                pr.Parameter(self.log, 'Tc',              self.dict['Tc'],                          min=0.0, max=np.inf),
-                       'Tc Fraction':       pr.Parameter(self.log, 'Tc Fraction',     self.dict['Tc Fraction'],                 min=0.0, max=np.inf),
-                       'SQUID NEI':         pr.Parameter(self.log, 'SQUID NEI',       self.dict['SQUID NEI'], un.pArtHzToArtHz, min=0.0, max=np.inf),
-                       'Bolo Resistance':   pr.Parameter(self.log, 'Bolo Resistance', self.dict['Bolo Resistance'],             min=0.0, max=np.inf),
-                       'Read Noise Frac':   pr.Parameter(self.log, 'Read Noise Frac', self.dict['Read Noise Frac'],             min=0.0, max=1.0   )}
+        self.paramsDict = {'Num Det per Wafer': pr.Parameter(self.log, 'Num Det per Wafer', self.dict['Num Det per Wafer'],           min=0.0, max=np.inf),
+                           'Num Waf per OT':    pr.Parameter(self.log, 'Num Waf per OT',    self.dict['Num Waf per OT'],              min=0.0, max=np.inf),
+                           'Num OT':            pr.Parameter(self.log, 'Num OT',            self.dict['Num OT'],                      min=0.0, max=np.inf),
+                           'Yield':             pr.Parameter(self.log, 'Yield',             self.dict['Yield'],                       min=0.0, max=1.0   ),
+                           'Pixel Size':        pr.Parameter(self.log, 'Pixel Size',        self.dict['Pixel Size'], un.mmToM,        min=0.0, max=np.inf),
+                           'Waist Factor':      pr.Parameter(self.log, 'Waist Factor',      self.dict['Waist Factor'],                min=2.0, max=np.inf),
+                           'Band Center':       pr.Parameter(self.log, 'Band Center',       self.dict['Band Center'], un.GHzToHz,     min=0.0, max=np.inf),
+                           'Fractional BW':     pr.Parameter(self.log, 'Fractional BW',     self.dict['Fractional BW'],               min=0.0, max=2.0   ),
+                           'Det Eff':           pr.Parameter(self.log, 'Det Eff',           self.dict['Det Eff'],                     min=0.0, max=1.0   ),
+                           'Psat':              pr.Parameter(self.log, 'Psat',              self.dict['Psat'], un.pWtoW,              min=0.0, max=np.inf),
+                           'Psat Factor':       pr.Parameter(self.log, 'Psat Factor',       self.dict['Psat Factor'],                 min=0.0, max=np.inf),
+                           'Carrier Index':     pr.Parameter(self.log, 'Carrier Index',     self.dict['Carrier Index'],               min=0.0, max=np.inf),
+                           'Tc':                pr.Parameter(self.log, 'Tc',                self.dict['Tc'],                          min=0.0, max=np.inf),
+                           'Tc Fraction':       pr.Parameter(self.log, 'Tc Fraction',       self.dict['Tc Fraction'],                 min=0.0, max=np.inf),
+                           'SQUID NEI':         pr.Parameter(self.log, 'SQUID NEI',         self.dict['SQUID NEI'], un.pArtHzToArtHz, min=0.0, max=np.inf),
+                           'Bolo Resistance':   pr.Parameter(self.log, 'Bolo Resistance',   self.dict['Bolo Resistance'],             min=0.0, max=np.inf),
+                           'Read Noise Frac':   pr.Parameter(self.log, 'Read Noise Frac',   self.dict['Read Noise Frac'],             min=0.0, max=1.0   )}
+        self.chKeys = ['Num Det per Wafer', 'Num Waf per OT', 'Num OT', 'Yield', 'Pixel Size', 'Waist Factor']
+
         #Newly added parameters to BoloCalc -- checked separately for backwards compatibility
         if 'Flink' in self.dict.keys():
-            self.params['Flink'] = pr.Parameter(self.log, 'Flink', self.dict['Flink'], min=0.0, max=np.inf)
+            self.paramsDict['Flink'] = pr.Parameter(self.log, 'Flink', self.dict['Flink'], min=0.0, max=np.inf)
         else:
-            self.params['Flink'] = pr.Parameter(self.log, 'Flink', 'NA',               min=0.0, max=np.inf)
+            self.paramsDict['Flink'] = pr.Parameter(self.log, 'Flink', 'NA',               min=0.0, max=np.inf)
 
         if 'G' in self.dict.keys():
-            self.params['G'] = pr.Parameter(self.log, 'G', self.dict['G'], un.pWtoW, min=0.0, max=np.inf)
+            self.paramsDict['G'] = pr.Parameter(self.log, 'G', self.dict['G'], un.pWtoW, min=0.0, max=np.inf)
         else:
-            self.params['G'] = pr.Parameter(self.log, 'G', 'NA',           un.pWtoW, min=0.0, max=np.inf)
+            self.paramsDict['G'] = pr.Parameter(self.log, 'G', 'NA',           un.pWtoW, min=0.0, max=np.inf)
         
         #Store the camera parameters
         self.camElv    = camera.params['Boresight Elevation']
@@ -83,6 +88,14 @@ class Channel:
 
     #***** Public Methods *****
     def generate(self):
+        #Generate channel parameters
+        self.params = {}; self.detectorDict = {}
+        for k in self.paramsDict:
+            if k in self.chKeys:
+                self.params[k] = self.__paramSamp(self.paramsDict[k], self.bandID)
+            else:
+                self.detectorDict[k] = self.paramsDict[k]
+
         #Derived channel parameters
         self.numDet    = int(self.params['Num Det per Wafer']*self.params['Num Waf per OT']*self.params['Num OT'])
         if self.clcDet == None: self.clcDet = self.numDet
@@ -90,13 +103,13 @@ class Channel:
 
         #Frequencies to integrate over -- wider than nominal band by 30% to cover tolerances/errors
         self.fres          = self.specRes
-        self.freqs         = np.arange(self.params['Band Center'].getAvg()*(1. - 0.65*self.params['Fractional BW'].getAvg()), self.params['Band Center'].getAvg()*(1. + 0.65*self.params['Fractional BW'].getAvg())+self.fres, self.fres)
+        self.freqs         = np.arange(self.detectorDict['Band Center'].getAvg()*(1. - 0.65*self.detectorDict['Fractional BW'].getAvg()), self.detectorDict['Band Center'].getAvg()*(1. + 0.65*self.detectorDict['Fractional BW'].getAvg())+self.fres, self.fres)
         self.nfreq         = len(self.freqs)
         self.deltaF        = self.freqs[-1] - self.freqs[0]
         
         #Band mask
-        self.fLo           = self.params['Band Center'].getAvg()*(1. - 0.50*self.params['Fractional BW'].getAvg())
-        self.fHi           = self.params['Band Center'].getAvg()*(1. + 0.50*self.params['Fractional BW'].getAvg())
+        self.fLo           = self.detectorDict['Band Center'].getAvg()*(1. - 0.50*self.detectorDict['Fractional BW'].getAvg())
+        self.fHi           = self.detectorDict['Band Center'].getAvg()*(1. + 0.50*self.detectorDict['Fractional BW'].getAvg())
         self.bandMask      = np.array([1. if f >= self.fLo and f <= self.fHi else 0. for f in self.freqs])
         self.bandDeltaF    = self.fHi - self.fLo
         

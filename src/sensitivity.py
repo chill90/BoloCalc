@@ -28,7 +28,7 @@ class Sensitivity:
         if ch: corrs = True
         else:  corrs = False
         powInts = np.array([self.ph.bbPowSpec(freqs, tempArr[i], emissArr[i]*np.prod(effArr[i+1:], axis=0)) for i in range(len(elemArr))])
-        if corrs: NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs, elemArr, (ch.params['Pixel Size']/float(ch.Fnumber*self.ph.lamb(ch.params['Band Center'].getAvg()))))
+        if corrs: NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs, elemArr, (ch.params['Pixel Size']/float(ch.Fnumber*self.ph.lamb(ch.detectorDict['Band Center'].getAvg()))))
         else:     NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs)
         return NEP_ph, NEP_pharr
     #Thermal carrier NEP given some optical power on the bolometer

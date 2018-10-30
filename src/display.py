@@ -113,8 +113,8 @@ class Display:
                     if genTables:
                         printStr = str("%-5s | %-5.1f +/- %-5.1f | %-5.3f +/- %-5.3f | %-7d | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-5.2f +/- %-5.2f | %-6.1f +/- %-6.1f | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n"
                                        % (ch.name, 
-                                          ch.params['Band Center'].getAvg()*un.HzToGHz, ch.params['Band Center'].getStd()*un.HzToGHz,
-                                          ch.params['Fractional BW'].getAvg(),          ch.params['Fractional BW'].getStd(),
+                                          ch.detectorDict['Band Center'].getAvg()*un.HzToGHz, ch.detectorDict['Band Center'].getStd()*un.HzToGHz,
+                                          ch.detectorDict['Fractional BW'].getAvg(),          ch.detectorDict['Fractional BW'].getStd(),
                                           ch.numDet,                                  
                                           self.snsmeans[i][j][k][0]*un.decToPct,        self.snsstds[i][j][k][0]*un.decToPct, 
                                           self.snsmeans[i][j][k][1]*un.WtoPw,           self.snsstds[i][j][k][1]*un.WtoPw, 
@@ -130,8 +130,8 @@ class Display:
                         fC.write(self.breakStrC)
                     
                     #Store the channel values for dictionary lookup
-                    dictCh = cl.OrderedDict({'Frequency':       [ch.params['Band Center'].getAvg()*un.HzToGHz, ch.params['Band Center'].getStd()*un.HzToGHz],
-                                             'Frac Bandwidth':  [ch.params['Fractional BW'].getAvg(),          ch.params['Fractional BW'].getStd()],
+                    dictCh = cl.OrderedDict({'Frequency':       [ch.detectorDict['Band Center'].getAvg()*un.HzToGHz, ch.detectorDict['Band Center'].getStd()*un.HzToGHz],
+                                             'Frac Bandwidth':  [ch.detectorDict['Fractional BW'].getAvg(),          ch.detectorDict['Fractional BW'].getStd()],
                                              'Num Det':         [ch.numDet,                                    0.],
                                              'Stop Efficiency': [self.snsmeans[i][j][k][0]*un.decToPct,        self.snsstds[i][j][k][0]*un.decToPct],
                                              'Optical Power':   [self.snsmeans[i][j][k][1]*un.WtoPw,           self.snsstds[i][j][k][1]*un.WtoPw],
@@ -145,8 +145,8 @@ class Display:
                                              'Map Depth':       [self.snsmeans[i][j][k][9]*un.KTouK,           self.snsstds[i][j][k][9]*un.KTouK]})
                     #Store channel values in camera arrays for averaging later
                     nameC.append(ch.name)
-                    freqC.append(ch.params['Band Center'].getAvg());  freqStdC.append(ch.params['Band Center'].getStd())
-                    fbwC.append(ch.params['Fractional BW'].getAvg()); fbwStdC.append(ch.params['Fractional BW'].getStd())
+                    freqC.append(ch.detectorDict['Band Center'].getAvg());   freqStdC.append(ch.detectorDict['Band Center'].getStd())
+                    fbwC.append( ch.detectorDict['Fractional BW'].getAvg()); fbwStdC.append( ch.detectorDict['Fractional BW'].getStd())
                     numDetC.append(ch.numDet)
                     netArrC.append(   self.snsmeans[i][j][k][7]);     netArrStdC.append(self.snsstds[i][j][k][7])
                     msC.append(       self.snsmeans[i][j][k][8]);     msStdC.append(    self.__ifZero(self.snsmeans[i][j][k][8], self.snsstds[i][j][k][8]))

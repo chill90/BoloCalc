@@ -49,12 +49,11 @@ class Camera:
         except:
             raise Exception("BoloCalc FATAL Exception: Failed to load parameters in '%s'. See 'camera.txt' formatting rules in the BoloCalc User Manual" % (self.camFile))
         try:
-            self.params = {'Boresight Elevation': self.__paramSamp(pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  )),
-                           'Optical Coupling':    self.__paramSamp(pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   )),
-                           'F Number':            self.__paramSamp(pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf)),
-                           'Bath Temp':           self.__paramSamp(pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf))}
+            self.paramsDict = {'Boresight Elevation': pr.Parameter(self.log, 'Boresight Elevation', dict['Boresight Elevation'], min=-40.0, max=40.0  ),
+                               'Optical Coupling':    pr.Parameter(self.log, 'Optical Coupling',    dict['Optical Coupling'],    min=0.0,   max=1.0   ),
+                               'F Number':            pr.Parameter(self.log, 'F Number',            dict['F Number'        ],    min=0.0,   max=np.inf),
+                               'Bath Temp':           pr.Parameter(self.log, 'Bath Temp',           dict['Bath Temp'       ],    min=0.0,   max=np.inf)}
         except KeyError:
-            #raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s': %s" % (self.telFile, #NEED EXCEPTION MESSAGE HERE))
             raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s'" % (self.camFile))
         
         #Generate camera
@@ -62,6 +61,10 @@ class Camera:
 
     #***** Public Methods *****
     def generate(self):
+        #Generate camera parameters
+        self.params = {}
+        for k in self.paramsDict:
+            self.params[k] = self.__paramSamp(self.paramsDict[k])
         #Store optical chain object
         self.log.log("Generating optical chain for camera %s" % (self.name), 1)
         self.optBandDict = self.__bandDict(os.path.join(self.bandDir, 'Optics'))

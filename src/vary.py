@@ -144,19 +144,19 @@ class Vary:
                         if self.cams[j] != '':
                             if self.chs[j] != '':
                                 if self.opts[j] != '':
-                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics[self.opts[j]].params[self.params[j]].change(self.setArr[j][i], bandID=int(self.chs[j]))
+                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics[self.opts[j]].paramsDict[self.params[j]].change(self.setArr[j][i], bandID=int(self.chs[j]))
                                     experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].generate()
                                 else:
-                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].params[self.params[j]].change(self.setArr[j][i], bandID=int(self.chs[j]))
+                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict[self.params[j]].change(self.setArr[j][i], bandID=int(self.chs[j]))
                                     experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].generate()
                             else:
-                                experiment.telescopes[self.tels[j]].cameras[self.cams[j]].params[self.params[j]].change(self.setArr[j][i])
+                                experiment.telescopes[self.tels[j]].cameras[self.cams[j]].paramsDict[self.params[j]].change(self.setArr[j][i])
                                 experiment.telescopes[self.tels[j]].cameras[self.cams[j]].generate()
                         else:
-                            experiment.telescopes[self.tels[j]].params[self.params[j]].change(self.setArr[j][i])
+                            experiment.telescopes[self.tels[j]].paramsDict[self.params[j]].change(self.setArr[j][i])
                             experiment.telescopes[self.tels[j]].generate()
                     else:
-                        experiment.params[self.params[j]].change(self.setArr[j][i])
+                        experiment.paramsDict[self.params[j]].change(self.setArr[j][i])
                         experiment.generate()
                 #After new parameters are stored, re-run mapping speed calculation
                 dsp = self.sim.calculate()

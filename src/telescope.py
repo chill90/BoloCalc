@@ -49,15 +49,14 @@ class Telescope:
         except:
             raise Exception("BoloCalc FATAL Exception: Failed to load parameters in '%s'. See 'telescope.txt' formatting rules in the BoloCalc User Manual" % (self.telFile))
         try:
-            self.params = {'Site':                   self.__paramSamp(pr.Parameter(self.log, 'Site',                   dict['Site'])),
-                           'Elevation':              self.__paramSamp(pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   )),
-                           'PWV':                    self.__paramSamp(pr.Parameter(self.log, 'PWV',                    dict['PWV'],                          min=0.0, max=8.0   )),
-                           'Observation Time':       self.__paramSamp(pr.Parameter(self.log, 'Observation Time',       dict['Observation Time'], un.yrToSec, min=0.0, max=np.inf)),
-                           'Sky Fraction':           self.__paramSamp(pr.Parameter(self.log, 'Sky Fraction',           dict['Sky Fraction'],                 min=0.0, max=1.0   )),
-                           'Observation Efficiency': self.__paramSamp(pr.Parameter(self.log, 'Observation Efficiency', dict['Observation Efficiency'],       min=0.0, max=1.0   )),
-                           'NET Margin':             self.__paramSamp(pr.Parameter(self.log, 'NET Margin',             dict['NET Margin'],                   min=0.0, max=np.inf))}
+            self.paramsDict = {'Site':                   pr.Parameter(self.log, 'Site',                   dict['Site']                                             ),
+                               'Elevation':              pr.Parameter(self.log, 'Elevation',              dict['Elevation'],                    min=20., max=90.   ),
+                               'PWV':                    pr.Parameter(self.log, 'PWV',                    dict['PWV'],                          min=0.0, max=8.0   ),
+                               'Observation Time':       pr.Parameter(self.log, 'Observation Time',       dict['Observation Time'], un.yrToSec, min=0.0, max=np.inf),
+                               'Sky Fraction':           pr.Parameter(self.log, 'Sky Fraction',           dict['Sky Fraction'],                 min=0.0, max=1.0   ),
+                               'Observation Efficiency': pr.Parameter(self.log, 'Observation Efficiency', dict['Observation Efficiency'],       min=0.0, max=1.0   ),
+                               'NET Margin':             pr.Parameter(self.log, 'NET Margin',             dict['NET Margin'],                   min=0.0, max=np.inf)}
         except KeyError:
-            #raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s': %s" % (self.telFile, #NEED EXCEPTION MESSAGE HERE))
             raise Exception("BoloCalc FATAL Exception: Failed to store parameters specified in '%s'" % (self.telFile))
 
         #Generate the telescope
@@ -65,6 +64,10 @@ class Telescope:
 
     #***** Public Methods *****
     def generate(self):
+        #Generate telescope parameters
+        self.params = {}
+        for k in self.paramsDict:
+            self.params[k] = self.__paramSamp(self.paramsDict[k])
         #Store sky and elevation objects
         self.log.log("Generating sky for telescope %s" % (self.name), 1)
         atmFile = sorted(gb.glob(os.path.join(self.configDir, 'atm*.txt')))

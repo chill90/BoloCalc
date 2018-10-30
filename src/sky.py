@@ -46,7 +46,6 @@ class Sky:
     def pwvSample(self):
         if self.pwv is not None: return self.pwv
         if self.pwvDict is None: return None
-        #samp = np.random.choice(np.array(self.pwvDict.keys()).astype(np.float), size=1, p=np.array(self.pwvDict.values()).astype(np.float)/np.sum(np.array(self.pwvDict.values()).astype(np.float)))[0]
         samp = np.random.choice(np.fromiter(self.pwvDict.keys(), dtype=np.float), size=1, p=np.fromiter(self.pwvDict.values(), dtype=np.float)/np.sum(np.fromiter(self.pwvDict.values(), dtype=np.float)))[0]
         if samp < self.minPWV:
             self.log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead' % (samp, self.minPWV, self.minPWV), 2)
@@ -70,10 +69,10 @@ class Sky:
         return freq.flatten().tolist(), temp.flatten().tolist(), tran.flatten().tolist()
     #Retrieve synchrotron spectrum given some array of frequencies
     def synSpectrum(self, freqs):
-        return self.fg.syncSpecRad(1.0, freqs)
+        return self.fg.syncSpecRad(freqs)
     #Retrieve dust spectrum given some array of frequencies
     def dstSpectrum(self, freqs):
-        return self.fg.dustSpecRad(1.0, freqs)
+        return self.fg.dustSpecRad(freqs)
     #Generate the sky
     def generate(self, pwv, elev, freqs):
         self.Ncmb = ['CMB' for f in freqs]; self.Tcmb = [2.725 for f in freqs]; self.Ecmb = [1. for f in freqs]; self.Acmb = [1. for f in freqs]
