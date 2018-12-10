@@ -5,6 +5,7 @@ import collections        as cl
 import                       os
 
 #BoloCalc packages
+import src.band           as bd
 import src.detectorArray  as da
 import src.observationSet as ob
 import src.parameter      as pr
@@ -29,6 +30,12 @@ class Channel:
         self.bandID    = int(self.dict['Band ID'])
         self.pixelID   = int(self.dict['Pixel ID'])
         self.name      = self.camera.name+str(self.bandID)
+
+        #Check for band file
+        if self.detBandDict and self.name in self.detBandDict.keys():
+            self.detBandFile = self.detBandDict[self.name]
+        else:
+            self.detBandFile = None
 
         self.log.log("Generating channel %s" % (self.name), 1)
         
@@ -101,15 +108,28 @@ class Channel:
         if self.clcDet == None: self.clcDet = self.numDet
         self.numPix    = np.round(self.numDet/2.)
 
-        #Frequencies to integrate over -- wider than nominal band by 30% to cover tolerances/errors
+        #Frequencies to integrate over
         self.fres          = self.specRes
-        self.freqs         = np.arange(self.detectorDict['Band Center'].getAvg()*(1. - 0.65*self.detectorDict['Fractional BW'].getAvg()), self.detectorDict['Band Center'].getAvg()*(1. + 0.65*self.detectorDict['Fractional BW'].getAvg())+self.fres, self.fres)
+        if self.detBandFile is not None:
+            #Use defined detector band edges
+            band = bd.Band(self.log, self.detBandFile)
+            self.loFreq = np.amin(band.freqs)
+            self.hiFreq = np.amax(band.freqs)
+            #Band mask edges defined using lowest and highest freqiencies in passed detector band file
+            self.fLo = self.loFreq
+            self.fHi = self.hiFreq
+        else:
+            #Use wider than nominal band by 30% to cover tolerances/errors
+            self.loFreq = self.detectorDict['Band Center'].getAvg()*(1. - 0.65*self.detectorDict['Fractional BW'].getAvg())
+            self.hiFreq = self.detectorDict['Band Center'].getAvg()*(1. + 0.65*self.detectorDict['Fractional BW'].getAvg())
+            #Band mask edges defined using band center and fractional BW
+            self.fLo           = self.detectorDict['Band Center'].getAvg()*(1. - 0.50*self.detectorDict['Fractional BW'].getAvg())
+            self.fHi           = self.detectorDict['Band Center'].getAvg()*(1. + 0.50*self.detectorDict['Fractional BW'].getAvg())
+        self.freqs         = np.arange(self.loFreq, self.hiFreq+self.fres, self.fres)
         self.nfreq         = len(self.freqs)
         self.deltaF        = self.freqs[-1] - self.freqs[0]
         
         #Band mask
-        self.fLo           = self.detectorDict['Band Center'].getAvg()*(1. - 0.50*self.detectorDict['Fractional BW'].getAvg())
-        self.fHi           = self.detectorDict['Band Center'].getAvg()*(1. + 0.50*self.detectorDict['Fractional BW'].getAvg())
         self.bandMask      = np.array([1. if f >= self.fLo and f <= self.fHi else 0. for f in self.freqs])
         self.bandDeltaF    = self.fHi - self.fLo
         
@@ -118,8 +138,8 @@ class Channel:
         self.edgeTaper  = None #Calculated later
 
         #Store the detector array object
-        if self.detBandDict and self.name in self.detBandDict.keys(): self.detArray = da.DetectorArray(self.log, self, self.detBandDict[self.name])
-        else:                                                         self.detArray = da.DetectorArray(self.log, self)
+        if self.detBandFile is not None: self.detArray = da.DetectorArray(self.log, self, self.detBandFile)
+        else:                            self.detArray = da.DetectorArray(self.log, self)
 
         #Store the observation set object
         self.obsSet = ob.ObservationSet(self.log, self.detArray, self.sky, self.scn, belv=self.camElv, nobs=self.nobs, elvDict=self.elvDict)
