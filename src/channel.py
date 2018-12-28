@@ -138,7 +138,7 @@ class Channel:
         self.edgeTaper  = None #Calculated later
 
         #Store the detector array object
-        if self.detBandFile is not None: self.detArray = da.DetectorArray(self.log, self, self.detBandFile)
+        if self.detBandFile is not None: self.detArray = da.DetectorArray(self.log, self, self.nrealize, self.detBandFile)
         else:                            self.detArray = da.DetectorArray(self.log, self)
 
         #Store the observation set object

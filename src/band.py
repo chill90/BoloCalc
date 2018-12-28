@@ -34,11 +34,14 @@ class Band:
             self.err[(self.err <= 0.)] = 1.e-6
 
     #***** Public Methods *****
+    #Return the average efficiency
+    def getAvg(self, nsample=1):
+        return np.array([self.eff for n in range(nsample)])
     #Sample the band
     def sample(self, nsample=1):
         if self.eff is None: return [None]
         if self.err is None:
-            return np.array([self.eff for n in range(nsample)])
+            return self.getAvg(nsample)
         else:
             if nsample == 1: return np.array([np.random.normal(self.eff, self.err)])
             else:            return np.random.normal(self.eff, self.err, (nsample, len(self.eff)))
