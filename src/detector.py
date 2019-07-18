@@ -1,50 +1,72 @@
-import numpy         as np
+# Built-in modules
+import numpy as np
+
+# BoloCalc modules
 import src.parameter as pr
-import src.units     as un
-import src.physics   as ph
+import src.units as un
+import src.physics as ph
+
 
 class Detector:
     def __init__(self, log, ch, band=None):
-        self.log  = log
-        self.ch   = ch
+        self.log = log
+        self.ch = ch
         self.__ph = ph.Physics()
 
-        #Store detector parameters
-        self.bandCenter    = self.__paramSamp(self.ch.detectorDict['Band Center'],     self.ch.bandID)
-        self.fbw           = self.__paramSamp(self.ch.detectorDict['Fractional BW'],   self.ch.bandID)
-        self.detEff        = self.__paramSamp(self.ch.detectorDict['Det Eff'],         self.ch.bandID)
-        self.psat          = self.__paramSamp(self.ch.detectorDict['Psat'],            self.ch.bandID)
-        self.psatFact      = self.__paramSamp(self.ch.detectorDict['Psat Factor'],     self.ch.bandID)
-        self.n             = self.__paramSamp(self.ch.detectorDict['Carrier Index'],   self.ch.bandID)
-        self.Tc            = self.__paramSamp(self.ch.detectorDict['Tc'],              self.ch.bandID)
-        self.TcFrac        = self.__paramSamp(self.ch.detectorDict['Tc Fraction'],     self.ch.bandID)
-        self.Flink         = self.__paramSamp(self.ch.detectorDict['Flink'],           self.ch.bandID)
-        self.G             = self.__paramSamp(self.ch.detectorDict['G'],               self.ch.bandID)
-        self.nei           = self.__paramSamp(self.ch.detectorDict['SQUID NEI'],       self.ch.bandID)
-        self.boloR         = self.__paramSamp(self.ch.detectorDict['Bolo Resistance'], self.ch.bandID)
-        self.readN         = self.__paramSamp(self.ch.detectorDict['Read Noise Frac'], self.ch.bandID)
+        # Store detector parameters
+        self.bandCenter = self._param_samp(
+            self.ch.detectorDict['Band Center'], self.ch.bandID)
+        self.fbw = self._param_samp(
+            self.ch.detectorDict['Fractional BW'], self.ch.bandID)
+        self.detEff = self._param_samp(
+            self.ch.detectorDict['Det Eff'], self.ch.bandID)
+        self.psat = self._param_samp(
+            self.ch.detectorDict['Psat'], self.ch.bandID)
+        self.psatFact = self._param_samp(
+            self.ch.detectorDict['Psat Factor'], self.ch.bandID)
+        self.n = self._param_samp(
+            self.ch.detectorDict['Carrier Index'], self.ch.bandID)
+        self.Tc = self._param_samp(
+            self.ch.detectorDict['Tc'], self.ch.bandID)
+        self.TcFrac = self._param_samp(
+            self.ch.detectorDict['Tc Fraction'], self.ch.bandID)
+        self.Flink = self._param_samp(
+            self.ch.detectorDict['Flink'], self.ch.bandID)
+        self.G = self._param_samp(
+            self.ch.detectorDict['G'], self.ch.bandID)
+        self.nei = self._param_samp(
+            self.ch.detectorDict['SQUID NEI'], self.ch.bandID)
+        self.boloR = self._param_samp(
+            self.ch.detectorDict['Bolo Resistance'], self.ch.bandID)
+        self.readN = self._param_samp(
+            self.ch.detectorDict['Read Noise Frac'], self.ch.bandID)
         self.flo, self.fhi = self.__ph.bandEdges(self.bandCenter, self.fbw)
-        self.Tb            = ch.Tb
-        if 'NA' in str(self.Tc): self.Tc = self.Tb*self.TcFrac
+        self.Tb = ch.Tb
+        if 'NA' in str(self.Tc):
+            self.Tc = self.Tb*self.TcFrac
 
-        #Load band
+        # Load band
         if band is not None:
-            eff  = band
+            eff = band
             if eff is not None:
                 eff = np.array([e if e > 0 else 0. for e in eff])
                 eff = np.array([e if e < 1 else 1. for e in eff])
         else:
-            #Default to top hat band
-            eff = [self.detEff if f > self.flo and f < self.fhi else 0. for f in ch.freqs]
+            # Default to top hat band
+            eff = [self.detEff if f > self.flo and f < self.fhi
+                   else 0. for f in ch.freqs]
 
-        #Store detector optical parameters
-        self.elem  = ["Detector"]
+        # Store detector optical parameters
+        self.elem = ["Detector"]
         self.emiss = [[0.000 for f in ch.freqs]]
         self.effic = [eff]
-        self.temp  = [[self.Tb for f in ch.freqs]]
+        self.temp = [[self.Tb for f in ch.freqs]]
 
-    #***** Private Methods *****
-    def __paramSamp(self, param, bandID):
-        if not ('instance' in str(type(param)) or 'class' in str(type(param))): return np.float(param)
-        if self.ch.clcDet == 1: return param.getAvg(bandID=bandID)
-        else:                   return param.sample(bandID=bandID, nsample=1)
+    # ***** Private Methods *****
+    def _param_samp(self, param, bandID):
+        if not ('instance' in str(type(param)) or 'class' in str(type(param))):
+            return np.float(param)
+        if self.ch.clcDet == 1:
+            return param.getAvg(bandID=bandID)
+        else:
+            return param.sample(bandID=bandID, nsample=1)

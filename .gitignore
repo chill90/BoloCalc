@@ -1,42 +1,46 @@
-#Temporary files
+# Temporary files
 *~
 *#
 
-#Python library files
+# Python library files
 *.pyc
 
-#Atmosphere profile files
+# Atmosphere profile files
 *src/atmFiles/*
 
-#Latex temporary files
+# Latex temporary files
 *MANUAL/*
 !*MANUAL/
 !*MANUAL/BoloCalc_UserManual.pdf
 
-#All output files
+# All output files
 *sensitivity.txt
 *opticalPower.txt
 *mappingSpeedVary*.txt
 
-#All logging files
+# All logging files
 *log/*.txt
 
-#Auxiliary scripts
+# Auxiliary scripts
 *overplotATM.py
 *plotATM.py
 
-#Ignore non-example directories
+# Ignore non-example directories
 *Experiments/*
 !*Experiments/importExperiment.py
 #!*Experiments/ExampleExperiment/
 #!*Experiments/ExampleExperiment/*
 
-#Take anything intended to be offline offline
+# Take anything intended to be offline offline
 *OFFLINE/
 *OFFLINE/*
 
-#OSX style files
+# OSX style files
 *.DS_Store
 
-#For now, ignore the web development directory
+# For now, ignore the web development directory
 *web*
+
+# Ignore VS code files
+.vscode/settings.json
+.vscode/launch.json

@@ -1,47 +1,77 @@
-import numpy     as np
+# Built in modules
+import numpy as np
+# Custom modules
 import src.units as un
+
 
 class Band:
     def __init__(self, log, bandFile, freqArr=None):
-        self.log   = log
+        self.log = log
         self.ftype = bandFile.split('.')[-1]
 
-        #Parse band file
+        # Parse band file
         if 'csv' in self.ftype:
-            try:    freqs, self.eff, self.err = np.loadtxt(bandFile, unpack=True, dtype=np.float, delimiter=',')
-            except: freqs, self.eff,          = np.loadtxt(bandFile, unpack=True, dtype=np.float, delimiter=','); self.err = None
-            if not np.all(freqs) > 1.e5: self.freqs = freqs*un.GHzToHz #Convert to Hz if band file is in GHz
+            try:
+                freqs, self.eff, self.err =
+                np.loadtxt(bandFile, unpack=True,
+                           dtype=np.float, delimiter=',')
+            except:
+                freqs, self.eff =
+                np.loadtxt(bandFile, unpack=True,
+                           dtype=np.float, delimiter=',')
+                self.err = None
+            if not np.all(freqs) > 1.e5:
+                # Convert to Hz if band file is in GHz
+                self.freqs = freqs*un.GHzToHz
             if freqArr is not None:
-                mask = np.array([1. if f >= self.freqs[0] and f <= self.freqs[-1] else 0. for f in freqArr])
-                self.eff   = np.interp(freqArr, self.freqs, self.eff)*mask
-                if self.err is not None: self.err   = np.interp(freqArr, self.freqs, self.err)*mask
+                mask = np.array([1. if f >= self.freqs[0] and
+                                 f <= self.freqs[-1] else 0. for f in freqArr])
+                self.eff = np.interp(freqArr, self.freqs, self.eff)*mask
+                if self.err is not None:
+                    self.err = np.interp(freqArr, self.freqs, self.err)*mask
                 self.freqs = freqArr
         elif 'txt' in self.ftype:
-            try:    freqs, self.eff, self.err = np.loadtxt(bandFile, unpack=True, dtype=np.float)
-            except: freqs, self.eff,          = np.loadtxt(bandFile, unpack=True, dtype=np.float); self.err = None
-            if not np.all(freqs) > 1.e5: self.freqs = freqs*un.GHzToHz #Convert to Hz if band file is in GHz
+            try:
+                freqs, self.eff, self.err =
+                np.loadtxt(bandFile, unpack=True, dtype=np.float)
+            except:
+                freqs, self.eff =
+                np.loadtxt(bandFile, unpack=True, dtype=np.float)
+                self.err = None
+            if not np.all(freqs) > 1.e5:
+                # Convert to Hz if band file is in GHz
+                self.freqs = freqs*un.GHzToHz
             if freqArr is not None:
-                mask = np.array([1. if f >= self.freqs[0] and f <= self.freqs[-1] else 0. for f in freqArr])
-                self.eff   = np.interp(freqArr, self.freqs, self.eff)*mask
-                if self.err is not None: self.err   = np.interp(freqArr, self.freqs, self.err)*mask
+                mask = np.array([1. if f >= self.freqs[0] and
+                                 f <= self.freqs[-1] else 0. for f in freqArr])
+                self.eff = np.interp(freqArr, self.freqs, self.eff)*mask
+                if self.err is not None:
+                    self.err = np.interp(freqArr, self.freqs, self.err)*mask
                 self.freqs = freqArr
         else:
             self.log.log('Unable to parse band file %s.' % (bandFile), 0)
-            self.freqs = None;  self.eff = None; self.err = None
+            self.freqs = None
+            self.eff = None
+            self.err = None
 
-        #Not allowed to have a standard deviation of zero or negative
+        # Not allowed to have a standard deviation of zero or negative
         if self.err is not None:
             self.err[(self.err <= 0.)] = 1.e-6
 
-    #***** Public Methods *****
-    #Return the average efficiency
+    # ***** Public Methods *****
+    # Return the average efficiency
     def getAvg(self, nsample=1):
         return np.array([self.eff for n in range(nsample)])
-    #Sample the band
+
+    # Sample the band
     def sample(self, nsample=1):
-        if self.eff is None: return [None]
+        if self.eff is None:
+            return [None]
         if self.err is None:
             return self.getAvg(nsample)
         else:
-            if nsample == 1: return np.array([np.random.normal(self.eff, self.err)])
-            else:            return np.random.normal(self.eff, self.err, (nsample, len(self.eff)))
+            if nsample == 1:
+                return np.array([np.random.normal(self.eff, self.err)])
+            else:
+                return np.random.normal(self.eff, self.err,
+                                        (nsample, len(self.eff)))
