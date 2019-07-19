@@ -2,18 +2,21 @@
 import numpy as np
 import sys as sy
 
+# BoloCalc modules
+import src.Units as un
+
 
 class Parameter:
     """
     The Parameter object contains attributes for input and output parameters.
-    If 'input' argument is a float, one band is assumed; if it is a list, 
+    If 'input' argument is a float, one band is assumed; if it is a list,
     len(list) bands are assumed.
 
     Args:
     log (src.Logging): logging object
     name (str): parameter name
-    input (float or list): parameter value
-    unit (src.Unit): parameter unit, conversion to SI
+    input (str): parameter value from input parameter text files
+    unit (src.Unit): parameter unit, conversion to SI. Defaults to 1.
     min (float): minimum allowed value. Defaults to None
     max (float): maximum allowe value. Defaults to None
     type (type): parameter data type. Defaults to numpy.float
@@ -28,25 +31,28 @@ class Parameter:
     type (type): where the 'type' arg is stored
     """
 
-    def __init__(self, log, name, input, unit=1.0,
+    def __init__(self, log, name, input, unit=None,
                  min=None, max=None, type=np.float):
         # Store passed arguments
         self.log = log
         self.name = name
         self.inst = input
-        self.unit = unit
+        if unit is not None:
+            self.unit = unit
+        else:
+            self.unit = un.Units("NA")
         self.min = self._float(min)
         self.max = self._float(max)
         self.type = type
 
         # Store the parameter mean and standard deviation
         self._spread_delim = '+/-'
-        if self._spread_delim in input:
-            vals = input.split(self._spread_delim)
-            self.avg = self._float(vals[0], self.unit)
-            self.std = self._float(vals[1], self.unit)
+        if self._spread_delim in self.inst:
+            vals = self.inst.split(self._spread_delim)
+            self.avg = self._float(vals[0])
+            self.std = self._float(vals[1])
         else:
-            self.avg = self._float(input,   self.unit)
+            self.avg = self._float(self.inst)
             self.std = self._zero(self.avg)
 
         # Check that the value is within the allowed range.
@@ -117,21 +123,44 @@ class Parameter:
         new_avg (int or list): new
         """
         if 'array' in str(type(self.avg)):
-            self.avg[band_id -1] = new_avg * self.unit
+            self.avg[band_id-1] = self.unit.to_SI(new_avg)
             if new_std is not None:
-                self.std[band_id -1] = new_std * self.unit
+                self.std[band_id-1] = self.unit.to_SI(new_std)
         else:
-            self.avg = new_avg * self.unit
+            self.avg = self.unit.to_SI(new_avg)
             if new_std is not None:
-                self.std = new_std * self.unit
+                self.std = self.unit.to_SI(new_std)
 
     def get_avg(self, band_id=1):
+        """
+        Return average value for band_id
+
+        Args:
+        band_id (int): band ID indexed from 1. Defaults to 1.
+        """
         return self.fetch(band_id)[0]
 
-    def get_std(self, band_id =1):
+    def get_std(self, band_id=1):
+        """
+        Return standard deviation for band_id
+
+        Args:
+        band_id (int): band ID indexed from 1. Defaults to 1.
+        """
         return self.fetch(band_id)[1]
 
     def sample(self, band_id=1, nsample=1, min=None, max=None):
+        """
+        Sample parameter distribution for band_id nsample times
+        and return the sampled values in an array if nsample > 1
+        or as a float if nsample = 1.
+
+        Args:
+        band_id (int): band ID indexes from 1. Defaults to 1.
+        nsample (int): number of samples to draw from distribution
+        min (float): the minimum allowed value to be returned
+        max (float): the maximum allowed value to be returned
+        """
         if self.is_empty():
             return 'NA'
         else:
@@ -144,25 +173,25 @@ class Parameter:
                 else:
                     samp = np.random.normal(avg, std, nsample)
 
-            if min is not None:
-                if samp < min:
-                    return min
-            if max is not None:
-                if samp > max:
-                    return max
+            if min is not None and samp < min:
+                return min
+            if max is not None and samp > max:
+                return max
             return samp
 
     # ***** Private Methods *****
-    def _float(self, val, unit=1.0):
+    def _float(self, val):
+        """Convert val to an array of or single float(s)"""
         try:
-            return unit*float(val)
+            return self.unit.to_SI(float(val))
         except:
             try:
-                return unit*np.array(eval(val)).astype(np.float)
+                return self.unit.to_SI(np.array(eval(val)).astype(np.float))
             except:
                 return str(val)
 
     def _zero(self, val):
+        """Convert val to an array of or single zero(s)"""
         try:
             return np.zeros(len(val))
         except:

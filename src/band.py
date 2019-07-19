@@ -1,58 +1,47 @@
-# Built in modules
+# Built-in modules
 import numpy as np
-# Custom modules
+
+# BoloCalc modules
+import src.loader as ld
 import src.units as un
 
 
 class Band:
-    def __init__(self, log, bandFile, freqArr=None):
+    def __init__(self, log, self.band_file, freqArr=None):
         self.log = log
-        self.ftype = bandFile.split('.')[-1]
+        self.ftype = self.band_file.split('.')[-1]
+        self.ld = ld.Loader()
 
         # Parse band file
-        if 'csv' in self.ftype:
-            try:
-                freqs, self.eff, self.err =
-                np.loadtxt(bandFile, unpack=True,
-                           dtype=np.float, delimiter=',')
-            except:
-                freqs, self.eff =
-                np.loadtxt(bandFile, unpack=True,
-                           dtype=np.float, delimiter=',')
+        try:
+            data = self.ld.band(self.band_file)
+            if len(data) == 3:
+                freqs, self.eff, self.err = data
+            elif len(data) == 2:
+                freqs, self.eff = data
                 self.err = None
-            if not np.all(freqs) > 1.e5:
-                # Convert to Hz if band file is in GHz
-                self.freqs = freqs*un.GHzToHz
-            if freqArr is not None:
-                mask = np.array([1. if f >= self.freqs[0] and
-                                 f <= self.freqs[-1] else 0. for f in freqArr])
-                self.eff = np.interp(freqArr, self.freqs, self.eff)*mask
-                if self.err is not None:
-                    self.err = np.interp(freqArr, self.freqs, self.err)*mask
-                self.freqs = freqArr
-        elif 'txt' in self.ftype:
-            try:
-                freqs, self.eff, self.err =
-                np.loadtxt(bandFile, unpack=True, dtype=np.float)
-            except:
-                freqs, self.eff =
-                np.loadtxt(bandFile, unpack=True, dtype=np.float)
-                self.err = None
-            if not np.all(freqs) > 1.e5:
-                # Convert to Hz if band file is in GHz
-                self.freqs = freqs*un.GHzToHz
-            if freqArr is not None:
-                mask = np.array([1. if f >= self.freqs[0] and
-                                 f <= self.freqs[-1] else 0. for f in freqArr])
-                self.eff = np.interp(freqArr, self.freqs, self.eff)*mask
-                if self.err is not None:
-                    self.err = np.interp(freqArr, self.freqs, self.err)*mask
-                self.freqs = freqArr
-        else:
-            self.log.log('Unable to parse band file %s.' % (bandFile), 0)
+            else:
+                raise Exception(
+                    "Could not understand band CSV file '%s'. \
+                    Too many or too few colums." % (self.band_file))
+        except:
+            self.log.log('Unable to parse band file %s.' % (self.band_file), 0)
             self.freqs = None
             self.eff = None
             self.err = None
+
+        # Convert to Hz if band file is in GHz
+        self._GHz_to_Hz = 1.e+09
+        if not np.all(freqs) > 1.e5:
+            self.freqs = freqs*self._GHz_to_Hz
+        # Equalize arrays
+        if freqArr is not None:
+            mask = np.array([1. if f >= self.freqs[0] and
+                             f <= self.freqs[-1] else 0. for f in freqArr])
+            self.eff = np.interp(freqArr, self.freqs, self.eff)*mask
+            if self.err is not None:
+                self.err = np.interp(freqArr, self.freqs, self.err)*mask
+            self.freqs = freqArr
 
         # Not allowed to have a standard deviation of zero or negative
         if self.err is not None:
