@@ -1,14 +1,19 @@
 # Built-in modules
-import sys
+import sys as sy
 import itertools as it
 
 
 class Compatible:
     def __init__(self):
         # Python version
-        self.major = sys.version_info.major
-        self.minor = sys.version_info.minor
-        self.micro = sys.version_info.micro
+        self.major = sy.version_info.major
+        self.minor = sy.version_info.minor
+        self.micro = sy.version_info.micro
+        # Boolean for Python 2
+        if self.major == 2:
+            self.PY2 = True
+        else:
+            self.PY2 = False
 
     # Make the zip function a generator for both python versions
     def zip(self, *args):

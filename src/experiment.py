@@ -24,37 +24,38 @@ class Experiment:
 
         # Check whether experiment exists
         if not os.path.isdir(self.dir):
-            raise Exception('BoloCalc FATAL Exception: Experiment directory \
-                            %s does not exist' % (self.dir))
+            self.log.err(
+                "Experiment directory '%s' does not exist" % (self.dir))
 
         # Generate global parameters
         self.configDir = os.path.join(self.dir, 'config')
         # Check whether configuration directory exists
         if not os.path.isdir(self.configDir):
-            raise Exception(
-                'BoloCalc FATAL Exception: Experiment configuration directory \
-                %s does not exist' % (self.configDir))
+            self.log.err(
+                "Experiment configuration directory '%s' does not exist"
+                % (self.configDir))
 
         # Name the experiment
         self.name = os.path.split(self.dir.rstrip('/'))[-1]
-        self.log.log("Instantiating experiment %s" % (self.name), 1)
+        self.log.log(
+            "Instantiating experiment %s"
+            % (self.name), self.log.level["MODERATE"])
 
         # Store foreground parameters
         self.ld = ld.Loader()
         if self.fgnds:
             self.fgndFile = os.path.join(self.configDir, 'foregrounds.txt')
             if not os.path.isfile(self.fgndFile):
-                raise Exception("BoloCalc FATAL Exception: Foreground file '%s' \
-                                does not exist" % (self.fgndFile))
+                self.log.err(
+                    "Foreground file '%s' does not exist" % (self.fgndFile))
             try:
-                params, vals = self.ld.foregrounds(self.fgndFile)
-                dict = {params[i].strip(): vals[i].strip()
-                        for i in range(len(params))}
+                dict = self.ld.foregrounds(self.fgndFile)
                 self.log.log(
-                    "Using foreground parameters in '%s'" % (self.fgndFile), 1)
+                    "Using foreground parameters in '%s'"
+                    % (self.fgndFile), self.log.level["MODERATE"])
             except:
-                raise Exception("BoloCalc FATAL Exception: Failed to load \
-                                parameters in '%s'" % (self.fgndFile))
+                self.log.err(
+                    "Failed to load parameters in '%s'" % (self.fgndFile))
             try:
                 self.paramsDict = {
                     'Dust Temperature': pr.Parameter(
@@ -82,12 +83,12 @@ class Experiment:
                         dict['Synchrotron Amplitude'],
                         min=0.0, max=np.inf)}
             except KeyError:
-                raise Exception(
-                    "BoloCalc FATAL Exception: Failed to store \
-                    parameters specified in '%s'" % (self.fgndFile))
+                self.log.err(
+                    "Failed to store parameters specified in '%s'"
+                    % (self.fgndFile))
         else:
             self.paramsDict = None
-            self.log.log("Ignoring foregrounds", 1)
+            self.log.log("Ignoring foregrounds", self.log.level["MODERATE"])
 
         # Generate experiment
         self.generate()
@@ -103,21 +104,22 @@ class Experiment:
             self.params = None
         # Store telescope objects in dictionary
         self.log.log(
-            "Generating telescopes for experiment %s" % (self.name), 1)
+            "Generating telescopes for experiment %s"
+            % (self.name), self.log.level["MODERATE"])
         telescopeDirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))
         telescopeDirs = [x for x in telescopeDirs
                          if 'config' not in x and 'paramVary' not in x]
         if len(telescopeDirs) == 0:
-            raise Exception(
-                "BoloCalc FATAL Exception: Zero telescope directories found in \
+            self.log.err(
+                "Zero telescope directories found in \
                 experiment directory '%s'" % (self.dir))
         telescopeNames = [telescopeDir.split(os.sep)[-2]
                           for telescopeDir in telescopeDirs]
         self.telescopes = cl.OrderedDict({})
         for i in range(len(telescopeNames)):
             if telescopeNames[i] in self.telescopes.keys():
-                raise Exception(
-                    "BoloCalc FATAL Exception: Multiple telescope directories \
+                self.log.err(
+                    "Multiple telescope directories \
                     with the same name '%s' in experiment directory '%s'"
                     % (telescopeNames[i], self.dir))
             self.telescopes.update({telescopeNames[i]: tp.Telescope(

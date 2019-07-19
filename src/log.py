@@ -1,20 +1,50 @@
+# Built-in modules
 import datetime as dt
+import sys as sy
+
 
 class Log:
-    def __init__(self, logFile, verbose=1):
-        self.__logFile = logFile
-        self.__f = open(self.__logFile, 'w')
-        if verbose is None:   self.__verbose = 0
-        elif verbose > 2:     self.__verbose = 2
-        elif verbose < 0:     self.__verbose = 0
-        else:                 self.__verbose = verbose
-    
-    def log(self, msg, importance=None):
+    def __init__(self, log_file, log_level=1):
+        self._log_file = log_file
+        self._f = open(self._log_file, 'w')
+        self._err_preamble = "BoloCalc Error: "
+
+        # Log leveling
+        if log_level is None:
+            self._log_level = 0
+        elif log_level > 2:
+            self._log_level = 2
+        elif log_level < 0:
+            self._log_level = 0
+        else:
+            self._log_level = log_level
+
+        # Log level enums
+        self.level{"CRUCIAL": 0,
+                   "MODERATE": 1,
+                   "NOTIFY": 2}
+
+    # ***** Public methods *****
+    def log(self, msg, log_level=None):
+        if not log_level:
+            log_level = self._log_level
+        self._write(msg)
+        if log_level <= self._log_level:
+            print(wrmsg),
+
+    def err(self, msg):
+        err_msg = self._err_preamble + msg
+        self._write(err_msg)
+        print(err_msg, file=sy.stderr)
+        raise Exception()
+
+    # ***** Private methods *****
+    def _write(self, msg):
+        self._f.write(self._dt_msg(msg))
+        return
+
+    def _dt_msg(self, msg):
         now = dt.datetime.now()
-        if not importance: importance = self.__verbose
-        wrmsg = '[%04d-%02d-%02d %02d:%02d:%02d] %s\n' % (now.year, now.month, now.day, now.hour, now.minute, now.second, msg)
-        self.__f.write(wrmsg)
-        if importance <= self.__verbose: print (wrmsg),
-    
-        
-        
+        return ("[%04d-%02d-%02d %02d:%02d:%02d] %s\n" % (
+            now.year, now.month, now.day, now.hour,
+            now.minute, now.second, msg))
