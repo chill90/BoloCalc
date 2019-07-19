@@ -15,57 +15,56 @@ class Parameter:
     Args:
     log (src.Logging): logging object
     name (str): parameter name
-    input (str): parameter value from input parameter text files
-    unit (src.Unit): parameter unit, conversion to SI. Defaults to 1.
+    inp (str or src.Distribution): parameter value(s)
+    unit (src.Unit): parameter unit. Defaults to src.Unit('NA')
     min (float): minimum allowed value. Defaults to None
     max (float): maximum allowe value. Defaults to None
-    type (type): parameter data type. Defaults to numpy.float
+    type (type): cast parameter data type. Defaults to numpy.float
 
     Attributes:
-    log (src.Logging): where the 'log' arg is stored
     name (str): where the 'name' arg is stored
-    input (float or list): where the 'input' arg is stored
     unit (src.Unit): where the 'unit' arg is stored
-    min (float): where the 'min' arg is stored
-    max (float): where the 'max' arg is stored
     type (type): where the 'type' arg is stored
     """
 
-    def __init__(self, log, name, input, unit=None,
+    def __init__(self, log, name, inp, unit=None,
                  min=None, max=None, type=np.float):
         # Store passed arguments
-        self.log = log
+        self._log = log
         self.name = name
-        self.inst = input
         if unit is not None:
             self.unit = unit
         else:
             self.unit = un.Units("NA")
-        self.min = self._float(min)
-        self.max = self._float(max)
+        self._min = self._float(min)
+        self._max = self._float(max)
         self.type = type
 
         # Store the parameter mean and standard deviation
-        self._spread_delim = '+/-'
-        if self._spread_delim in self.inst:
-            vals = self.inst.split(self._spread_delim)
-            self.avg = self._float(vals[0])
-            self.std = self._float(vals[1])
-        else:
-            self.avg = self._float(self.inst)
-            self.std = self._zero(self.avg)
+        if isinstance(inp, str):
+            self._spread_delim = '+/-'
+            if self._spread_delim in inp:
+                vals = inp.split(self._spread_delim)
+                self._avg = self._float(vals[0])
+                self._std = self._float(vals[1])
+            else:
+                self._avg = self._float(inp)
+                self._std = self._zero(self.avg)
+        elif isinstance(inp, Distribution):
+            self._avg = inp.mean()
+            self._std = inp.std()
 
         # Check that the value is within the allowed range.
-        if not isinstance(self.avg, str):
-            if np.any(self.avg < self.min):
+        if not isinstance(self._avg, str):
+            if np.any(self._avg < self._min):
                 self.log.log(
                     "Passed value %f for parameter %s lower than the mininum \
-                    allowed value %f" % (self.avg, self.name, self.min), 0)
+                    allowed value %f" % (self.avg, self.name, self._min), 0)
                 sy.exit(1)
-            elif np.any(self.avg > self.max):
+            elif np.any(self.avg > self._max):
                 self.log.log(
                     "Passed value %f for parameter %s greater than the maximum \
-                    allowed value %f" % (self.avg, self.name, self.max), 0)
+                    allowed value %f" % (self.avg, self.name, self._max), 0)
                 sy.exit(1)
 
     # ***** Public Methods *****
@@ -111,7 +110,7 @@ class Parameter:
             return ('NA', 'NA')
         else:
             if 'array' in str(type(self.avg)):
-                return (self.avg[band_id-1], self.std[band_id-1])
+                return (self.avg[band_id - 1], self.std[band_id - 1])
             else:
                 return (self.avg, self.std)
 
