@@ -17,6 +17,13 @@ class Loader:
         return
 
     # ***** Public methods *****
+    def sim(self, fname):
+        """ Load simulation TXT file, returning dictionary"""
+        params, vals = np.loadtxt(
+            fname, unpack=True, skiprows=1, usecols=[0, 1],
+            dtype=np.str, delimiter='|')
+        return self._dict(params, vals)
+
     def band(self, fname):
         """ Load either a CSV or TXT band file """
         if 'csv' in fname.lower():
@@ -35,7 +42,7 @@ class Loader:
         """ Load telescope file, skipping column 1, which defines units"""
         params, vals = np.loadtxt(
             fname, unpack=True, usecols=[0, 2], dtype=np.str, delimiter='|')
-        return self._dict(self._dist_dir(fname), params, vals)
+        return self._dict(params, vals, self._dist_dir(fname))
 
     def pdf(self, fname):
         """ Load either a CSV or TXT PDF file """
@@ -53,18 +60,19 @@ class Loader:
     def _txt(self, fname):
         return np.loadtxt(fname, unpack=True, dtype=np.float)
 
-    def _dict(self, dist_dir, params, vals):
+    def _dict(self, params, vals, dist_dir=None):
         data = {paramArr[i].strip(): valArr[i].strip()
                 for i in range(len(paramArr))}
-        for key, val in data.items():
-            if 'NA' in val.upper():
-                for fname in self._dist_fnames(dist_dir, key):
-                    if os.file.exists(fname):
-                        val = ds.Distribution(self.pdf(fname))
-                    else:
-                        continue
-            else:
-                continue
+        if dist_dir is not None:
+            for key, val in data.items():
+                if 'NA' in val.upper():
+                    for fname in self._dist_fnames(dist_dir, key):
+                        if os.file.exists(fname):
+                            val = ds.Distribution(self.pdf(fname))
+                        else:
+                            continue
+                else:
+                    continue
         return data
 
     def _dist_dir(self, fname):

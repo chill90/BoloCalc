@@ -5,10 +5,6 @@ import sys as sy
 
 class Log:
     def __init__(self, log_file, log_level=1):
-        self._log_file = log_file
-        self._f = open(self._log_file, 'w')
-        self._err_preamble = "BoloCalc Error: "
-
         # Log leveling
         if log_level is None:
             self._log_level = 0
@@ -18,11 +14,23 @@ class Log:
             self._log_level = 0
         else:
             self._log_level = log_level
-
         # Log level enums
         self.level{"CRUCIAL": 0,
                    "MODERATE": 1,
                    "NOTIFY": 2}
+        # Open log file
+        self._log_file = log_file
+        self._f = open(self._log_file, 'w')
+        self.log(
+            "Logging to file '%s,' printing with verbosity = %d"
+            % (logFile, self.verbosity), 1)
+        # Error preamble
+        self._err_preamble = "BoloCalc Error: "
+        return
+
+    def __del__(self):
+        self._f.close()
+        return
 
     # ***** Public methods *****
     def log(self, msg, log_level=None):

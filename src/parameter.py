@@ -28,7 +28,7 @@ class Parameter:
     """
 
     def __init__(self, log, name, inp, unit=None,
-                 min=None, max=None, type=np.float):
+                 min=None, max=None, inp_type=np.float):
         # Store passed arguments
         self._log = log
         self.name = name
@@ -38,34 +38,13 @@ class Parameter:
             self.unit = un.Units("NA")
         self._min = self._float(min)
         self._max = self._float(max)
-        self.type = type
+        self.type = inp_type
 
-        # Store the parameter mean and standard deviation
-        if isinstance(inp, str):
-            self._spread_delim = '+/-'
-            if self._spread_delim in inp:
-                vals = inp.split(self._spread_delim)
-                self._avg = self._float(vals[0])
-                self._std = self._float(vals[1])
-            else:
-                self._avg = self._float(inp)
-                self._std = self._zero(self.avg)
-        elif isinstance(inp, Distribution):
-            self._avg = inp.mean()
-            self._std = inp.std()
+        # Store the parameter value, mean, and standard deviation
+        self._store_param()
 
-        # Check that the value is within the allowed range.
-        if not isinstance(self._avg, str):
-            if np.any(self._avg < self._min):
-                self.log.log(
-                    "Passed value %f for parameter %s lower than the mininum \
-                    allowed value %f" % (self.avg, self.name, self._min), 0)
-                sy.exit(1)
-            elif np.any(self.avg > self._max):
-                self.log.log(
-                    "Passed value %f for parameter %s greater than the maximum \
-                    allowed value %f" % (self.avg, self.name, self._max), 0)
-                sy.exit(1)
+        # Check that the value is within the allowed range
+        self._check_range()
 
     # ***** Public Methods *****
     def is_empty(self):
@@ -101,12 +80,15 @@ class Parameter:
 
     def fetch(self, band_id=1):
         """
-        Return self.avg and self.std given a band_id
+        Return self.avg and self.std given a band_id, 
+        or return the parameter value
 
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
-        if self.is_empty():
+        if self._val is not None:
+            return self._val
+        elif self.is_empty():
             return ('NA', 'NA')
         else:
             if 'array' in str(type(self.avg)):
@@ -195,3 +177,49 @@ class Parameter:
             return np.zeros(len(val))
         except:
             return 0.
+
+    def _check_range(self):
+        if self.avg is None:
+            return True
+        else:
+            if np.any(self._avg < self._min):
+                self.log.err(
+                    "Passed value %f for parameter %s lower than the mininum \
+                    allowed value %f" % (self.avg, self.name, self._min), 0)
+            elif np.any(self._avg > self._max):
+                self.log.err(
+                    "Passed value %f for parameter %s greater than the maximum \
+                    allowed value %f" % (self.avg, self.name, self._max), 0)
+            else:
+                return True
+
+    def _store_param(self):
+        if self.type is bool:
+            self._val = self._bool(inp)
+            self._avg = None
+            self._std = None
+        elif self.type is np.float or self.type is np.int:
+            if isinstance(inp, str):
+                self._spread_delim = '+/-'
+                if self._spread_delim in inp:
+                    self._val = None
+                    values = inp.split(self._spread_delim)
+                    self._avg = self._float(vals[0])
+                    self._std = self._float(vals[1])
+                else:
+                    self._val = None
+                    self._avg = self._float(inp)
+                    self._std = self._zero(self.avg)
+            elif isinstance(inp, Distribution):
+                self._val = None
+                self._avg = inp.mean()
+                self._std = inp.std()
+        elif self.type is np.str:
+            self._val = str(inp)
+            self._avg = None
+            self._std = None
+        else:
+            self.log.err(
+                "Passed paramter '%s' not one of allowed data types: \
+                bool, np.float, np.int, np.str" % (self.name))
+        return True
