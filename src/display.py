@@ -1,32 +1,26 @@
-import numpy                 as np
-import collections           as cl
-import                          os
-import src.physics           as ph
-import src.units             as un
+# Built-in modules
+import numpy as np
+import collections as cl
+import os
+
+# BoloCalc modules
+import src.physics as ph
+import src.units as un
+
 
 class Display:
     def __init__(self, log, calcs):
-        #Store passed parameters
-        self.log     = log
-        self.__calcs = calcs
+        # Store passed parameters
+        self._log = log
+        self._calcs = calcs
+        self._ph = ph.Physics()
+        # Get experiment info
+        self.exp = self._calcs[0].exp
 
-        #Create physics class for calculations
-        self.__ph    = ph.Physics() 
+        # Extract means and standard deviations from calcs
+        self._store_means_stds(calcs)
 
-        #Get experiment info
-        self.exp     = self.__calcs[0].exp
-
-        snsmeans = [calc.snsmeans for calc in calcs]
-        snsstds  = [calc.snsstds  for calc in calcs]
-        optmeans = [calc.optmeans for calc in calcs]
-        optstds  = [calc.optstds  for calc in calcs]
-
-        self.snsmeans = [[[(np.mean([snsmeans[m][i][j][k] for m in range(len(snsmeans))], axis=0)                                                                        ).tolist() for k in range(len(snsmeans[0][i][j]))] for j in range(len(snsmeans[0][i]))] for i in range(len(snsmeans[0]))]
-        self.snsstds  = [[[(np.mean([snsstds[m][i][j][k]  for m in range(len(snsstds))],  axis=0) + np.std([snsmeans[m][i][j][k]  for m in range(len(snsmeans))], axis=0)).tolist() for k in range(len(snsstds[0][i][j]))]  for j in range(len(snsstds[0][i]))]  for i in range(len(snsstds[0] ))]
-        self.optmeans = [[[(np.mean([optmeans[m][i][j][k] for m in range(len(optmeans))], axis=0)                                                                        ).tolist() for k in range(len(optmeans[0][i][j]))] for j in range(len(optmeans[0][i]))] for i in range(len(optmeans[0]))]
-        self.optstds  = [[[(np.mean([optstds[m][i][j][k]  for m in range(len(optstds))],  axis=0) + np.std([optmeans[m][i][j][k]  for m in range(len(optmeans))], axis=0)).tolist() for k in range(len(optstds[0][i][j]))]  for j in range(len(optstds[0][i]))]  for i in range(len(optstds[0] ))]
-        
-        #Dictionaries to hold values for look-up
+        # Dictionaries to hold values for look-up
         self.dict = cl.OrderedDict({})
 
         self.name   = []
@@ -37,7 +31,8 @@ class Display:
         self.sens   = []; self.sensStd   = []
         self.ms     = []; self.msStd     = []
 
-        #Table column titles for camera files
+        # Table column titles for camera files
+
         self.titleStrC  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-21s | %-15s\n" 
                               % ("Chan", "Frequency", "Frac Bandwidth", "Num Det", "Stop Efficiency", "Optical Power", "Photon NEP", "Bolometer NEP", "Readout NEP", "Detector NEP", "Detector NET", "Array NET", "Mapping Speed", "Map Depth"))
         self.unitStrC   = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-21s | %-15s\n"
@@ -159,9 +154,9 @@ class Display:
                 if genTables:
                     printStr = str("%-5s | %-33s | %-7d | %-125s | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                                    % ('Total', '', sum(numDetC), '', 
-                                      self.__ph.invVar(netArrC)*un.KTouK, self.__ph.invVar(netArrStdC)*un.KTouK,
+                                      self._ph.invVar(netArrC)*un.KTouK, self._ph.invVar(netArrStdC)*un.KTouK,
                                       sum(msC)*un.uK2ToK2,                self.__ifZero(sum(msC), sum(msStdC))*un.uK2ToK2,
-                                      self.__ph.invVar(sensC)*un.KTouK,   self.__ph.invVar(sensStdC)*un.KTouK))
+                                      self._ph.invVar(sensC)*un.KTouK,   self._ph.invVar(sensStdC)*un.KTouK))
                     fC.write(printStr)
                     fC.close()
 
@@ -203,9 +198,9 @@ class Display:
                         fbwStdT[m]     = np.std([fbwT[m], fbwT[n]]) + np.mean([fbwStdT[m], fbwStdT[n]])
                         numDetT[m]    += numDetT[n]
 
-                        netArrTv    = self.__ph.invVar([netArrT[m],    netArrT[n]])
+                        netArrTv    = self._ph.invVar([netArrT[m],    netArrT[n]])
                         netArrStdTv = np.mean([netArrStdT[m], netArrStdT[n]])
-                        sensTv      = self.__ph.invVar([sensT[m],      sensT[n]])
+                        sensTv      = self._ph.invVar([sensT[m],      sensT[n]])
                         sensStdTv   = np.mean([sensStdT[m],   sensStdT[n]])
                         msTv        = 1./(np.power(netArrTv,   2.))
                         msStdTv     = np.mean([msStdT[m]*(msT/float(msT[m])) + msStdT[n]*(msT/float(msT[n]))])
@@ -260,9 +255,9 @@ class Display:
             if genTables:
                 printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                             % ('Total', '', sum(numDetT), 
-                               self.__ph.invVar(netArrT)*un.KTouK, self.__ph.invVar(netArrStdT)*un.KTouK,
+                               self._ph.invVar(netArrT)*un.KTouK, self._ph.invVar(netArrStdT)*un.KTouK,
                                sum(msT)*un.uK2ToK2,                self.__ifZero(sum(msT), sum(msStdT))*un.uK2ToK2,
-                               self.__ph.invVar(sensT)*un.KTouK,   self.__ph.invVar(sensStdT)*un.KTouK))
+                               self._ph.invVar(sensT)*un.KTouK,   self._ph.invVar(sensStdT)*un.KTouK))
                 fT.write(printStr)
                 fT.close()
 
@@ -289,9 +284,9 @@ class Display:
                     self.fbwStd[m]    = np.std([self.fbw[m], self.fbw[n]]) + np.mean([self.fbwStd[m], self.fbwStd[n]])
                     self.numDet[m]    += self.numDet[n]
                     
-                    netArr    = self.__ph.invVar([self.netArr[m],    self.netArr[n]])
+                    netArr    = self._ph.invVar([self.netArr[m],    self.netArr[n]])
                     netArrStd = np.mean([self.netArrStd[m], self.netArrStd[n]])
-                    sens      = self.__ph.invVar([self.sens[m],      self.sens[n]])
+                    sens      = self._ph.invVar([self.sens[m],      self.sens[n]])
                     sensStd   = np.mean([self.sensStd[m],   self.sensStd[n]])
                     ms        = 1./float(np.power(netArr,   2.))
                     msStd     = np.mean([self.msStd[m]*(ms/float(self.ms[m])) + self.msStd[n]*(ms/float(self.ms[n]))])
@@ -334,9 +329,9 @@ class Display:
         if genTables:
             printStr = ("%-5s | %-33s | %-7d | %-5.2f +/- %-5.2f | %-8.2e +/- %-8.2e | %-5.1f +/- %-5.1f\n" 
                         % ('Total', '', sum(self.numDet), 
-                           self.__ph.invVar(self.netArr)*un.KTouK, self.__ph.invVar(self.netArrStd)*un.KTouK,
+                           self._ph.invVar(self.netArr)*un.KTouK, self._ph.invVar(self.netArrStd)*un.KTouK,
                            sum(self.ms)*un.uK2ToK2,                self.__ifZero(sum(self.ms), sum(self.msStd))*un.uK2ToK2,
-                           self.__ph.invVar(self.sens)*un.KTouK,   self.__ph.invVar(self.sensStd)*un.KTouK))
+                           self._ph.invVar(self.sens)*un.KTouK,   self._ph.invVar(self.sensStd)*un.KTouK))
             fE.write(printStr)
             fE.close()        
 
@@ -382,3 +377,58 @@ class Display:
     def __ifZero(self, avg, std):
         if std < avg*1.e-3: return 0
         else:               return std
+
+    def _store_means_stds(calcs):
+        snsmeans = [calc.snsmeans for calc in calcs]
+        snsstds = [calc.snsstds for calc in calcs]
+        optmeans = [calc.optmeans for calc in calcs]
+        optstds = [calc.optstds for calc in calcs]
+        self.snsmeans = [[[(np.mean(
+            [snsmeans[m][i][j][k]
+             for m in range(len(snsmeans))], axis=0)).tolist()
+             for k in range(len(snsmeans[0][i][j]))]
+             for j in range(len(snsmeans[0][i]))]
+             for i in range(len(snsmeans[0]))]
+        self.snsstds = [[[(np.mean(
+            [snsstds[m][i][j][k]
+             for m in range(len(snsstds))], axis=0) +
+             np.std([snsmeans[m][i][j][k]
+                     for m in range(len(snsmeans))], axis=0)).tolist()
+             for k in range(len(snsstds[0][i][j]))]
+             for j in range(len(snsstds[0][i]))]
+             for i in range(len(snsstds[0]))]
+        self.optmeans = [[[(np.mean(
+            [optmeans[m][i][j][k]
+             for m in range(len(optmeans))], axis=0)).tolist()
+             for k in range(len(optmeans[0][i][j]))]
+             for j in range(len(optmeans[0][i]))]
+             for i in range(len(optmeans[0]))]
+        self.optstds = [[[(np.mean(
+            [optstds[m][i][j][k]
+             for m in range(len(optstds))], axis=0) +
+             np.std([optmeans[m][i][j][k]
+                     for m in range(len(optmeans))], axis=0)).tolist()
+             for k in range(len(optstds[0][i][j]))]
+             for j in range(len(optstds[0][i]))]
+             for i in range(len(optstds[0]))]
+        return
+
+    def _table_format(self):
+        white_space_cam = [5, 15, 15, 7, 15, 15, 15, 15, 15, 15, 17, 15, 21, 15]
+        title_cam = ["Chan", "Frequency", "Frac Bandwidth", "Num Det", "Stop Efficiency",
+                     "Optical Power",. "Photon NEP", "Bolometer NEP", "Readout NEP",
+                     "Detector NEP", "Detector NET", "Array NET", "Mapping Speed",
+                     "Map Depth"]
+        unit_cam = ["", "[GHz]", "", "", "[%]", "[pW]", "[aW/rtHz]", "[aW/rtHz]",
+                    "[aW/rtHz]", "[aW/rtHz]"]
+        self.titleStrC  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-21s | %-15s\n" 
+                              % ("Chan", "Frequency", "Frac Bandwidth", "Num Det", "Stop Efficiency", "Optical Power", "Photon NEP", "Bolometer NEP", "Readout NEP", "Detector NEP", "Detector NET", "Array NET", "Mapping Speed", "Map Depth"))
+        self.unitStrC   = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-17s | %-15s | %-21s | %-15s\n"
+                              % ("", "[GHz]", "", "", "[%]", "[pW]", "[aW/rtHz]", "[aW/rtHz]", "[aW/rtHz]", "[aW/rtHz]", "[uK-rtSec]", "[uK-rtSec]", "[(uK^2 s)^-1]", "[uK-arcmin]"))
+        self.breakStrC  = "-"*240+"\n"
+        #Table column titles for telescope and experiment files
+        self.titleStrTE = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-21s | %-15s\n"
+                              % ("Chan", "Frequency", "Frac Bandwidth", "Num Det", "Array NET", "Mapping Speed", "Map Depth"))
+        self.unitStrTE  = str("%-5s | %-15s | %-15s | %-7s | %-15s | %-21s | %-15s\n"
+                              % ("", "[GHz]", "", "", "[uK-rtSec]", "[(uK^2 s)^-1]", "[uK-arcmin]"))
+        self.breakStrTE = "-"*110+"\n"

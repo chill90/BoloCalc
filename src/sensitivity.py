@@ -1,82 +1,164 @@
-import numpy       as np
-import warnings    as wn
-import functools   as ft
-import src.physics as ph
-import src.noise   as ns
-import src.units   as un
+# Built-in modules
+import numpy as np
+import warnings as wn
+import functools as ft
 
+# BoloCalc modules
+import src.physics as ph
+import src.noise as ns
+import src.units as un
+
+# Suppress future warnings for now
 wn.simplefilter(action='ignore', category=FutureWarning)
+
 
 class Sensitivity:
     def __init__(self, log, exp, corr=True):
-        #Store passed parameters
-        self.exp  = exp
+        # Store passed parameters
+        self.exp = exp
         self.corr = corr
 
-        #Generate classes for calculating
-        self.ph   = ph.Physics()
-        self.nse  = ns.Noise()
+        # Generate classes for calculating
+        self.ph = ph.Physics()
+        self.nse = ns.Noise()
 
-    #***** Public Methods *****
-    #Optical power given some array of optical elements
+    # ***** Public Methods *****
+    # Optical power given some array of optical elements
     def Popt(self, elemArr, emissArr, effArr, tempArr, freqs):
-        effArr  = np.insert(effArr, len(effArr), [1. for f in freqs], axis=0); effArr = np.array(effArr).astype(np.float)
-        return np.sum([np.trapz(self.ph.bbPowSpec(freqs, tempArr[i], emissArr[i]*np.prod(effArr[i+1:], axis=0)), freqs) for i in range(len(elemArr))])
-    #Photon NEP given some array of optical elements
+        effArr = np.insert(effArr, len(effArr), [1. for f in freqs], axis=0)
+        effArr = np.array(effArr).astype(np.float)
+        return np.sum([np.trapz(
+            self.ph.bbPowSpec(
+                freqs, tempArr[i], emissArr[i] *
+                np.prod(effArr[i+1:], axis=0)), freqs)
+                for i in range(len(elemArr))])
+
+    # Photon NEP given some array of optical elements
     def NEPph(self, elemArr, emissArr, effArr, tempArr, freqs, ch=None):
-        effArr  = np.insert(effArr, len(effArr), [1. for f in freqs], axis=0); effArr = np.array(effArr).astype(np.float)
-        if ch: corrs = True
-        else:  corrs = False
-        powInts = np.array([self.ph.bbPowSpec(freqs, tempArr[i], emissArr[i]*np.prod(effArr[i+1:], axis=0)) for i in range(len(elemArr))])
-        if corrs: NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs, elemArr, (ch.params['Pixel Size']/float(ch.Fnumber*self.ph.lamb(ch.detectorDict['Band Center'].getAvg()))))
-        else:     NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs)
+        effArr = np.insert(effArr, len(effArr), [1. for f in freqs], axis=0)
+        effArr = np.array(effArr).astype(np.float)
+        if ch:
+            corrs = True
+        else:
+            corrs = False
+        powInts = np.array([self.ph.bbPowSpec(
+            freqs, tempArr[i], emissArr[i]*np.prod(effArr[i+1:], axis=0)) 
+            for i in range(len(elemArr))])
+        if corrs:
+            NEP_ph, NEP_pharr = self.nse.photonNEP(
+                powInts, freqs, elemArr, (
+                    ch.params['Pixel Size'] /
+                    float(ch.Fnumber * self.ph.lamb(
+                        ch.detectorDict['Band Center'].getAvg()))))
+        else:
+            NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs)
         return NEP_ph, NEP_pharr
-    #Thermal carrier NEP given some optical power on the bolometer
+
+    # Thermal carrier NEP given some optical power on the bolometer
     def NEPbolo(self, optPow, det):
         if 'NA' in str(det.G):
-            if 'NA' in str(det.psat):  g = self.nse.G(det.psatFact*optPow, det.n, det.Tb, det.Tc)
-            else:                      g = self.nse.G(det.psat,            det.n, det.Tb, det.Tc)
+            if 'NA' in str(det.psat):
+                g = self.nse.G(det.psatFact*optPow, det.n, det.Tb, det.Tc)
+            else:
+                g = self.nse.G(det.psat, det.n, det.Tb, det.Tc)
         else:
             g = det.G
-        if 'NA' in str(det.Flink): return self.nse.bolometerNEP(self.nse.Flink(det.n, det.Tb, det.Tc), g, det.Tc)
-        else:                      return self.nse.bolometerNEP(det.Flink,                             g, det.Tc)
-    #Readout NEP given some optical power on the bolometer
-    def NEPrd(self, optPow, det):
-        if   'NA' in str(det.nei):   return 'NA'
-        elif 'NA' in str(det.boloR): return 'NA'
-        elif 'NA' in str(det.psat):  return self.nse.readoutNEP((det.psatFact-1.)*optPow, det.boloR, det.nei)
+        if 'NA' in str(det.Flink):
+            return self.nse.bolometerNEP(
+                self.nse.Flink(det.n, det.Tb, det.Tc), g, det.Tc)
         else:
-            if optPow >= det.psat: return 0.
-            else:                  return self.nse.readoutNEP((det.psat-optPow),       det.boloR, det.nei)
-    #Mapping speed given some channel and telescope
-    def sensitivity(self, ch, tp, corr=None):
-        if corr is None: corr = self.corr
+            return self.nse.bolometerNEP(det.Flink, g, det.Tc)
 
-        ApEff             = ch.apEff
-        PoptArr           = np.array([[self.Popt(   ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j], ch.temp[i][j], ch.freqs)     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
-        if corr: NEPPhArr = np.array([[self.NEPph(  ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j], ch.temp[i][j], ch.freqs, ch) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
-        else:    NEPPhArr = np.array([[self.NEPph(  ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j], ch.temp[i][j], ch.freqs)     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
-        NEPboloArr        = np.array([[self.NEPbolo(PoptArr[i][j],                                ch.detArray.detectors[j])     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
-        NEPrdArr          = np.array([[self.NEPrd(  PoptArr[i][j],                                ch.detArray.detectors[j])     for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
+    # Readout NEP given some optical power on the bolometer
+    def NEPrd(self, optPow, det):
+        if 'NA' in str(det.nei):
+            return 'NA'
+        elif 'NA' in str(det.boloR):
+            return 'NA'
+        elif 'NA' in str(det.psat):
+            return self.nse.readoutNEP(
+                (det.psatFact-1.)*optPow, det.boloR, det.nei)
+        else:
+            if optPow >= det.psat:
+                return 0.
+            else:
+                return self.nse.readoutNEP(
+                    (det.psat-optPow), det.boloR, det.nei)
+
+    # Mapping speed given some channel and telescope
+    def sensitivity(self, ch, tp, corr=None):
+        if corr is None:
+            corr = self.corr
+
+        ApEff = ch.apEff
+        PoptArr = np.array([[self.Popt(
+            ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
+            ch.temp[i][j], ch.freqs)
+            for j in range(ch.detArray.nDet)]
+            for i in range(ch.nobs)])
+        if corr:
+            NEPPhArr = np.array([[self.NEPph(
+                ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
+                ch.temp[i][j], ch.freqs, ch)
+                for j in range(ch.detArray.nDet)]
+                for i in range(ch.nobs)])
+        else:
+            NEPPhArr = np.array([[self.NEPph(
+                ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
+                ch.temp[i][j], ch.freqs)
+                for j in range(ch.detArray.nDet)]
+                for i in range(ch.nobs)])
+        NEPboloArr = np.array([[self.NEPbolo(
+            PoptArr[i][j], ch.detArray.detectors[j])
+            for j in range(ch.detArray.nDet)]
+            for i in range(ch.nobs)])
+        NEPrdArr = np.array([[self.NEPrd(
+            PoptArr[i][j], ch.detArray.detectors[j])
+            for j in range(ch.detArray.nDet)]
+            for i in range(ch.nobs)])
 
         NEPPhArr, NEPPhArrArr = np.split(NEPPhArr, 2, axis=2)
-        NEPPhArr    = np.reshape(NEPPhArr,    np.shape(NEPPhArr)[   :2])
+        NEPPhArr = np.reshape(NEPPhArr, np.shape(NEPPhArr)[:2])
         NEPPhArrArr = np.reshape(NEPPhArrArr, np.shape(NEPPhArrArr)[:2])
 
-        if 'NA' in NEPrdArr: NEPrdArr = np.array([[np.sqrt((1. + ch.detArray.detectors[j].readN)**2 - 1.)*np.sqrt(NEPPhArr[i][j]**2 + NEPboloArr[i][j]**2) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)])
-        NEP        = np.sqrt(NEPPhArr**2    + NEPboloArr**2 + NEPrdArr**2)
-        NEParr     = np.sqrt(NEPPhArrArr**2 + NEPboloArr**2 + NEPrdArr**2)
-        NET        = np.array([[self.nse.NETfromNEP(NEP[i][j],    ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
-        NETar      = np.array([[self.nse.NETfromNEP(NEParr[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple) for j in range(ch.detArray.nDet)] for i in range(ch.nobs)]).flatten()*tp.params['NET Margin']
-        NETarr     = self.ph.invVar(NETar)*np.sqrt(float(ch.nobs))*np.sqrt(float(ch.clcDet)/float(ch.params['Yield']*ch.numDet))
-        NETarrStd  = np.std(NET)*np.sqrt(1./ch.numDet)
-        MS         = 1./(np.power(NETarr,    2.))
-        #MSStd      = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.)/(np.power(NETarr-NETarrStd, 2.)))/2.
-        MSStd      = (NETarrStd/NETarr)*MS if (NETarrStd/NETarr) > 1.e-3 else 0.
+        if 'NA' in NEPrdArr:
+            NEPrdArr = np.array([[np.sqrt(
+                (1. + ch.detArray.detectors[j].readN)**2 - 1.) *
+                np.sqrt(NEPPhArr[i][j]**2 + NEPboloArr[i][j]**2)
+                for j in range(ch.detArray.nDet)]
+                for i in range(ch.nobs)])
+        NEP = np.sqrt(NEPPhArr**2 + NEPboloArr**2 + NEPrdArr**2)
+        NEParr = np.sqrt(NEPPhArrArr**2 + NEPboloArr**2 + NEPrdArr**2)
+        NET = np.array([[self.nse.NETfromNEP(
+            NEP[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple)
+            for j in range(ch.detArray.nDet)]
+            for i in range(ch.nobs)]).flatten() * tp.params['NET Margin']
+        NETar = np.array([[self.nse.NETfromNEP(
+            NEParr[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0),
+            ch.optCouple)
+            for j in range(ch.detArray.nDet)]
+            for i in range(ch.nobs)]).flatten() * tp.params['NET Margin']
+        NETarr = self.ph.invVar(NETar) * np.sqrt(float(ch.nobs)) * np.sqrt(
+            float(ch.clcDet) / float(ch.params['Yield']*ch.numDet))
+        NETarrStd = np.std(NET)*np.sqrt(1./ch.numDet)
+        MS = 1./(np.power(NETarr,    2.))
+        # MSStd = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.) /
+        # (np.power(NETarr-NETarrStd, 2.)))/2.
+        MSStd = (NETarrStd/NETarr)*MS if (NETarrStd/NETarr) > 1.e-3 else 0.
 
-        Sens       = self.nse.sensitivity(NETarr,    tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
-        SensStd    = self.nse.sensitivity(NETarrStd, tp.params['Sky Fraction'], tp.params['Observation Time']*tp.params['Observation Efficiency'])
+        Sens = self.nse.sensitivity(
+            NETarr, tp.params['Sky Fraction'],
+            tp.params['Observation Time'] *
+            tp.params['Observation Efficiency'])
+        SensStd = self.nse.sensitivity(
+            NETarrStd, tp.params['Sky Fraction'],
+            tp.params['Observation Time'] *
+            tp.params['Observation Efficiency'])
 
+        # Return a dictionary of output parameters
+        ret_dict = {
+            "Stop Efficiency": 
+        }
         means = [ch.apEff,
                  np.mean(PoptArr.flatten()),
                  np.mean(NEPPhArr.flatten()),
@@ -100,7 +182,7 @@ class Sensitivity:
 
         return means, stds
 
-    #Optical power element by element given some channel and telescope
+    # Optical power element by element given some channel and telescope
     def opticalPower(self, ch, tp):
         powSkySide = []
         powDetSide = []
