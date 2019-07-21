@@ -46,7 +46,7 @@ class Display:
         self.breakStrTE = "-"*110+"\n"
 
     #Generate sensitivities
-    def sensitivity(self, genTables=True):
+    def sensitivity(self):
         #Full experiment
         experiment = self.exp
         if genTables:

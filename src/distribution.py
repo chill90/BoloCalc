@@ -11,25 +11,28 @@ class Distribution:
     for instrument parameters
 
     Args:
-    finput (str or arr): file name for the input PDF or input data array
+    inp (str or arr): file name for the input PDF or input data array
 
     Attributes:
     prob (array): probabilities
     val (array): values
     """
-    def __init__(self, input):
+    def __init__(self, inp):
         # Load PDF from file if 'finput' is a string
-        if isinstance(input, str):
+        if isinstance(inp, str):
             self._ld = ld.Loader()
-            self.prob, self.val = self._ld.pdf(input)
+            self.prob, self.val = self._ld.pdf(inp)
             # Rescale probabilities to 1 in case they are not already
             self.prob = self.prob/np.sum(self.prob)
             self._cum = np.cumsum(self.prob)
         # Store values if 'finput' is a data array
-        if isinstance(input, list) or isinstance(input, np.array):
-            self.val = input
+        if isinstance(inp, list) or isinstance(inp, np.array):
+            self.val = inp
             self.prob = None
             self._cum = None
+
+    def sample(self, nsample=1):
+        return np.random.choice(self.val, size=nsample, p=self.prob)
 
     def mean(self):
         if self.prob is not None:

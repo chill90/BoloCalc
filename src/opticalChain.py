@@ -1,36 +1,50 @@
-import numpy       as np
+# Built-in methods
+import numpy as np
 import collections as cl
-import                os
-import src.optic   as op
+import os
+import glob as gb
+
+# BoloCalc methods
+import src.optic as op
+
 
 class OpticalChain:
-    def __init__(self, log, optFile, nrealize=1, optBands=None):
-        #Store passed parameters
-        self.log      = log
-        self.optFile  = optFile
-        self.nrealize = nrealize
-        self.optBands = optBands
-        self.camName  = self.optFile.rstrip(os.sep).split(os.sep)[-3]
-        self.telName  = self.optFile.rstrip(os.sep).split(os.sep)[-4]
-        self.expName  = self.optFile.rstrip(os.sep).split(os.sep)[-5]
+    def __init__(self, cam):
+        # Store passed parameters
+        self.cam = cam
 
-        #Store optic objects
-        self.log.log("Storing individual optics in optical chain", 1)
-        output      = np.loadtxt(self.optFile, dtype=np.str, delimiter='|'); keyArr  = output[0]; elemArr = output[1:]
-        opticDicts  = [{keyArr[i].strip(): elem[i].strip() for i in range(len(keyArr))} for elem in elemArr]
+        # Store optic objects
+        self.param_dicts = self._load().optics(os.path.join(self.cam.config_dir, 'optics.txt'))
+        self._gen_band_dict()
         self.optics = cl.OrderedDict({})
-        for opticDict in opticDicts:
-            if opticDict['Element'] in self.optics.keys():
-                raise Exception('FATAL: Multiple optical elements with the same name "%s" defined in camera "%s", telescope "%s", experiment "%s"' % (opticDict['Element'], self.camName, self.telName, self.expName))
-            if self.optBands is not None and opticDict['Element'] in self.optBands.keys(): 
+        for param_dict in self.param_dicts:
+            if param_dict['Element'] in self.optics.keys():
+                self._log().err(
+                    "Multiple optical elements named '%s' in camera '%s'" 
+                    % (opticDict['Element'], self.cam.dir.))
+            if self.band_dict is not None and param_dict['Element'] in self.optBands.keys(): 
                 self.optics.update({opticDict['Element']: op.Optic(log, opticDict, nrealize=self.nrealize, bandFile=self.optBands[opticDict['Element']])})
                 self.log.log("Using user-input spectra for optic '%s'" % (opticDict['Element']),1)
-            else:                                       
+            else:
                 self.optics.update({opticDict['Element']: op.Optic(log, opticDict, nrealize=self.nrealize)})
-            
-    #***** Public Methods *****
-    #Generate element, temperature, emissivity, and efficiency arrays
+
+    # ***** Public Methods *****
+    # Generate element, temperature, emissivity, and efficiency arrays
     def generate(self, ch):
         arr = [optic.generate(ch) for optic in list(self.optics.values())]
-        elem = [a[0] for a in arr]; emiss = [a[1] for a in arr]; effic = [a[2] for a in arr]; temp = [a[3] for a in arr]
+        elem = [a[0] for a in arr]
+        emiss = [a[1] for a in arr]
+        effic = [a[2] for a in arr]
+        temp = [a[3] for a in arr]
         return elem, emiss, effic, temp
+
+    # ***** Private Methods *****
+    def _log(self):
+        return self.cam.tel.exp.sim.log
+
+    def _load(self):
+        return self.cam.tel.exp.sim.ld
+
+    def _gen_band_dict(self):
+        band_dir = os.path.join(self.cam.config_dir, 'Optics')
+        self.band_dict = self._load().band_dir(band_dir)

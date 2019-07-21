@@ -30,7 +30,7 @@ class Foregrounds:
 
     # ***** Public methods *****
     # Polarized galactic dust spectral radiance [W/(m^2-Hz)]
-    def dustSpecRad(self, freq, emissivity=1.0):
+    def dust_spec_rad(self, freq, emissivity=1.0):
         amp = emissivity * self.fgndDict['Dust Amplitude']
         fscale = ((freq/float(self.fgndDict['Dust Scale Frequency'])) **
                   self.fgndDict['Dust Spec Index'])
@@ -38,7 +38,7 @@ class Foregrounds:
         return (amp * fscale * spec)
 
     # Synchrotron spectral radiance [W/(m^2-Hz)]
-    def syncSpecRad(self, freq, emissivity=1.0):
+    def sync_spec_rad(self, freq, emissivity=1.0):
         amp = emissivity * self.fgndDict['Synchrotron Amplitude']
         fscale = freq ** self.fgndDict['Synchrotron Spec Index']
         return (amp * fscale)

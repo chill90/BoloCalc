@@ -1,39 +1,36 @@
-import numpy     as np
+# Built-in modules
+import numpy as np
+
+# BoloCalc modules
 import src.units as un
 
-class ScanStrategy:
-    def __init__(self, log, elv=None, elvDict=None):
-        #Store passed parameters
-        self.log      = log
-        self.elv      = elv
-        self.elvDict  = elvDict
-        
-        #Mininum and maximum allowed elevations
-        self.minElv = 20
-        self.maxElv = 90
 
-        if elvDict is not None:
-            self.elVals = np.fromiter(elvDict.keys()  , dtype=np.float)
-            self.elFrac = np.fromiter(elvDict.values(), dtype=np.float)
-        else:
-            self.elVals = None
-            self.elFrac = None
-        
-    #***** Public Methods *****
-    #Sample elevation distribution
-    def elvSample(self):
-        if self.elv is not None: return self.elv
-        if self.elvDict is None: return None
-        else:                    samp = np.random.choice(self.elVals, size=1, p=self.elFrac/float(np.sum(self.elFrac)))[0]
-        if   samp < self.minElv:
-            self.log.log("Cannot have elevation %.1f < %.1f. Using %.1f instead" % (samp, self.minElv, self.minElv), 2)
-            return self.minElv
-        elif samp > self.maxElv:
-            self.log.log("Cannot have elevation %.1f > %.1f. Using %.1f instead"  % (samp, self.maxElv, self.maxElv), 2)
-            return self.maxElv
+class ScanStrategy:
+    def __init__(self, tel):
+        # Store passed parameters
+        self.tel = tel
+
+        # Mininum and maximum allowed elevations
+        self.min_elev = 20
+        self.max_elev = 90
+
+    # ***** Public Methods *****
+    # Sample elevation distribution
+    def elv_sample(self):
+        samp = tel.fetch("elev").sample()
+        if samp < self.min_elev:
+            self.log.log(
+                "Cannot have elevation %.1f < %.1f. Using %.1f instead"
+                % (samp, self.min_elev, self.min_elev), 2)
+            return self.min_elev
+        elif samp > self.max_elev:
+            self.log.log(
+                "Cannot have elevation %.1f > %.1f. Using %.1f instead"
+                % (samp, self.max_elev, self.max_elev), 2)
+            return self.max_elev
         else:
             return samp
-            
-    #Retrieve user-defined elevation
-    def getElv(self):
-        return self.elv
+
+    # Retrieve elevation
+    def get_elev(self):
+        return tel.fetch('elev')

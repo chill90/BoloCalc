@@ -9,32 +9,19 @@ import io
 # BoloCalc modules
 import src.foregrounds as fg
 import src.compatible as cm
+# Choose fastest pickling module
+if cm.Compatible().PY2:
+    import cPickle as pk
+else:
+    import pickle as pk
 
 
 class Sky:
-    def __init__(self, log, nrealize=1, fgndDict=None, atmFile=None,
-                 site=None, pwv=None, pwvDict=None, foregrounds=False):
+    def __init__(self, tel):
         # Store passed parameters
-        self.log = log
-        self.nrealize = nrealize
-        self.fgndDict = fgndDict
-        self.atmFile = atmFile
-        self.site = site
-        self.pwv = pwv
-        self.pwvDict = pwvDict
-        self.inclF = foregrounds
+        self.tel = tel
 
-        # Available sites
-        self.site_opts = ['ATACAMA', 'POLE', 'MCMURDO', 'SPACE']
-
-        # Store global parameters
-        self.cm = cm.Compatible()
-        if cm.PY2:
-            import cPickle as pk
-        else:
-            import pickle as pk
-        self.fg = fg.Foregrounds(self.log, fgndDict=fgndDict,
-                                 nrealize=nrealize)
+        self.fg = fg.Foregrounds(self)
         self.nfiles = 20  # Number of files to break .pkl file into
         self.medianPwv = 0.934  # Atacama, as defined by the MERRA-2 dataset
         self.maxPWV = 8.0
@@ -54,14 +41,7 @@ class Sky:
     # ***** Public methods ******
     # Sample PWV distribution
     def pwv_sample(self):
-        if self.pwv is not None:
-            return self.pwv
-        if self.pwvDict is None:
-            return None
-        samp = np.random.choice(np.fromiter(
-            self.pwvDict.keys(), dtype=np.float), size=1,
-            p=np.fromiter(self.pwvDict.values(), dtype=np.float) /
-            np.sum(np.fromiter(self.pwvDict.values(), dtype=np.float)))[0]
+        samp = tel.fetch("pwv").sample()
         if samp < self.minPWV:
             self.log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead'
                          % (samp, self.minPWV, self.minPWV), 2)
@@ -79,15 +59,11 @@ class Sky:
 
     # Retrieve ATM spectrum given some PWV, elevation, and array of frequencies
     def atm_spectrum(self, pwv, elev, freqs):
-        self._GHz_to_Hz
-        if self.atmFile:
-            self.log.log("Using provided ATM file. \
-                         Ignoring PWV and El in 'telescope.txt' (%.1f, %.1f)"
-                         % (pwv, elev), 1)
-            freq, temp, tran = np.loadtxt(
-                self.atmFile, unpack=True, usecols=[0, 2, 3], dtype=np.float)
+        self._GHz_to_Hz = 1.e+09
+        if self.tel.atmFile is not None
+            freq, tran, temp = self._load().atm(self.tel.atmFile)
         else:
-            freq, temp, tran = self.atmDict[
+            freq, temp, tran = self.atm_dict[
                 (int(round(elev, 0)), round(pwv, 1))]
         freq = freq*self._GHz_to_Hz.flatten().tolist()
         temp = np.interp(freqs, freq, temp).flatten().tolist()
@@ -96,11 +72,11 @@ class Sky:
 
     # Retrieve synchrotron spectrum given some array of frequencies
     def syn_spectrum(self, freqs):
-        return self.fg.syncSpecRad(freqs)
+        return self.fg.sync_spec_rad(freqs)
 
     # Retrieve dust spectrum given some array of frequencies
     def dst_spectrum(self, freqs):
-        return self.fg.dustSpecRad(freqs)
+        return self.fg.dust_spec_rad(freqs)
 
     # Generate the sky
     def generate(self, pwv, elev, freqs):
@@ -161,25 +137,24 @@ class Sky:
                 self._um_to_mm
                 for atmFile in atmFileArrs[site]])
                 for site in self.siteNames}
-            self.atmDicts = cl.OrderedDict({})
+            self.atm_dicts = cl.OrderedDict({})
             for site in self.siteNames:
                 freqArr, tempArr, tranArr = np.hsplit(np.array(
                     [np.loadtxt(atmFile, usecols=[0, 2, 3], unpack=True)
                      for atmFile in atmFileArrs[site]]), 3)
-                self.atmDicts[site] = {
+                self.atm_dicts[site] = {
                     (int(round(self.elevArrs[site][i])),
                      round(self.pwvArrs[site][i], 1)): (
                          freqArr[i][0], tempArr[i][0], tranArr[i][0])
                     for i in range(len(atmFileArrs[site]))}
                 for i in range(self.nfiles):
-                    sub_dict = self.atmDicts[site].items()[i::self.nfiles]
+                    sub_dict = self.atm_dicts[site].items()[i::self.nfiles]
                     pk.dump(sub_dict, open(os.path.join(
                         self.siteDirs[site], 'PKL',
                         ('atmDict_%d.pkl' % (i))), 'wb'))
-            self.atmDict = self.atmDicts[self.site]
+            self.atm_dict = self.atm_dicts[self.site]
         else:
-            self.atmDict = {}
-
+            self.atm_dict = {}
             for i in range(self.nfiles):
                 if self.cm.PY2:
                     sub_dict = pk.load(open(os.path.join(
@@ -189,4 +164,4 @@ class Sky:
                     sub_dict = pk.load(io.open(os.path.join(
                         self.siteDirs[self.site], 'PKL',
                         ('atmDict_%d.pkl' % (i))), 'rb'), encoding='latin1')
-                self.atmDict.update(sub_dict)
+                self.atm_dict.update(sub_dict)

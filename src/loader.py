@@ -19,10 +19,22 @@ class Loader:
     # ***** Public methods *****
     def sim(self, fname):
         """ Load simulation TXT file, returning dictionary"""
-        params, vals = np.loadtxt(
-            fname, unpack=True, skiprows=1, usecols=[0, 1],
-            dtype=np.str, delimiter='|')
+        try:
+            params, vals = np.loadtxt(
+                fname, unpack=True, skiprows=1, usecols=[0, 1],
+                dtype=np.str, delimiter='|')
+        except:
+            self._log.err("Failed to load simulation file '%s'" % (fname))
         return self._dict(params, vals)
+
+    def atm(self, fname):
+        """ Load atmosphere TXT file, returning (freq, temp, tran) """
+        try:
+            freq, temp, tran = np.loadtxt(
+                self.atmFile, unpack=True, usecols=[0, 2, 3], dtype=np.float)
+        except:
+            self._log_err("Failed to load atm file '%s'" % (fname))
+        return (freq, temp, tran)
 
     def band(self, fname):
         """ Load either a CSV or TXT band file """
@@ -31,18 +43,60 @@ class Loader:
         elif 'txt' in fname.lower():
             return _txt(fname)
         else:
-            raise Exception("Illegal file format passed to Loader.band()")
+            self._log.err("Illegal file format passed to Loader.band()")
+
+    def band_dir(self, inp_dir):
+        band_files = sorted(gb.glob(os.path.join(inp_dir, '*')))
+        if len(band_files):
+            names = [os.path.split(f)[-1].split('.')[0]
+                     for f in band_files if "~" not in f]
+            if len(names):
+                return {
+                    names[i]: band_files[i]for i in range(len(names))}
+            else:
+                return None
+        else:
+            return None
 
     def foregrounds(self, fname):
         """ Load foregrounds file, skipping column 1, which defines units"""
-        return np.loadtxt(
-            fname, unpack=True, usecols=[0, 2], dtype=np.str, delimiter='|')
+        try:
+            params, vals = np.loadtxt(
+                fname, unpack=True, usecols=[0, 2], dtype=np.str, delimiter='|')
+        except:
+            self._log.err(
+                "Failed to load foreground file '%s'" % (fname))
+        return self._dict(params, vals, self._dist_dir(fname))
 
     def telescope(self, fname):
         """ Load telescope file, skipping column 1, which defines units"""
-        params, vals = np.loadtxt(
-            fname, unpack=True, usecols=[0, 2], dtype=np.str, delimiter='|')
+        try:
+            params, vals = np.loadtxt(
+                fname, unpack=True, usecols=[0, 2], dtype=np.str, delimiter='|')
+        except:
+            self._log_err(
+                "Failed to load telescope file '%s'" % (fname))
         return self._dict(params, vals, self._dist_dir(fname))
+
+    def camera(self, fname):
+        """ Load camera file, skipping column 1, which defines the units"""
+        try:
+            params, vals = np.loadtxt(
+                fname, dtype=np.str, unpack=True,
+                usecols=[0, 2], delimiter='|')
+        except:
+            self._log_err(
+                "Failed to load camera file '%s'" % (fname))
+        return self._dict(params, vals, self._dist_dir(fname))
+
+    def optics(self, fname):
+        """ Load optics file"""
+        output = np.loadtxt(fname, dtype=np.str, delimiter='|')
+        keys = output[0]
+        elems = output[1:]
+        return [{keys[i].strip(): elem[i].strip()
+                for i in range(len(keyArr))}
+                for elem in elems]
 
     def pdf(self, fname):
         """ Load either a CSV or TXT PDF file """

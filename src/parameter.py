@@ -144,6 +144,8 @@ class Parameter:
         """
         if self.is_empty():
             return 'NA'
+        elif isinstance(self._val, Distribution):
+            return self._val.sample()
         else:
             avg, std = self.fetch(band_id)
             if np.any(std <= 0.):
@@ -211,7 +213,7 @@ class Parameter:
                     self._avg = self._float(inp)
                     self._std = self._zero(self.avg)
             elif isinstance(inp, Distribution):
-                self._val = None
+                self._val = inp
                 self._avg = inp.mean()
                 self._std = inp.std()
         elif self.type is np.str:

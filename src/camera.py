@@ -11,70 +11,35 @@ import src.channel as ch
 
 
 class Camera:
-    def __init__(self, log, dir, sky, scn, nrealize=1,
-                 nobs=1, clcDet=1, specRes=1.e9):
+    def __init__(self, tel, inp_dir):
         # Store passed parameters
-        self.log = log
-        self.dir = dir
-        self.sky = sky
-        self.scn = scn
-        self.nrealize = nrealize
-        self.nobs = nobs
-        self.clcDet = clcDet
-        self.specRes = specRes
+        self.tel = tel
+        self.dir = inp_dir
 
         # Check whether this camera exists
         if not os.path.isdir(self.dir):
-            raise Exception("BoloCalc FATAL Exception: Camera directory '%s' \
-                             does not exist" % (self.dir))
+            self._log().err("Camera dir '%s' does not exist" % (self.dir))
 
-        # Store global parameters
-        self.configDir = os.path.join(self.dir, 'config')
         # Check whether configuration directory exists
-        if not os.path.isdir(self.configDir):
-            raise Exception("BoloCalc FATAL Exception: Camera configuration \
-                             directory '%s' does not exist" % (self.configDir))
+        self.config_dir = os.path.join(self.dir, 'config')
+        if not os.path.isdir(self.config_dir):
+            self._log().err(
+                "Camera config dir '%s' does not exist"
+                % (self.config_dir))
+
+        # Band and distribution directories
+        self.band_dir = os.path.join(self.configDir, "Bands")
+        self.dist_dir = os.path.join(self.configDir, "pdf")
 
         # Name the camera
-        self.bandDir = os.path.join(self.configDir, 'Bands')
         self.name = self.dir.rstrip(os.sep).split(os.sep)[-1]
-        self.telName = self.dir.rstrip(os.sep).split(os.sep)[-2]
-        self.expName = self.dir.rstrip(os.sep).split(os.sep)[-3]
 
         # Store camera parameters into a dictionary
-        self.log.log("Generating camera %s" % (self.name), 1)
-        self.camFile = os.path.join(self.configDir, 'camera.txt')
-        if not os.path.isfile(self.camFile):
-            raise Exception("BoloCalc FATAL Exception: Camera file '%s' \
-                             does not exist" % (self.camFile))
-        try:
-            paramArr, valArr = np.loadtxt(
-                self.camFile, dtype=np.str, unpack=True,
-                usecols=[0, 2], delimiter='|')
-            dict = {paramArr[i].strip(): valArr[i].strip()
-                    for i in range(len(paramArr))}
-        except:
-            raise Exception(
-                "BoloCalc FATAL Exception: Failed to load parameters in '%s'. \
-                See 'camera.txt' formatting rules in the BoloCalc User Manual"
-                % (self.camFile))
-        try:
-            self.paramsDict = {
-                'Boresight Elevation': pr.Parameter(
-                    self.log, 'Boresight Elevation',
-                    dict['Boresight Elevation'], min=-40.0, max=40.0),
-                'Optical Coupling': pr.Parameter(
-                    self.log, 'Optical Coupling',
-                    dict['Optical Coupling'], min=0.0, max=1.0),
-                'F Number': pr.Parameter(
-                    self.log, 'F Number',
-                    dict['F Number'], min=0.0, max=np.inf),
-                'Bath Temp': pr.Parameter(
-                    self.log, 'Bath Temp',
-                    dict['Bath Temp'], min=0.0, max=np.inf)}
-        except KeyError:
-            raise Exception("BoloCalc FATAL Exception: Failed to store \
-                             parameters specified in '%s'" % (self.camFile))
+        self.cam_file = os.path.join(self.configDir, 'camera.txt')
+        if not os.path.isfile(self.cam_file):
+            self._log().err(
+                "Camera file '%s' does not exist" % (self.cam_file))
+        self._store_param_dict(self._load().camera(self.cam_file))
 
         # Generate camera
         self.generate()
@@ -82,18 +47,15 @@ class Camera:
     # ***** Public Methods *****
     def generate(self):
         # Generate camera parameters
-        self.params = {}
-        for k in self.paramsDict:
-            self.params[k] = self._param_samp(self.paramsDict[k])
-        # Store optical chain object
-        self.log.log("Generating optical chain for camera %s" % (self.name), 1)
-        self.optBandDict = self._band_dict(
-            os.path.join(self.bandDir, 'Optics'))
-        self.optChain = oc.OpticalChain(
-            self.log, os.path.join(self.configDir, 'optics.txt'),
-            nrealize=self.nrealize, optBands=self.optBandDict)
+        self.param_vals = {}
+        for k in self.param_dict:
+            self.param_vals[k] = self._param_samp(self.params_dict[k])
+
+        # Store optical chain
+        self.opt_chain = oc.OpticalChain(self)
+        
         # Store channel objects
-        self.log.log("Generating channels for camera %s" % (self.name), 1)
+        self._log().log("Generating channels for camera %s" % (self.name), 1)
         self.detBandDict = self._band_dict(
             os.path.join(self.bandDir, 'Detectors'))
         self.chnFile = os.path.join(
@@ -115,11 +77,11 @@ class Camera:
                     (chDict['Band ID'], self.name, self.telName, self.expName))
             self.channels.update(
                 {chDict['Band ID']: ch.Channel(
-                    self.log, chDict, self, self.optChain, self.sky, self.scn,
+                    self._log(), chDict, self, self.optChain, self.sky, self.scn,
                     detBandDict=self.detBandDict, nrealize=self.nrealize,
                     nobs=self.nobs, clcDet=self.clcDet, specRes=self.specRes)})
         # Store pixel dictionary
-        self.log.log("Generating pixels for camera %s" % (self.name), 2)
+        self._log().log("Generating pixels for camera %s" % (self.name), 2)
         self.pixels = cl.OrderedDict({})
         for c in self.channels:
             if self.channels[c].pixelID in self.pixels.keys():
@@ -128,6 +90,12 @@ class Camera:
                 self.pixels[self.channels[c].pixelID] = [self.channels[c]]
 
     # ***** Private Methods *****
+    def _log(self):
+        return self.tel.exp.sim.log
+
+    def _load(self):
+        return self.tel.exp.sim.ld
+
     # Collect band files
     def _band_dict(self, dir):
         bandFiles = sorted(gb.glob(os.path.join(dir, '*')))
@@ -150,3 +118,18 @@ class Camera:
             return param.getAvg()
         else:
             return param.sample(nsample=1)
+
+    def _store_param_dict(self, params):
+        self.param_dict = {
+            "bore_elev": pr.Parameter(
+                    self._log(), "Boresight Elevation",
+                    params["Boresight Elevation"], min=-40.0, max=40.0),
+            "opt_coup": pr.Parameter(
+                    self._log(), "Optical Coupling",
+                    params["Optical Coupling"], min=0.0, max=1.0),
+            "fnum": pr.Parameter(
+                    self._log(), "F Number",
+                    params["F Number"], min=0.0, max=np.inf),
+            "bath_temp": pr.Parameter(
+                    self._log(), "Bath Temp",
+                    params["Bath Temp"], min=0.0, max=np.inf)}
