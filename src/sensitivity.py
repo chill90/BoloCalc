@@ -13,7 +13,7 @@ wn.simplefilter(action='ignore', category=FutureWarning)
 
 
 class Sensitivity:
-    def __init__(self, log, exp, corr=True):
+    def __init__(self, calc):
         # Store passed parameters
         self.exp = exp
         self.corr = corr

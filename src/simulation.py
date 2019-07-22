@@ -15,20 +15,31 @@ import src.log as lg
 import src.loader as ld
 import src.parameter as pr
 import src.units as un
+import src.physics as ph
+import src.noise as ns
+
 
 
 class Simulation:
     def __init__(self, log_file, sim_file, exp_dir):
         # Store experiment input file
         self.exp_dir = exp_dir
-        # Logging object
+
+        # Build simulation-wide objects
         self.log = lg.Log(log_file)
-        # Simulation Input Parameters
-        self.ld = ld.Loader()
-        self._store_param_dict(ld.sim(self.sim_file))
+        self.load = ld.Loader()
+        self.phys = ph.Physics()
+        self.noise = ns.Noise(self.phys)
+
+        # Store parameter dictionary
+        self._store_param_dict(ld.sim(sim_file))
+
         # Set up multiprocessing
         if self.fetch("mpss"):
-            self.pool = mp.Pool(self.cores)
+            self.pool = mp.Pool(self.fetch("core"))
+        
+        #Length of status bar
+        self._bar_len = 100.
 
     # **** Public Methods ****
     # Generate experiments
@@ -69,7 +80,7 @@ class Simulation:
     def fetch(self, param):
         return self._param_dict[param].fetch()
 
-    # **** Private methods ****
+    # **** Helper Methods ****
     # Multiprocessing functions
     def _mp1(self, drr, n=None):
         if n is not None and n == 0:
@@ -116,7 +127,6 @@ class Simulation:
         return dsp
 
     def _status(self, rel):
-        self._bar_len = 100
         frac = float(rel)/float(self.fetch("nexp"))
         sy.stdout.write('\r')
         sy.stdout.write(
@@ -129,7 +139,7 @@ class Simulation:
         if self.verbosity == 0:
             sy.stdout.write('\r')
             sy.stdout.write(
-                "[%-*s] %d%%" % (self.barLen, '='*self.barLen, 100))
+                "[%-*s] %d%%" % (self._bar_len, '='*self._bar_len, 100))
             sy.stdout.write('\n')
             sy.stdout.flush()
         return
@@ -138,7 +148,7 @@ class Simulation:
         self._param_dict = {
             "mpps": pr.Parameter(
                self.log, params["Multiprocess"], inp_type=bool),
-            "cor": pr.Parameter(
+            "core": pr.Parameter(
                 self.log, params["Cores"], inp_type=np.int),
             "vrbs": pr.Parameter(
                 self.log, params["Verbosity"], inp_type=np.int),

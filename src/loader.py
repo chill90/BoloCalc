@@ -90,13 +90,24 @@ class Loader:
         return self._dict(params, vals, self._dist_dir(fname))
 
     def optics(self, fname):
-        """ Load optics file"""
-        output = np.loadtxt(fname, dtype=np.str, delimiter='|')
-        keys = output[0]
-        elems = output[1:]
-        return [{keys[i].strip(): elem[i].strip()
-                for i in range(len(keyArr))}
-                for elem in elems]
+        """ Load optics file """
+        return self._txt_2D(fname)
+
+    def channel(self, fname):
+        """ Load channel file """
+        return self._txt_2D(fname)
+
+    def elevation(self, fname):
+        """ Load elevation file """
+        try:
+            params, vals = np.loadtxt(
+                fname, unpack=True, usecols=[0, 1],
+                dtype=np.str, delimiter="|")
+        except:
+            self._log_err(
+                "Failed to load elevation file '%s'" % (fname))
+        return {params[i].strip(): vals[i].strip()
+                for i in range(2, len(params))}
 
     def pdf(self, fname):
         """ Load either a CSV or TXT PDF file """
@@ -113,6 +124,15 @@ class Loader:
 
     def _txt(self, fname):
         return np.loadtxt(fname, unpack=True, dtype=np.float)
+
+    def _txt_2D(self, fname):
+        """ For loading 2D BoloCalc text files """
+        output = np.loadtxt(fname, dtype=np.str, delimiter='|')
+        keys = chans[0]
+        elems = chans[1:]
+        return [{keys[i].strip(): elem[i].strip()
+                for i in range(len(keys))}
+                for elem in elems]
 
     def _dict(self, params, vals, dist_dir=None):
         data = {paramArr[i].strip(): valArr[i].strip()

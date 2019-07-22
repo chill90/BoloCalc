@@ -7,7 +7,7 @@ import src.units as un
 
 
 class Band:
-    def __init__(self, log, self.band_file, freqArr=None):
+    def __init__(self, log, band_file, freqArr=None):
         self.log = log
         self.ftype = self.band_file.split('.')[-1]
         self.ld = ld.Loader()

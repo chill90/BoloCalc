@@ -5,14 +5,14 @@ import src.sensitivity as sn
 
 
 class Calculate:
-    def __init__(self, log, exp, corr=True):
+    def __init__(self, sim):
         # Store passed parameters
         self.log = log
         self.exp = exp
         self.corr = corr
 
-        self.log.log("Calculating sensitivity for experiment %s" %
-                     (self.exp.name), 1)
+        self.log.log("Calculating sensitivity for experiment '%s'" %
+                     (self.exp.name), )
         self.chans = [[[ch for ch in camera.channels.values()]
                       for camera in telescope.cameras.values()]
                       for telescope in self.exp.telescopes.values()]
@@ -22,7 +22,7 @@ class Calculate:
         self.teles = [[[tp for i in cm.channels.values()]
                       for cm in tp.cameras.values()]
                       for tp in self.exp.telescopes.values()]
-        self.sens = sn.Sensitivity(log, exp, corr)
+        self.sens = sn.Sensitivity(self)
 
     # ***** Public Methods *****
     # Calculate sensitivity for this channel

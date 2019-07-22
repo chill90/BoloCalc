@@ -4,25 +4,32 @@ import src.band as bd
 
 
 class DetectorArray:
-    def __init__(self, log, ch, nrealize=1, bandFile=None):
-        self.log = log
+    def __init__(self, ch):
+        #Store some passed parameters
         self.ch = ch
-        self.nrealize = nrealize
-        self.nDet = int(self.ch.clcDet)  # Number of detectors to calculate
 
         # Store detectors
-        if bandFile:
-            band = bd.Band(log, bandFile, ch.freqs)
+        if bandFile is not None:
+            band = bd.Band(self._log(), ch.band_file, self.ch.freqs)
             if band.eff is not None:
-                if self.nrealize == 1:
-                    bands = band.getAvg(nsample=self.nDet)
+                if self._nexp() == 1:
+                    bands = band.getAvg(nsample=self._ndet())
                 else:
-                    bands = band.sample(nsample=self.nDet)
-                self.detectors = [dt.Detector(log, self.ch, bands[i])
-                                  for i in range(self.nDet)]
+                    bands = band.sample(nsample=self._ndet())
+                self.detectors = [dt.Detector(self._log(), self.ch, bands[i])
+                                  for i in range(self._ndet())]
             else:
-                self.detectors = [dt.Detector(log, self.ch)
-                                  for i in range(self.nDet)]
+                self.detectors = [dt.Detector(self._log(), self.ch)
+                                  for i in range(self._ndet())]
         else:
-            self.detectors = [dt.Detector(log, self.ch)
-                              for i in range(self.nDet)]
+            self.detectors = [dt.Detector(self._log(), self.ch)
+                              for i in range(self._ndet())]
+    
+    def _log(self):
+        return self.ch.cam.tel.exp.sim.log
+    
+    def _nexp(self):
+        return self.cam.tel.exp.sim.fetch("nexp")
+
+    def _ndet(self):
+        return self.cam.tel.exp.sim.fetch("ndet")

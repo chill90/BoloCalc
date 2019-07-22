@@ -30,12 +30,16 @@ class Units:
             "s": 1.,
             "NA": 1.}
         # Check that passed unit is available
-        if unit not in self._dict.keys():
-            raise Exception("Passed unit '%s' not understood by \
-                Units object" % (self.name))
-        else:
-            self.name = unit
-            self._SI = self._to_SI_dict[self.name]
+        if isinstance(unit, str):
+            if unit not in self._dict.keys():
+                raise Exception("Passed unit '%s' not understood by \
+                    Units object" % (self.name))
+            else:
+                self.name = unit
+                self._SI = self._to_SI_dict[self.name]
+        else isinstance(unit, np.float):
+            self.name = "NA"
+            self._SI = unit
 
     def to_SI(self, val):
         """Convert value to SI unit """

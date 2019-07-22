@@ -1,58 +1,77 @@
-import numpy       as np
-import sys         as sy
-import                os
-import                io
-import src.physics as ph
-
+# Built-in modules
+import numpy as np
+import sys as sy
+import os
+import io
+# Use fastest pickling module
 PY2 = (sy.version_info[0] == 2)
-if PY2: import cPickle as pk
-else:   import pickle  as pk
+if PY2:
+    import cPickle as pk
+else:
+    import pickle as pk
+
 
 class Noise:
-    def __init__(self):     
-        #Efficiency of the galaxy
-        self.__skyEff = 1.0
+    def __init__(self, phys):
+        # Store passed parameters
+        self.ph = phys
 
-        #Instantiate physics object for calculations
-        self.ph = ph.Physics()
+        # Aperture stop names
+        self._ap_names = ["APERT", "STOP", "LYOT"]
 
-        #Correlation files
-        dir = os.path.join(os.path.split(__file__)[0], 'detCorrFiles', 'PKL')
-        if PY2: #using Python 2
-            self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'))
-            self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'))
-            self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'))
-            self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'))
-        else: #using Python 3
-            self.p_c_apert, self.c_apert = pk.load(io.open(os.path.join(dir, 'coherentApertCorr.pkl'),   'rb'), encoding='latin1')
-            self.p_c_stop,  self.c_stop  = pk.load(io.open(os.path.join(dir, 'coherentStopCorr.pkl'),    'rb'), encoding='latin1')
-            self.p_i_apert, self.i_apert = pk.load(io.open(os.path.join(dir, 'incoherentApertCorr.pkl'), 'rb'), encoding='latin1')
-            self.p_i_stop,  self.i_stop  = pk.load(io.open(os.path.join(dir, 'incoherentStopCorr.pkl'),  'rb'), encoding='latin1')
-                
-        #Detector pitch array
+        # Correlation files
+        dir = os.path.join(os.path.split(__file__)[0], "detCorrFiles", "PKL")
+        if PY2:
+            self.p_c_apert, self.c_apert = pk.load(io.open(
+                os.path.join(dir, "coherentApertCorr.pkl"), "rb"))
+            self.p_c_stop,  self.c_stop = pk.load(io.open(
+                os.path.join(dir, "coherentStopCorr.pkl"), "rb"))
+            self.p_i_apert, self.i_apert = pk.load(io.open(
+                os.path.join(dir, "incoherentApertCorr.pkl"), "rb"))
+            self.p_i_stop,  self.i_stop = pk.load(io.open(
+                os.path.join(dir, "incoherentStopCorr.pkl"),  "rb"))
+        else:
+            self.p_c_apert, self.c_apert = pk.load(io.open(
+                os.path.join(dir, "coherentApertCorr.pkl"), "rb"),
+                             encoding="latin1")
+            self.p_c_stop,  self.c_stop = pk.load(io.open(
+                os.path.join(dir, "coherentStopCorr.pkl"), "rb"),
+                             encoding="latin1")
+            self.p_i_apert, self.i_apert = pk.load(io.open(
+                os.path.join(dir, "incoherentApertCorr.pkl"), "rb"),
+                             encoding="latin1")
+            self.p_i_stop,  self.i_stop = pk.load(io.open(
+                os.path.join(dir, "incoherentStopCorr.pkl"), "rb"),
+                             encoding="latin1")
+
+        # Detector pitch array
         self.DetP = self.p_c_apert
-        #Geometric pitch factor
-        self.corrFact = 6 #Hex packing
-        
-    #Bose correlation factors
+        # Geometric pitch factor
+        self.corrFact = 6  # Hex packing
+
+    # Bose correlation factors
     def corrFactors(self, elemArr, detPitchFlamb, FlambMax=3.):
-        FlambMax = 3. #Consider correlations out to this length
+        FlambMax = 3.  # Consider correlations out to this length
         ndets = int(round(FlambMax/(detPitchFlamb), 0))
-        inds1 = [np.argmin(abs(np.array(self.DetP) - detPitchFlamb*(n+1)            )) for n in range(ndets)]
-        inds2 = [np.argmin(abs(np.array(self.DetP) - detPitchFlamb*(n+1)*np.sqrt(3.))) for n in range(ndets)]
-        inds  = np.sort(inds1 + inds2)
+        inds1 = [np.argmin(abs(np.array(self.DetP) -
+                 detPitchFlamb*(n+1)))
+                 for n in range(ndets)]
+        inds2 = [np.argmin(abs(np.array(self.DetP) -
+                 detPitchFlamb*(n+1)*np.sqrt(3.)))
+                 for n in range(ndets)]
+        inds = np.sort(inds1 + inds2)
         c_apert = np.sum([abs(self.c_apert)[ind] for ind in inds])
         i_apert = np.sum([abs(self.c_apert)[ind] for ind in inds])
-        i_stop  = np.sum([abs(self.c_stop)[ ind] for ind in inds])
-        c_apert  = np.sqrt(c_apert*self.corrFact + 1.)
-        i_apert  = np.sqrt(i_apert*self.corrFact + 1.)
-        i_stop   = np.sqrt(i_stop*self.corrFact  + 1.)
+        i_stop = np.sum([abs(self.c_stop)[ind] for ind in inds])
+        c_apert = np.sqrt(c_apert*self.corrFact + 1.)
+        i_apert = np.sqrt(i_apert*self.corrFact + 1.)
+        i_stop = np.sqrt(i_stop*self.corrFact + 1.)
         atDet = False
         factors = []
         for i in range(len(elemArr)):
-            if 'CMB' in elemArr[i]:
+            if "CMB" in elemArr[i]:
                 factors.append(c_apert)
-            if ('Apert' in elemArr[i]) or ('Lyot' in elemArr[i]) or ('Stop' in elemArr[i]):
+            if elemArr[i].upper() in self._ap_names:
                 factors.append(i_stop)
                 atDet = True
             elif not atDet:
@@ -60,72 +79,95 @@ class Noise:
             else:
                 factors.append(1.)
         return np.array(factors[:-1])
-    #Photon noise equivalent power on a diffraction-limited detector [W/rtHz]
+
+    # Photon noise equivalent power on a diffraction-limited detector [W/rtHz]
     def photonNEP(self, poptArr, freqs, elemArr=None, detPitchFlamb=None):
-        popt  = sum([x for x in poptArr])
-        #Don't consider correlations
+        popt = sum([x for x in poptArr])
+        # Don't consider correlations
         if elemArr is None and detPitchFlamb is None:
-            popt2  = sum([x*y for x in poptArr for y in poptArr])
-            nep    = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2), freqs))
+            popt2 = sum([x*y for x in poptArr for y in poptArr])
+            nep = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2), freqs))
             neparr = nep
             return nep, neparr
-        #Consider correlations
+        # Consider correlations
         else:
             factors = self.corrFactors(elemArr, detPitchFlamb)
-            popt2    = sum([poptArr[i]*poptArr[j]                       for i in range(len(poptArr)) for j in range(len(poptArr))])
-            popt2arr = sum([factors[i]*factors[j]*poptArr[i]*poptArr[j] for i in range(len(poptArr)) for j in range(len(poptArr))])
-            nep    = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2),    freqs))
-            neparr = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2arr), freqs))
+            popt2 = sum([poptArr[i]*poptArr[j]
+                         for i in range(len(poptArr))
+                         for j in range(len(poptArr))])
+            popt2arr = sum([factors[i]*factors[j]*poptArr[i]*poptArr[j]
+                            for i in range(len(poptArr))
+                            for j in range(len(poptArr))])
+            nep = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2), freqs))
+            neparr = np.sqrt(np.trapz(
+                (2*self.ph.h*freqs*popt + 2*popt2arr), freqs))
             return nep, neparr
-    #RJ approximation of photon noise equivalent power on a diffraction-limited detector [W/rt(Hz)]
+
+    # RJ approximation of photon noise equivalent power
+    # on a diffraction-limited detector [W/rt(Hz)]
     def photonNEPapprox(self, pow, freqs):
         deltaF = freqs[-1] - freqs[0]
         return np.sqrt(2*(self.ph.h*freqs*pow + ((pow**2)/(deltaF))))
+
     def Flink(self, n, Tb, Tc):
         return ((n+1)/(2*n+3))*(1-(Tb/Tc)**(2*n+3))/(1-(Tb/Tc)**(n+1))
+
     def G(self, psat, n, Tb, Tc):
         return psat*(n+1)*(Tc**n)/((Tc**(n+1))-(Tb**(n+1)))
-    #Bolometer noise equivalent power [W/rt(Hz)]
+
+    # Bolometer noise equivalent power [W/rt(Hz)]
     def bolometerNEP(self, Flink, G, Tc):
         return np.sqrt(4*self.ph.kB*Flink*(Tc**2)*G)
-        #return np.sqrt(4*self.ph.kB*psat*Tb*(((np.power((n+1),2.)/((2.*n)+3.))*((np.power(Tc/float(Tb),((2.*n)+3.)) - 1)/float(np.power((np.power(Tc/float(Tb),(n+1)) - 1),2.))))))
-    #Readout noise equivalent power [W/rt(Hz)]
+
+    # Readout noise equivalent power [W/rt(Hz)]
     def readoutNEP(self, pelec, boloR, nei):
         return np.sqrt(boloR*pelec)*nei
-    #Change in power with change in CMB temperature [W/K]
+
+    # Change in power with change in CMB temperature [W/K]
     def dPdT(self, eff, freqs):
         temp = np.array([self.ph.Tcmb for f in freqs])
-        return np.trapz(self.ph.aniPowSpec(np.array(freqs), temp, np.array(eff)), freqs)
-    #Photon noise equivalent temperature [K-rts]
-    def photonNET(self, poptArr, freqs, skyEff, elemArr=None, detPitchFlamb=None):
-        nep  = self.photonNEP(poptArr, freqs, elemArr, detPitchFlamb)
+        return np.trapz(self.ph.aniPowSpec(
+            np.array(freqs), temp, np.array(eff)), freqs)
+
+    # Photon noise equivalent temperature [K-rts]
+    def photonNET(self, poptArr, freqs, skyEff,
+                  elemArr=None, detPitchFlamb=None):
+        nep = self.photonNEP(poptArr, freqs, elemArr, detPitchFlamb)
         dpdt = self.dPdT(skyEff, freq, fbw)
         return nep/(np.sqrt(2.)*dpdt)
-    #RJ approximation of photon noise equivalent tempeature [K-rt(s)]
+
+    # RJ approximation of photon noise equivalent tempeature [K-rt(s)]
     def photonNETapprox(self, pow, freqs, skyEff):
-        nep  = photonNEPapprox(pow, freqs)
+        nep = photonNEPapprox(pow, freqs)
         dpdt = self.dPdT(skyEff, freqs)
         return nep/(np.sqrt(2.)*dpdt)
-    #Bolometer noise equivalent temperature [K-rt(s)]
+
+    # Bolometer noise equivalent temperature [K-rt(s)]
     def bolometerNET(self, psat, freq, fbw, n, Tc, Tb, skyEff):
-        nep  = bolometerNEP(psat, n, Tc, Tb) 
+        nep = bolometerNEP(psat, n, Tc, Tb) 
         dpdt = self.dPdT(skyEff, freq, fbw)
         return nep/(np.sqrt(2.)*dpdt)
-    #Readout noise equivalent temperature [K-rt(s)]
+
+    # Readout noise equivalent temperature [K-rt(s)]
     def readoutNET(self, pelec, freq, fbw, boloR, nei, skyEff):
-        nep  = readoutNEP(pelec, boloR, nei)
+        nep = readoutNEP(pelec, boloR, nei)
         dpdt = self.dPdT(skyEff, freq, fbw)
         return nep/(np.sqrt(2.)*dpdt)
-    #Total noise equivalent temperature [K-rt(s)]
+
+    # Total noise equivalent temperature [K-rt(s)]
     def NETfromNEP(self, nep, freqs, skyEff, optCouple=1.0):
         dpdt = optCouple*self.dPdT(skyEff, freqs)
         return nep/(np.sqrt(2.)*dpdt)
-    #Array noise equivalent temperature [K-rt(s)]
+
+    # Array noise equivalent temperature [K-rt(s)]
     def NETarr(self, net, nDet, detYield=1.0):
         return net/(np.sqrt(nDet*detYield))
-    #Sky sensitivity [K-arcmin]
+
+    # Sky sensitivity [K-arcmin]
     def sensitivity(self, netArr, fsky, tobs):
-        return np.sqrt((4.*self.ph.PI*fsky*2.*np.power(netArr, 2.))/float(tobs))*(10800./(self.ph.PI))
-    #Mapping speed [(K^2*s)^-1]
+        return np.sqrt((4.*self.ph.PI*fsky*2.*np.power(netArr, 2.)) /
+                       float(tobs))*(10800./(self.ph.PI))
+
+    # Mapping speed [(K^2*s)^-1]
     def mappingSpeed(self, net, nDet, detYield=1.0):
         return detYield/(np.power(self.NETarr(net, nDet), 2.))

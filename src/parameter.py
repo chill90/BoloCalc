@@ -80,7 +80,7 @@ class Parameter:
 
     def fetch(self, band_id=1):
         """
-        Return self.avg and self.std given a band_id, 
+        Return self.avg and self.std given a band_id,
         or return the parameter value
 
         Args:

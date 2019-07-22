@@ -3,17 +3,10 @@ import numpy as np
 
 
 class Observation:
-    def __init__(self, log, obsSet, detArray, sky, scn, belv=0.):
-        self.log = log
-        self.obsSet = obsSet
-        self.detArray = detArray
-        self.sky = sky
-        self.scn = scn
-        self.belv = belv
-
+    def __init__(self, obs_set):
         # Sample PWV and Elevation for the camera
-        self.pwv = self.sky.pwvSample()
-        self.elv = self.scn.elvSample()
+        self.pwv = self._sky().pwvSample()
+        self.elv = self._scn().elvSample()
         if self.elv is not None:
             self.elv += self.belv
 
@@ -21,11 +14,11 @@ class Observation:
         if detArray.nDet == 1:
             elv = self.elv
         else:
-            elv = self.elv + self.obsSet.pixElvSample()
+            elv = self.elv + self.obs_set.sample_pix_elev()
         elem, emiss, effic, temp = np.hsplit(
             np.array([self.sky.generate(
                 self.pwv, self.elv, det.ch.freqs)
-                for det in detArray.detectors]), 4)
+                for det in self._det_arr().detectors]), 4)
 
         # Store the element name
         self.elem = elem.reshape(
@@ -45,3 +38,13 @@ class Observation:
         self.temp = temp.reshape(
             len(temp), len(temp[0][0]), len(temp[0][0][0])).astype(np.float)
         self.temp = self.temp.tolist()
+
+    # ***** Helper Methods *****
+    def _sky(self):
+        return self.obs_set.ch.cam.tel.sky
+
+    def _scn(self):
+        return self.obs_set.ch.cam.tel.scn
+
+    def _det_arr(self):
+        return self.obs_set.ch.det_arr

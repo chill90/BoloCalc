@@ -20,11 +20,9 @@ class Telescope:
         self.exp = exp
         self.dir = inp_dir
 
-        # Check whether telescope exists
+        # Check whether telescope and config dir exists
         if not os.path.isdir(self.dir):
             self._log().err("Telescope dir '%s' does not exist" % (self.dir))
-
-        # Check whether configuration directory exists
         self.config_dir = os.path.join(self.dir, 'config')
         if not os.path.isdir(self.config_dir):
             self._log().err(
@@ -47,9 +45,7 @@ class Telescope:
     # ***** Public Methods *****
     def generate(self):
         # Generate parameter values
-        self.param_vals = {}
-        for k in self.param_dict:
-            self.param_vals[k] = self._param_samp(self.param_dict[k])
+        self._store_param_vals(self)
 
         # Handle custom atmospheres
         self._handle_custom_atm()
@@ -100,26 +96,33 @@ class Telescope:
                 min=0.0, max=np.inf)}
         return
 
+    def _store_param_vals(self):
+        self.param_vals = {}
+        for k in self.param_dict:
+            self.param_vals[k] = self._param_samp(self.param_dict[k])
+        return
+
     def _handle_custom_atm(self):
         if self.param_vals['Site'] is 'NA':
-            atm_file = sorted(gb.glob(os.path.join(self.config_dir, 'atm*.txt')))
-            if len(atmFile) == 0:
+            atm_files = sorted(gb.glob(
+                os.path.join(self.config_dir, 'atm*.txt')))
+            if len(atm_files) == 0:
                 self._log().err(
                     "'Site' parameter in '%s' is 'NA', but no custom \
                     atmosphere file  in '%s'"
                     % (self.tel_file, self.config_dir))
-            elif len(atmFile) > 1:
+            elif len(atm_files) > 1:
                 self._log().err(
                     "'Site' parameter in '%s' is 'NA', but more than one custom \
                     atmosphere file was found in '%s'"
                     % (self.tel_file, self.config_dir))
             else:
-                self.atm_file = atmFile[0]
+                self.atm_file = atm_files[0]
                 self.param_vals['Site'] = None
                 self.param_vals['Elevation'] = None
                 self.param_vals['PWV'] = None
                 self._log().log("Using custom atmosphere defined in '%s'"
-                             % (atmFile), 0)
+                                % (self.atm_file), 0)
 
     def _handle_special_atm(self):
         if self.param_vals['Site'] is not 'NA':
@@ -130,7 +133,6 @@ class Telescope:
             elif self.param_vals['Site'].upper() == 'SPACE':
                 self.param_vals['PWV'] = None
                 self.param_vals['Elevation'] = None
-                self.pwvDict = None
 
     def _gen_cams(self):
         cam_dirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))
@@ -139,7 +141,7 @@ class Telescope:
             self._log().err("Zero cameras in '%s'" % (self.dir))
         cam_names = [cam_dir.split(os.sep)[-2] for cam_dir in cam_dirs]
         if len(cam_names) != len(set(cam_names)):
-            self.log.err("Duplicate camera name in '%s'" % (self.dir))
+            self._log().err("Duplicate camera name in '%s'" % (self.dir))
         self.cams = cl.OrderedDict({})
         for i in range(len(cam_names)):
             self.cams.update({cam_names[i]: cm.Camera(self, cam_dirs[i])})

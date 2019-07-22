@@ -16,32 +16,26 @@ class Experiment:
         # Experiment directory
         self.dir = self.sim.exp_dir
 
-        # Check whether experiment exists
+        # Check whether experiment and config dir exists
         if not os.path.isdir(self.dir):
             self._log().err(
                 "Experiment dir '%s' does not exist" % (self.dir))
-
-        # Generate global parameters
         self.config_dir = os.path.join(self.dir, 'config')
-        # Check whether configuration directory exists
         if not os.path.isdir(self.config_dir):
             self._log().err(
-                "Experiment config dir '%s' does not exist" 
+                "Experiment config dir '%s' does not exist"
                 % (self.config_dir))
 
         # Name the experiment
         self.name = os.path.split(self.dir.rstrip('/'))[-1]
-        self._log.()log(
-            "Instantiating experiment %s"
-            % (self.name), self.log.level["MODERATE"])
 
         # Store foreground parameter dictionary
         if self.sim.fetch("fgs"):
-            self.fgnd_file = os.path.join(self.config_dir, 'foregrounds.txt')
-            self._store_param_dict(self._load().foregrounds(self.fgnd_file))
+            fgnd_file = os.path.join(self.config_dir, 'foregrounds.txt')
+            self._store_param_dict(self._load().foregrounds(fgnd_file))
         else:
             self.param_dict = None
-            self.log.log("Ignoring foregrounds", self.log.level["MODERATE"])
+            self._log().log("Ignoring foregrounds", self.log.level["MODERATE"])
 
         # Generate experiment
         self.generate()
@@ -49,7 +43,7 @@ class Experiment:
     # ***** Public Methods *****
     def generate(self):
         # Generate foreground parameter values
-        self._gen_fg()
+        self._store_param_vals()
         # Store telescope objects in dictionary
         self._gen_tels()
         return
@@ -100,7 +94,7 @@ class Experiment:
                 min=0.0, max=np.inf)}
         return
 
-    def _gen_fg(self):
+    def _store_param_vals(self):
         if self.param_dict is not None:
             self.param_vals = {}
             for k in self.param_dict.keys():

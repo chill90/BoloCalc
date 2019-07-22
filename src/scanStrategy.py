@@ -17,7 +17,7 @@ class ScanStrategy:
     # ***** Public Methods *****
     # Sample elevation distribution
     def elv_sample(self):
-        samp = tel.fetch("elev").sample()
+        samp = self.tel.fetch("elev").sample()
         if samp < self.min_elev:
             self.log.log(
                 "Cannot have elevation %.1f < %.1f. Using %.1f instead"
@@ -33,4 +33,4 @@ class ScanStrategy:
 
     # Retrieve elevation
     def get_elev(self):
-        return tel.fetch('elev')
+        return self.tel.fetch('elev')

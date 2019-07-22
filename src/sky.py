@@ -22,10 +22,8 @@ class Sky:
         self.tel = tel
 
         self.fg = fg.Foregrounds(self)
-        self.nfiles = 20  # Number of files to break .pkl file into
-        self.medianPwv = 0.934  # Atacama, as defined by the MERRA-2 dataset
-        self.maxPWV = 8.0
-        self.minPWV = 0.0
+        self.max_pwv = 8.0
+        self.min_pwv = 0.0
         self.atmDir = os.path.join(
             os.path.split(__file__)[0], 'atmFiles')
         self.siteDirs = sorted(gb.glob(os.path.join(
@@ -42,14 +40,14 @@ class Sky:
     # Sample PWV distribution
     def pwv_sample(self):
         samp = tel.fetch("pwv").sample()
-        if samp < self.minPWV:
+        if samp < self.min_pwv:
             self.log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead'
-                         % (samp, self.minPWV, self.minPWV), 2)
-            return self.minPWV
-        elif samp > self.maxPWV:
+                         % (samp, self.min_pwv, self.min_pwv), 2)
+            return self.min_pwv
+        elif samp > self.max_pwv:
             self.log.log('Cannot have PWV %.1f > %.1f. Using %.1f instead'
-                         % (samp, self.maxPWV, self.maxPWV), 2)
-            return self.maxPWV
+                         % (samp, self.max_pwv, self.max_pwv), 2)
+            return self.max_pwv
         else:
             return samp
 
@@ -60,7 +58,7 @@ class Sky:
     # Retrieve ATM spectrum given some PWV, elevation, and array of frequencies
     def atm_spectrum(self, pwv, elev, freqs):
         self._GHz_to_Hz = 1.e+09
-        if self.tel.atmFile is not None
+        if self.tel.atmFile is not None:
             freq, tran, temp = self._load().atm(self.tel.atmFile)
         else:
             freq, temp, tran = self.atm_dict[
@@ -123,7 +121,8 @@ class Sky:
     # Initialize atmosphere.
     # If "create" is True, then create pickle files from text files of spectra
     def _init_atm(self, create=False):
-        self._um_to_mm = 1.e-3
+        um_to_mm = 1.e-3
+        nfiles = 20  # Number of files to break .pkl file into
         if create:
             atmFileArrs = {site: np.array(sorted(gb.glob(os.path.join(
                 self.siteDirs[site], 'TXT', 'atm*.txt'))))
@@ -134,7 +133,7 @@ class Sky:
                 for site in self.siteNames}
             self.pwvArrs = {site: np.array([float(
                 os.path.split(atmFile)[-1].split('_')[2][:4]) *
-                self._um_to_mm
+                um_to_mm
                 for atmFile in atmFileArrs[site]])
                 for site in self.siteNames}
             self.atm_dicts = cl.OrderedDict({})
@@ -147,15 +146,15 @@ class Sky:
                      round(self.pwvArrs[site][i], 1)): (
                          freqArr[i][0], tempArr[i][0], tranArr[i][0])
                     for i in range(len(atmFileArrs[site]))}
-                for i in range(self.nfiles):
-                    sub_dict = self.atm_dicts[site].items()[i::self.nfiles]
+                for i in range(nfiles):
+                    sub_dict = self.atm_dicts[site].items()[i::nfiles]
                     pk.dump(sub_dict, open(os.path.join(
                         self.siteDirs[site], 'PKL',
                         ('atmDict_%d.pkl' % (i))), 'wb'))
             self.atm_dict = self.atm_dicts[self.site]
         else:
             self.atm_dict = {}
-            for i in range(self.nfiles):
+            for i in range(nfiles):
                 if self.cm.PY2:
                     sub_dict = pk.load(open(os.path.join(
                         self.siteDirs[self.site], 'PKL',
