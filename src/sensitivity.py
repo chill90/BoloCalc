@@ -4,80 +4,78 @@ import warnings as wn
 import functools as ft
 
 # BoloCalc modules
-import src.physics as ph
-import src.noise as ns
 import src.units as un
-
-# Suppress future warnings for now
-wn.simplefilter(action='ignore', category=FutureWarning)
 
 
 class Sensitivity:
     def __init__(self, calc):
         # Store passed parameters
-        self.exp = exp
-        self.corr = corr
-
-        # Generate classes for calculating
-        self.ph = ph.Physics()
-        self.nse = ns.Noise()
+        self.calc = calc
 
     # ***** Public Methods *****
     # Optical power given some array of optical elements
-    def Popt(self, elemArr, emissArr, effArr, tempArr, freqs):
-        effArr = np.insert(effArr, len(effArr), [1. for f in freqs], axis=0)
-        effArr = np.array(effArr).astype(np.float)
+    def popt(self, elem, emiss, eff, temp, freqs):
+        eff = np.insert(eff, len(eff), [1. for f in freqs], axis=0)
+        eff = np.array(eff).astype(np.float)
         return np.sum([np.trapz(
-            self.ph.bbPowSpec(
-                freqs, tempArr[i], emissArr[i] *
-                np.prod(effArr[i+1:], axis=0)), freqs)
-                for i in range(len(elemArr))])
+            self._phys().bb_pow_spec(
+                freqs, temp[i], emiss[i] *
+                np.prod(eff[i+1:], axis=0)), freqs)
+                for i in range(len(elem))])
 
     # Photon NEP given some array of optical elements
-    def NEPph(self, elemArr, emissArr, effArr, tempArr, freqs, ch=None):
-        effArr = np.insert(effArr, len(effArr), [1. for f in freqs], axis=0)
-        effArr = np.array(effArr).astype(np.float)
+    def photon_NEP(self, elem, emiss, eff, temp, freqs, ch=None):
+        eff = np.insert(eff, len(eff), [1. for f in freqs], axis=0)
+        eff = np.array(eff).astype(np.float)
         if ch:
             corrs = True
         else:
             corrs = False
-        powInts = np.array([self.ph.bbPowSpec(
-            freqs, tempArr[i], emissArr[i]*np.prod(effArr[i+1:], axis=0)) 
-            for i in range(len(elemArr))])
+        pow_ints = np.array([self._phys().bb_pow_spec(
+            freqs, temp[i], emiss[i]*np.prod(eff[i+1:], axis=0))
+            for i in range(len(elem))])
         if corrs:
-            NEP_ph, NEP_pharr = self.nse.photonNEP(
-                powInts, freqs, elemArr, (
-                    ch.params['Pixel Size'] /
-                    float(ch.Fnumber * self.ph.lamb(
-                        ch.detectorDict['Band Center'].getAvg()))))
+            NEP_ph, NEP_ph_arr = self._noise().photon_nep(
+                pow_ints, freqs, elem, (
+                    ch.fetch("pix_sz") /
+                    float(ch.cam.fetch("fnum") * self._ph().lamb(
+                        ch.fetch("bc")))))
         else:
-            NEP_ph, NEP_pharr = self.nse.photonNEP(powInts, freqs)
-        return NEP_ph, NEP_pharr
+            NEP_ph, NEP_ph_arr = self.nse.photon_nep(pow_ints, freqs)
+        return NEP_ph, NEP_ph_arr
 
     # Thermal carrier NEP given some optical power on the bolometer
-    def NEPbolo(self, optPow, det):
-        if 'NA' in str(det.G):
-            if 'NA' in str(det.psat):
-                g = self.nse.G(det.psatFact*optPow, det.n, det.Tb, det.Tc)
+    def bolo_NEP(self, opt_pow, det):
+        if 'NA' in str(det.fetch("g")):
+            if 'NA' in str(det.fetch("psat")):
+                g = self._noise().G(
+                    det.fetch("psat_fact") * opt_pow, det.fetch("n"),
+                    det.fetch("tb"), det.fetch("tc"))
             else:
-                g = self.nse.G(det.psat, det.n, det.Tb, det.Tc)
+                g = self.nse.G(
+                    det.fetch("psat"), det.fetch("n"),
+                    det.fetch("tb"), det.fetch("tc"))
         else:
-            g = det.G
+            g = det.fetch("g")
         if 'NA' in str(det.Flink):
-            return self.nse.bolometerNEP(
-                self.nse.Flink(det.n, det.Tb, det.Tc), g, det.Tc)
+            return self.nse.bolo_NEP(
+                self.nse.Flink(
+                    det.fetch("n"), det.fetch("tb"), det.fetch("tc")),
+                g, det.fetch("tc"))
         else:
-            return self.nse.bolometerNEP(det.Flink, g, det.Tc)
+            return self.nse.bolometerNEP(
+                det.fetch("flink"), g, det.fetch("tc"))
 
     # Readout NEP given some optical power on the bolometer
-    def NEPrd(self, optPow, det):
-        if 'NA' in str(det.nei):
+    def read_NEP(self, optPow, det):
+        if 'NA' in str(det.float("nei")):
             return 'NA'
-        elif 'NA' in str(det.boloR):
+        elif 'NA' in str(det.fetch("bolo_r")):
             return 'NA'
-        elif 'NA' in str(det.psat):
+        elif 'NA' in str(det.fetch("psat")):
             return self.nse.readoutNEP(
-                (det.psatFact-1.)*optPow, det.boloR, det.nei)
+                (det.fetch("psat_fact") - 1.) * optPow,
+                det.fetch("bolo_r"), det.fetch("nei"))
         else:
             if optPow >= det.psat:
                 return 0.
@@ -86,9 +84,7 @@ class Sensitivity:
                     (det.psat-optPow), det.boloR, det.nei)
 
     # Mapping speed given some channel and telescope
-    def sensitivity(self, ch, tp, corr=None):
-        if corr is None:
-            corr = self.corr
+    def sensitivity(self, ch, tp):
 
         ApEff = ch.apEff
         PoptArr = np.array([[self.Popt(
@@ -96,7 +92,7 @@ class Sensitivity:
             ch.temp[i][j], ch.freqs)
             for j in range(ch.detArray.nDet)]
             for i in range(ch.nobs)])
-        if corr:
+        if self._corr():
             NEPPhArr = np.array([[self.NEPph(
                 ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
                 ch.temp[i][j], ch.freqs, ch)
@@ -234,3 +230,12 @@ class Sensitivity:
                  np.std(powDetSide,  axis=1),
                  np.std(effDetSide,  axis=1)]
         return means, stds
+
+    def _phys(self):
+        return self.calc.sim.phys
+
+    def _noise(self):
+        return self.calc.sim.noise
+
+    def _corr(self):
+        return self.calc.sim.fetch("corr")

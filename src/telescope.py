@@ -8,13 +8,28 @@ import os
 # BoloCalc modules
 import src.parameter as pr
 import src.camera as cm
-import src.units as un
 import src.sky as sk
 import src.scanStrategy as sc
-import src.loader as ld
+import src.units as un
 
 
 class Telescope:
+    """
+    Telescope object contains a Sky object, a ScanStrategy object,
+    and a dictionary of Camera objects
+
+    Args:
+    exp (src.Experiment): Experiment object
+    inp_dir (str): directory for this telescope
+
+    Attributes:
+    exp (src.Experiment): where arg 'exp' is stored
+    dir (str): where arg 'inp_dir' is stored
+    name (str): name of this telescope
+    sky (src.Sky): Sky object
+    scn (src.ScanStrategy): ScanStrategy object
+    cams (dict): dictionary of Camera objects
+    """
     def __init__(self, exp, inp_dir):
         # Passed parameters
         self.exp = exp
@@ -23,18 +38,18 @@ class Telescope:
         # Check whether telescope and config dir exists
         if not os.path.isdir(self.dir):
             self._log().err("Telescope dir '%s' does not exist" % (self.dir))
-        self.config_dir = os.path.join(self.dir, 'config')
-        if not os.path.isdir(self.config_dir):
+        self._config_dir = os.path.join(self.dir, 'config')
+        if not os.path.isdir(self._config_dir):
             self._log().err(
                 "Telescope config dir '%s' does not exist"
-                % (self.config_dir))
+                % (self._config_dir))
 
         # Name the telescope
         self.name = self.dir.rstrip(os.sep).split(os.sep)[-1]
 
         # Store the telescope parameters
-        self.tel_file = os.path.join(self.config_dir, 'telescope.txt')
-        if not os.path.isfile(self.tel_file):
+        self._tel_file = os.path.join(self._config_dir, 'telescope.txt')
+        if not os.path.isfile(self._tel_file):
             self._log().err(
                 "Telescope file '%s' does not exist" % (self.telFile))
         self._store_param_dict(self._load().telescope(self.telFile))
@@ -44,6 +59,7 @@ class Telescope:
 
     # ***** Public Methods *****
     def generate(self):
+        """ Generate camera """
         # Generate parameter values
         self._store_param_vals(self)
 
@@ -58,12 +74,21 @@ class Telescope:
         # Store cameras
         self._gen_cams()
 
-    # ***** Private Methods *****
+    def fetch(self, param):
+        """
+        Fetch telescope parameter values
+
+        Args:
+        param (str): name of parameter, param dict key
+        """
+        return self._param_vals[param]
+
+    # ***** Helper Methods *****
     def _log(self):
         return self.exp.sim.log
 
     def _load(self):
-        return self.exp.sim.ld
+        return self.exp.sim.load
 
     def _param_samp(self, param):
         if self.exp.sim.fetch("nexp") == 1:
@@ -72,14 +97,14 @@ class Telescope:
             return param.sample(nsample=1)
 
     def _store_param_dict(self, params):
-        self.param_params = {
+        self._param_dict = {
             "site": pr.Parameter(
                 self._log(), 'Site', params['Site']),
             "elev": pr.Parameter(
                 self._log(), 'Elevation', params['Elevation'],
                 min=20., max=90.),
             "pwv": pr.Parameter(
-                self._log(), 'PWV', params['PWV'], 
+                self._log(), 'PWV', params['PWV'],
                 min=0.0, max=8.0),
             "obs_tm": pr.Parameter(
                 self._log(), 'Observation Time', params['Observation Time'],
@@ -97,42 +122,42 @@ class Telescope:
         return
 
     def _store_param_vals(self):
-        self.param_vals = {}
-        for k in self.param_dict:
-            self.param_vals[k] = self._param_samp(self.param_dict[k])
+        self._param_vals = {}
+        for k in self._param_dict:
+            self._param_vals[k] = self._param_samp(self._param_dict[k])
         return
 
     def _handle_custom_atm(self):
-        if self.param_vals['Site'] is 'NA':
+        if self._param_vals['Site'] is 'NA':
             atm_files = sorted(gb.glob(
-                os.path.join(self.config_dir, 'atm*.txt')))
+                os.path.join(self._config_dir, 'atm*.txt')))
             if len(atm_files) == 0:
                 self._log().err(
                     "'Site' parameter in '%s' is 'NA', but no custom \
                     atmosphere file  in '%s'"
-                    % (self.tel_file, self.config_dir))
+                    % (self._tel_file, self._config_dir))
             elif len(atm_files) > 1:
                 self._log().err(
                     "'Site' parameter in '%s' is 'NA', but more than one custom \
                     atmosphere file was found in '%s'"
-                    % (self.tel_file, self.config_dir))
+                    % (self._tel_file, self._config_dir))
             else:
-                self.atm_file = atm_files[0]
-                self.param_vals['Site'] = None
-                self.param_vals['Elevation'] = None
-                self.param_vals['PWV'] = None
+                self._param_vals['File'] = atm_files[0]
+                self._param_vals['Site'] = None
+                self._param_vals['Elevation'] = None
+                self._param_vals['PWV'] = None
                 self._log().log("Using custom atmosphere defined in '%s'"
                                 % (self.atm_file), 0)
 
     def _handle_special_atm(self):
-        if self.param_vals['Site'] is not 'NA':
-            self.atm_file = None
+        if self._param_vals['Site'] is not 'NA':
+            self._param_vals['File'] = None
             # Force PWV and elevation for balloon and space missions
-            if self.param_vals['Site'].upper() == 'MCMURDO':
-                self.param_vals['PWV'] = 0
-            elif self.param_vals['Site'].upper() == 'SPACE':
-                self.param_vals['PWV'] = None
-                self.param_vals['Elevation'] = None
+            if self._param_vals['Site'].upper() == 'MCMURDO':
+                self._param_vals['PWV'] = 0
+            elif self._param_vals['Site'].upper() == 'SPACE':
+                self._param_vals['PWV'] = None
+                self._param_vals['Elevation'] = None
 
     def _gen_cams(self):
         cam_dirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))

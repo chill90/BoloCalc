@@ -13,65 +13,47 @@ import src.units as un
 
 
 class Channel:
+    """
+    Channel object contains the src.DetectorArray object and
+    channel-specific parameters
+
+    Args:
+    cam (src.Camera): Camera object
+    inp_dict (dict): dictionary of channel parameters
+    band_file (str): band file for this channel. Defaults to 'None'
+
+    Attributes:
+    cam (src.Camera): where the 'cam' arg is stored
+    band_file (str): where the 'inp_dict'
+    elev_dict (dict): dictionary containing pixel elevation distribution
+    name (str): channel name
+    band_id (int): channel band ID
+    pixel_id (int): channel pixel ID
+    """
     def __init__(self, cam, inp_dict, band_file=None):
         # Store passed parameters
         self.cam = cam
-        self.inp_dict = inp_dict
+        self._inp_dict = inp_dict
         self.band_file = band_file
 
         # Name this channel
         self.band_id = int(self.inp_dict["Band ID"].fetch())
-        self.pixel_ID = int(self.inp_dict["Band ID"].fetch())
-        self.name = (self.det_arr.cam.name + str(self.band_id))
+        self.pixel_id = int(self.inp_dict["Band ID"].fetch())
+        self.name = (self.cam.name + str(self.band_id))
 
         # Store the channel parameters in a dictionary
         self._store_param_dict()
 
         # Elevation distribution for pixels in the camera
-        elv_files = sorted(gb.glob(os.path.join(
-            self.det_arr.config_dir, "elevation.txt")))
-        if len(elv_files) == 0:
-            self.elv_dict = None
-        elif len(elv_files) > 1:
-            self._log().err(
-                "More than one pixel elevation distribution for camera '%s'"
-                % (self.det_arr.cam.name))
-            self.elv_dict = None
-        else:
-            self.elv_dict = self._load().elevation(elv_files[0])
-            self._log().log("Using pixel elevation distribution '%s'"
-                            % (camera.name, elv_file),
-                            self._log().level["MODERATE"])
+        self._store_elev_dict()
 
         # Generate the channel
         self.generate()
 
     # ***** Public Methods *****
     def generate(self):
-        # Generate channel parameters
-        self.param_vals = {}
-        self.det_dict = {}
-        for k in self.param_dict.keys():
-            if k in self.ch_keys:
-                self.param_vals[k] = self._param_samp(
-                    self.param_dict[k], self.band_id)
-            else:
-                self.det_dict[k] = self.param_dict[k]
-
-        # Add camera parameters
-        self.camElv = camera.params["Boresight Elevation"]
-        self.optCouple = camera.params["Optical Coupling"]
-        self.Fnumber = camera.params["F Number"]
-        self.Tb = camera.params["Bath Temp"]
-
-        # Derived channel parameters
-        self.num_det = int(self.param_vals["det_per_waf"] *
-                           self.param_vals["waf_per_ot"] *
-                           self.param_vals["ot"])
-        if self.det_arr.cam.tel.exp.sim.fetch("ndet") is "NA":
-            self.calc_det = self.num_det
-        else:
-            self.calc_det = self.det_arr.cam.tel.exp.sim.fetch("ndet")[0]
+        # Generate parameter values
+        self._store_param_vals()
 
         # Frequencies to integrate over
         if self.band_file is not None:
@@ -135,6 +117,12 @@ class Channel:
              for i in range(self.det_arr.nDet)]
              for obs in self.obsSet.observations]).astype(np.float)
 
+    def fetch(self, param):
+        if param in self._param_vals.keys():
+            return self._param_vals[param]
+        else:
+            return self._cam_fetch(param)
+
     # ***** Private Methods *****
     def _log(self):
         return self.cam.tel.exp.sim.log
@@ -146,7 +134,7 @@ class Channel:
         return self.cam.tel.exp.sim.fetch("fres")
 
     def _cam_fetch(self, param):
-        return self.cam.param_vals[param]
+        return self.cam.fetch(param)
 
     def _param_samp(self, param, bandID):
         if not ("instance" in str(type(param)) or "class" in str(type(param))):
@@ -157,7 +145,7 @@ class Channel:
             return param.sample(band_id=band_id, nsample=1)
 
     def _store_param_dict(self, params):
-        self.param_dict = {
+        self._param_dict = {
             "det_per_waf": pr.Parameter(
                 self._log(), "Num Det per Wafer", params["Num Det per Wafer"],
                 min=0.0, max=np.inf),
@@ -175,7 +163,9 @@ class Channel:
                 un.Unit("mm"), min=0.0, max=np.inf),
             "wf": pr.Parameter(
                 self._log(), "Waist Factor", params["Waist Factor"],
-                min=2.0, max=np.inf),
+                min=2.0, max=np.inf)}
+
+        self.det_dict = {
             "bc": pr.Parameter(
                 self._log(), "Band Center", params["Band Center"],
                 un.Unit("GHz"), min=0.0, max=np.inf),
@@ -212,25 +202,61 @@ class Channel:
 
         # Newly added parameters to BoloCalc
         # checked separately for backwards compatibility
-        if "Flink" in params.keys():
-            self.params_dict["flink"] = pr.Parameter(
-                self._log(), "Flink", params["Flink"],
+        if "Flink" in self.param_dict.keys():
+            self.det_dict["flink"] = pr.Parameter(
+                self._log(), "Flink", self._param_dict["Flink"],
                 min=0.0, max=np.inf)
         else:
-            self.params_dict["flink"] = pr.Parameter(
+            self.det_dict["flink"] = pr.Parameter(
                 self._log(), "Flink", "NA",
                 min=0.0, max=np.inf)
 
-        if "G" in params.keys():
-            self.params_dict["g"] = pr.Parameter(
-                self._log(), "G", params["G"],
-                un.pWtoW, min=0.0, max=np.inf)
+        if "G" in self.param_dict.keys():
+            self.det_dict["g"] = pr.Parameter(
+                self._log(), "G", self._param_dict["G"],
+                un.Unit("pW"), min=0.0, max=np.inf)
         else:
-            self.params_dict["g"] = pr.Parameter(
+            self.det_dict["g"] = pr.Parameter(
                 self._log(), "G", "NA",
-                un.pWtoW, min=0.0, max=np.inf)
+                un.Unit("pW"), min=0.0, max=np.inf)
 
         # Parameters that are the same for all detectors
         self.ch_keys = ["det_per_waf", "waf_per_ot",
                         "ot", "yield", "pix_sz", "wf"]
         return
+
+    def _store_param_vals(self):
+        # Generate channel parameters
+        self._param_vals = {}
+        for k in self._param_dict.keys():
+            self._param_vals[k] = self._param_samp(
+                self._param_dict[k], self.band_id)
+        # Store average values for detector-specific parameters
+        for k in self.det_dict.keys():
+            self._param_vals[k] = self.det_dict[k].get_avg(self.band_id)
+        # Derived channel parameters
+        self._param_vals["ndet"] = int(self.param_vals["det_per_waf"] *
+                                      self.param_vals["waf_per_ot"] *
+                                      self.param_vals["ot"])
+        if self.det_arr.cam.tel.exp.sim.fetch("ndet") is "NA":
+            self._param_vals["cdet"] = self._param_vals["ndet"]
+        else:
+            self._param_vals["cdet"] = self.det_arr.cam.tel.exp.sim.fetch("ndet")
+
+    def _store_elev_dict(self):
+        elev_files = sorted(gb.glob(os.path.join(
+            self.cam.config_dir, "elevation.txt")))
+        if len(elev_files) == 0:
+            self.elev_dict = None
+        elif len(elev_files) > 1:
+            self._log().err(
+                "More than one pixel elevation distribution for camera '%s'"
+                % (self.cam.name))
+            self.elev_dict = None
+        else:
+            elev_file = elv_files[0]
+            self.elev_dict = self._load().elevation(elev_files[0])
+            self._log().log("Using pixel elevation distribution '%s'"
+                            % (self.cam.name, elev_file),
+                            self._log().level["MODERATE"])
+

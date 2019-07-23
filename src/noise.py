@@ -12,162 +12,296 @@ else:
 
 
 class Noise:
+    """
+    Noise object calculates NEP, NET, mapping speed, and sensitivity
+
+    Args:
+    phys (src.Physics): Physics object
+    """
     def __init__(self, phys):
         # Store passed parameters
-        self.ph = phys
+        self._phys = phys
 
         # Aperture stop names
         self._ap_names = ["APERT", "STOP", "LYOT"]
 
         # Correlation files
-        dir = os.path.join(os.path.split(__file__)[0], "detCorrFiles", "PKL")
+        corr_dir = os.path.join(
+            os.path.split(__file__)[0], "detCorrFiles", "PKL")
         if PY2:
-            self.p_c_apert, self.c_apert = pk.load(io.open(
-                os.path.join(dir, "coherentApertCorr.pkl"), "rb"))
-            self.p_c_stop,  self.c_stop = pk.load(io.open(
-                os.path.join(dir, "coherentStopCorr.pkl"), "rb"))
-            self.p_i_apert, self.i_apert = pk.load(io.open(
-                os.path.join(dir, "incoherentApertCorr.pkl"), "rb"))
-            self.p_i_stop,  self.i_stop = pk.load(io.open(
-                os.path.join(dir, "incoherentStopCorr.pkl"),  "rb"))
+            self._p_c_apert, self._c_apert = pk.load(io.open(
+                os.path.join(corr_dir, "coherentApertCorr.pkl"), "rb"))
+            self._p_c_stop,  self._c_stop = pk.load(io.open(
+                os.path.join(corr_dir, "coherentStopCorr.pkl"), "rb"))
+            self._p_i_apert, self._i_apert = pk.load(io.open(
+                os.path.join(corr_dir, "incoherentApertCorr.pkl"), "rb"))
+            self._p_i_stop,  self._i_stop = pk.load(io.open(
+                os.path.join(corr_dir, "incoherentStopCorr.pkl"),  "rb"))
         else:
-            self.p_c_apert, self.c_apert = pk.load(io.open(
-                os.path.join(dir, "coherentApertCorr.pkl"), "rb"),
+            self._p_c_apert, self._c_apert = pk.load(io.open(
+                os.path.join(corr_dir, "coherentApertCorr.pkl"), "rb"),
                              encoding="latin1")
-            self.p_c_stop,  self.c_stop = pk.load(io.open(
-                os.path.join(dir, "coherentStopCorr.pkl"), "rb"),
+            self._p_c_stop,  self._c_stop = pk.load(io.open(
+                os.path.join(corr_dir, "coherentStopCorr.pkl"), "rb"),
                              encoding="latin1")
-            self.p_i_apert, self.i_apert = pk.load(io.open(
-                os.path.join(dir, "incoherentApertCorr.pkl"), "rb"),
+            self._p_i_apert, self._i_apert = pk.load(io.open(
+                os.path.join(corr_dir, "incoherentApertCorr.pkl"), "rb"),
                              encoding="latin1")
-            self.p_i_stop,  self.i_stop = pk.load(io.open(
-                os.path.join(dir, "incoherentStopCorr.pkl"), "rb"),
+            self._p_i_stop,  self._i_stop = pk.load(io.open(
+                os.path.join(corr_dir, "incoherentStopCorr.pkl"), "rb"),
                              encoding="latin1")
 
         # Detector pitch array
-        self.DetP = self.p_c_apert
+        self._det_p = self._p_c_apert
         # Geometric pitch factor
-        self.corrFact = 6  # Hex packing
+        self._geo_fact = 6  # Hex packing
 
-    # Bose correlation factors
-    def corrFactors(self, elemArr, detPitchFlamb, FlambMax=3.):
-        FlambMax = 3.  # Consider correlations out to this length
-        ndets = int(round(FlambMax/(detPitchFlamb), 0))
-        inds1 = [np.argmin(abs(np.array(self.DetP) -
-                 detPitchFlamb*(n+1)))
+    def corr_facts(self, elems, det_pitch, flamb_max=3.):
+        """
+        Calculate the Bose white-noise correlation factor
+
+        Args:
+        elems (list): optical elements in the camera
+        det_pitch (float): detector pitch in f-lambda units
+        flamb_max (float): the maximum detector pitch distance
+        for which to calculate the correlation factor.
+        Default is 3.
+        """
+        ndets = int(round(flamb_max / (det_pitch), 0))
+        inds1 = [np.argmin(abs(np.array(self._det_p) -
+                 det_pitch * (n + 1)))
                  for n in range(ndets)]
-        inds2 = [np.argmin(abs(np.array(self.DetP) -
-                 detPitchFlamb*(n+1)*np.sqrt(3.)))
+        inds2 = [np.argmin(abs(np.array(self._det_p) -
+                 det_pitch * (n + 1) * np.sqrt(3.)))
                  for n in range(ndets)]
         inds = np.sort(inds1 + inds2)
-        c_apert = np.sum([abs(self.c_apert)[ind] for ind in inds])
-        i_apert = np.sum([abs(self.c_apert)[ind] for ind in inds])
-        i_stop = np.sum([abs(self.c_stop)[ind] for ind in inds])
-        c_apert = np.sqrt(c_apert*self.corrFact + 1.)
-        i_apert = np.sqrt(i_apert*self.corrFact + 1.)
-        i_stop = np.sqrt(i_stop*self.corrFact + 1.)
-        atDet = False
+        c_apert = np.sum([abs(self._c_apert)[ind] for ind in inds])
+        i_apert = np.sum([abs(self._c_apert)[ind] for ind in inds])
+        i_stop = np.sum([abs(self._c_stop)[ind] for ind in inds])
+        c_apert = np.sqrt(c_apert*self._geo_fact + 1.)
+        i_apert = np.sqrt(i_apert*self._geo_fact + 1.)
+        i_stop = np.sqrt(i_stop*self._geo_fact + 1.)
+        at_det = False
         factors = []
-        for i in range(len(elemArr)):
-            if "CMB" in elemArr[i]:
+        for i in range(len(elems)):
+            if "CMB" in elems[i]:
                 factors.append(c_apert)
-            if elemArr[i].upper() in self._ap_names:
+            if elems[i].upper() in self._ap_names:
                 factors.append(i_stop)
-                atDet = True
-            elif not atDet:
+                at_det = True
+            elif not at_det:
                 factors.append(i_apert)
             else:
                 factors.append(1.)
         return np.array(factors[:-1])
 
-    # Photon noise equivalent power on a diffraction-limited detector [W/rtHz]
-    def photonNEP(self, poptArr, freqs, elemArr=None, detPitchFlamb=None):
-        popt = sum([x for x in poptArr])
+    def photon_NEP(self, popts, freqs, elems=None, det_pitch=None):
+        """
+        Calculate photon NEP [W/rtHz] for a detector
+
+        Args:
+        popts (list): power from elements in the optical elements [W]
+        freqs (list): frequencies of observation [Hz]
+        elems (list): optical elements
+        det_pitch (float): detector pitch in f-lambda units. Default is None.
+        """
+        popt = sum([x for x in popts])
         # Don't consider correlations
-        if elemArr is None and detPitchFlamb is None:
-            popt2 = sum([x*y for x in poptArr for y in poptArr])
-            nep = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2), freqs))
+        if elems is None and det_pitch is None:
+            popt2 = sum([x*y for x in popts for y in popts])
+            nep = np.sqrt(np.trapz(
+                (2. * self._phys.h * freqs * popt + 2. * popt2), freqs))
             neparr = nep
             return nep, neparr
         # Consider correlations
         else:
-            factors = self.corrFactors(elemArr, detPitchFlamb)
-            popt2 = sum([poptArr[i]*poptArr[j]
-                         for i in range(len(poptArr))
-                         for j in range(len(poptArr))])
-            popt2arr = sum([factors[i]*factors[j]*poptArr[i]*poptArr[j]
-                            for i in range(len(poptArr))
-                            for j in range(len(poptArr))])
-            nep = np.sqrt(np.trapz((2*self.ph.h*freqs*popt + 2*popt2), freqs))
+            factors = self.corr_facts(elems, det_pitch)
+            popt2 = sum([popts[i]*popts[j]
+                         for i in range(len(popts))
+                         for j in range(len(popts))])
+            popt2arr = sum([factors[i] * factors[j] * popts[i] * popts[j]
+                            for i in range(len(popts))
+                            for j in range(len(popts))])
+            nep = np.sqrt(np.trapz(
+                (2. * self._phys.h * freqs * popt + 2. * popt2), freqs))
             neparr = np.sqrt(np.trapz(
-                (2*self.ph.h*freqs*popt + 2*popt2arr), freqs))
+                (2. * self._phys.h * freqs * popt + 2. * popt2arr), freqs))
             return nep, neparr
 
-    # RJ approximation of photon noise equivalent power
-    # on a diffraction-limited detector [W/rt(Hz)]
-    def photonNEPapprox(self, pow, freqs):
-        deltaF = freqs[-1] - freqs[0]
-        return np.sqrt(2*(self.ph.h*freqs*pow + ((pow**2)/(deltaF))))
+    def photon_NEP_approx(self, powr, freqs):
+        """
+        Calculate RJ approximation of photon NEP [W/rtHz]
+
+        Args:
+        powr (list): total power incident on the detector [W]
+        freqs (list): frequencies of observation [Hz]
+        """
+        bw = freqs[-1] - freqs[0]
+        return np.sqrt(2. * (self._phys.h * freqs * powr + ((powr**2) / bw)))
 
     def Flink(self, n, Tb, Tc):
-        return ((n+1)/(2*n+3))*(1-(Tb/Tc)**(2*n+3))/(1-(Tb/Tc)**(n+1))
+        """
+        Link factor for the bolo to the bath
+
+        Args:
+        n (float): thermal carrier index
+        Tb (float): bath temperature [K]
+        Tc (float): transition temperature [K]
+        """
+        return (((n + 1)/(2 * n + 3)) * (1 - (Tb / Tc)**(2 * n + 3)) /
+                (1 - (Tb / Tc)**(n + 1)))
 
     def G(self, psat, n, Tb, Tc):
-        return psat*(n+1)*(Tc**n)/((Tc**(n+1))-(Tb**(n+1)))
+        """
+        Thermal conduction between the bolo and the bath
 
-    # Bolometer noise equivalent power [W/rt(Hz)]
-    def bolometerNEP(self, Flink, G, Tc):
-        return np.sqrt(4*self.ph.kB*Flink*(Tc**2)*G)
+        Args:
+        psat (float): saturation power [W]
+        n (float): thermal carrier index
+        Tb (float): bath temperature [K]
+        Tc (float): bolo transition temperature [K]
+        """
+        return (psat * (n + 1) * (Tc**n) /
+                ((Tc**(n + 1)) - (Tb**(n + 1))))
 
-    # Readout noise equivalent power [W/rt(Hz)]
-    def readoutNEP(self, pelec, boloR, nei):
-        return np.sqrt(boloR*pelec)*nei
+    def bolo_NEP(self, flink, G, Tc):
+        """
+        Thremal carrier NEP [W/rtHz]
 
-    # Change in power with change in CMB temperature [W/K]
+        Args:
+        flink (float): link factor to the bolo bath
+        G (float): thermal conduction between the bolo and the bath [W/K]
+        Tc (float): bolo transition temperature [K]
+        """
+        return np.sqrt(4 * self._phys.kB * flink * (Tc**2) * G)
+
+    def read_NEP(self, pelec, boloR, nei):
+        """
+        Readout NEP [W/rtHz] for a voltage-biased bolo
+
+        Args:
+        pelec (float): bias power [W]
+        boloR (float): bolometer resistance [Ohms]
+        nei (float): noise equivalent current [A/rtHz]
+        """
+        return np.sqrt(boloR * pelec) * nei
+
     def dPdT(self, eff, freqs):
-        temp = np.array([self.ph.Tcmb for f in freqs])
-        return np.trapz(self.ph.aniPowSpec(
+        """
+        Change in power on the detector with change in CMB temperature [W/K]
+
+        Args:
+        eff (float): detector efficiency
+        freqs (float): observation frequencies [Hz]
+        """
+        temp = np.array([self._phys.Tcmb for f in freqs])
+        return np.trapz(self._phys.aniPowSpec(
             np.array(freqs), temp, np.array(eff)), freqs)
 
-    # Photon noise equivalent temperature [K-rts]
-    def photonNET(self, poptArr, freqs, skyEff,
-                  elemArr=None, detPitchFlamb=None):
-        nep = self.photonNEP(poptArr, freqs, elemArr, detPitchFlamb)
-        dpdt = self.dPdT(skyEff, freq, fbw)
-        return nep/(np.sqrt(2.)*dpdt)
+    def photon_NET(self, freqs, popts, sky_eff,
+                   elems=None, det_pitch=None):
+        """
+        Photon NET [K-rts]
 
-    # RJ approximation of photon noise equivalent tempeature [K-rt(s)]
-    def photonNETapprox(self, pow, freqs, skyEff):
-        nep = photonNEPapprox(pow, freqs)
-        dpdt = self.dPdT(skyEff, freqs)
-        return nep/(np.sqrt(2.)*dpdt)
+        Args:
+        popts (list): power from elements in the optical elements [W]
+        freqs (list): frequencies of observation [Hz]
+        sky_eff (float): efficiency between the detector and the sky
+        elems (list): optical elements
+        det_pitch (float): detector pitch in f-lambda units. Default is None.
+        """
+        nep = self.photon_NEP(popts, freqs, elems, det_pitch)
+        dpdt = self.dPdT(sky_eff, freq, fbw)
+        return nep/(np.sqrt(2.) * dpdt)
 
-    # Bolometer noise equivalent temperature [K-rt(s)]
-    def bolometerNET(self, psat, freq, fbw, n, Tc, Tb, skyEff):
-        nep = bolometerNEP(psat, n, Tc, Tb) 
-        dpdt = self.dPdT(skyEff, freq, fbw)
-        return nep/(np.sqrt(2.)*dpdt)
+    def photon_NET_approx(self, freqs, powr, sky_eff):
+        """
+        RJ approximatino of photon NET [K-rts]
 
-    # Readout noise equivalent temperature [K-rt(s)]
-    def readoutNET(self, pelec, freq, fbw, boloR, nei, skyEff):
-        nep = readoutNEP(pelec, boloR, nei)
-        dpdt = self.dPdT(skyEff, freq, fbw)
-        return nep/(np.sqrt(2.)*dpdt)
+        rgs:
+        freqs (list): observation frequencies [Hz]
+        powr (list): total power incident on the detector [W]
+        freqs (list): frequencies of observation [Hz]
+        sky_eff (float): efficiency between the detector and the sky
+        """
+        nep = photon_NEP_approx(powr, freqs)
+        dpdt = self.dPdT(sky_eff, freqs)
+        return nep/(np.sqrt(2.) * dpdt)
 
-    # Total noise equivalent temperature [K-rt(s)]
-    def NETfromNEP(self, nep, freqs, skyEff, optCouple=1.0):
-        dpdt = optCouple*self.dPdT(skyEff, freqs)
-        return nep/(np.sqrt(2.)*dpdt)
+    def bolo_NET(self, freqs, flink, G, Tc, sky_eff):
+        """
+        Thermal carrier NET [K-rts]
 
-    # Array noise equivalent temperature [K-rt(s)]
-    def NETarr(self, net, nDet, detYield=1.0):
-        return net/(np.sqrt(nDet*detYield))
+        Args:
+        freqs (list): observation frequencies [Hz]
+        flink (float): link factor to the bolo bath
+        G (float): thermal conduction between the bolo and the bath [W/K]
+        Tc (float): bolo transition temperature [K]
+        sky_eff (float): efficiency between the detector and the sky
+        """
+        nep = bolo_NEP(psat, n, tc, tb)
+        dpdt = self.dPdT(sky_eff, freqs)
+        return nep/(np.sqrt(2.) * dpdt)
 
-    # Sky sensitivity [K-arcmin]
-    def sensitivity(self, netArr, fsky, tobs):
-        return np.sqrt((4.*self.ph.PI*fsky*2.*np.power(netArr, 2.)) /
-                       float(tobs))*(10800./(self.ph.PI))
+    def read_NET(self, freqs, pelec, boloR, nei, sky_eff):
+        """
+        Readout NEP [W/rtHz] for a voltage-biased bolo
 
-    # Mapping speed [(K^2*s)^-1]
-    def mappingSpeed(self, net, nDet, detYield=1.0):
-        return detYield/(np.power(self.NETarr(net, nDet), 2.))
+        Args:
+        freqs (list): observation frequencies [Hz]
+        pelec (float): bias power [W]
+        boloR (float): bolometer resistance [Ohms]
+        nei (float): noise equivalent current [A/rtHz]
+        sky_eff (float): efficiency between the detector and the sky
+        """
+        nep = read_NEP(pelec, boloR, nei)
+        dpdt = self.dPdT(sky_eff, freq, fbw)
+        return nep/(np.sqrt(2.) * dpdt)
+
+    def NET_from_NEP(self, nep, freqs, sky_eff, opt_coup=1.0):
+        """
+        NET [K-rts] from NEP
+
+        Args:
+        nep (float): NEP [W/rtHz]
+        freqs (list): observation frequencies [Hz]
+        sky_eff (float): efficiency between the detector and the sky
+        opt_coup (float): optical coupling to the detector. Default to 1.
+        """
+        dpdt = opt_coup * self.dPdT(sky_eff, freqs)
+        return nep / (np.sqrt(2.) * dpdt)
+
+    def NET_arr(self, net, n_det, det_yield=1.0):
+        """
+        Array NET [K-rts] from NET per detector and num of detectors
+
+        Args:
+        net (float): NET per detector
+        n_det (int): number of detectors
+        det_yield (float): detector yield. Defaults to 1.
+        """
+        return net/(np.sqrt(n_det * det_yield))
+
+    def sensitivity(self, net_arr, fsky, tobs):
+        """
+        Sensitivity [K-arcmin] given array NET
+
+        Arg:
+        net_arr (float): array NET [K-rts]
+        fsky (float): sky fraction
+        tobs (float): observation time [s]
+        """
+        return np.sqrt(
+            (4. * self._phys.PI * fsky * 2. * np.power(net_arr, 2.)) /
+            float(tobs)) * (10800. / self._phys.PI)
+
+    def mapping_speed(self, net, n_det, det_yield=1.0):
+        """
+        Mapping speed [(k^2*s)^-1] given detector NET and num of detectors
+
+        Args:
+        net (float): detector NET [K-rts]
+        n_det (int): number of detectors
+        det_yield (float): detector yield. Defaults to 1.
+        """
+        return det_yield / (np.power(self.NET_arr(net, n_det), 2.))

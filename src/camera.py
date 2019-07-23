@@ -11,6 +11,22 @@ import src.channel as ch
 
 
 class Camera:
+    """
+    Camera object holds the optical chain and channel data for a defined
+    camera
+
+    Args:
+    tel (src.Telescope): Telescope object
+    inp_dir (str): camera directory
+
+    Attributes:
+    tel (src.Telescope): where arg 'tel' is stored
+    dir (str): where arg 'dir' is stored
+    name (str): camera name
+    opt_chn (src.OpticalChain): OpticalChain object
+    chs (dict): dictionary of Channel objects
+    pixs (dict): dictionary of Channel objects grouped by pixel
+    """
     def __init__(self, tel, inp_dir):
         # Store passed parameters
         self.tel = tel
@@ -21,25 +37,21 @@ class Camera:
             self._log().err("Camera dir '%s' does not exist" % (self.dir))
 
         # Check whether configuration directory exists
-        self.config_dir = os.path.join(self.dir, 'config')
-        if not os.path.isdir(self.config_dir):
+        self._config_dir = os.path.join(self.dir, 'config')
+        if not os.path.isdir(self._config_dir):
             self._log().err(
                 "Camera config dir '%s' does not exist"
-                % (self.config_dir))
-
-        # Band and distribution directories
-        self.band_dir = os.path.join(self.configDir, "Bands")
-        self.dist_dir = os.path.join(self.configDir, "pdf")
+                % (self._config_dir))
 
         # Name the camera
         self.name = self.dir.rstrip(os.sep).split(os.sep)[-1]
 
         # Store camera parameters into a dictionary
-        self.cam_file = os.path.join(self.configDir, 'camera.txt')
-        if not os.path.isfile(self.cam_file):
+        cam_file = os.path.join(self._config_dir, 'camera.txt')
+        if not os.path.isfile(cam_file):
             self._log().err(
-                "Camera file '%s' does not exist" % (self.cam_file))
-        self._store_param_dict(self._load().camera(self.cam_file))
+                "Camera file '%s' does not exist" % (cam_file))
+        self._store_param_dict(self._load().camera(cam_file))
 
         # Generate camera
         self.generate()
@@ -50,37 +62,37 @@ class Camera:
         self._store_param_vals()
 
         # Store optical chain
-        self.opt_chain = oc.OpticalChain(self)
+        self.opt_chn = oc.OpticalChain(self)
 
         # Store channel objects
-        self.band_dict = self._band_dict(
-            os.path.join(self.band_dir, "Detectors"))
-        self.chn_file = os.path.join(
-            self.config_dir, "channels.txt")
-        self.chan_dicts = self._load().channel(self.chn_file)
-        self.channels = cl.OrderedDict({})
-        for chan_dict in self.chan_dicts:
-            if chan_dict["Band ID"] in self.channels.keys():
+        self._band_dict = self._gen_band_dict(
+            os.path.join(self._config_dir, "Bands", "Detectors"))
+        chn_file = os.path.join(
+            self._config_dir, "channels.txt")
+        chan_dicts = self._load().channel(chn_file)
+        self.chs = cl.OrderedDict({})
+        for chan_dict in chan_dicts:
+            if chan_dict["Band ID"] in self.chs.keys():
                 self._log().err(
                     "Multiple bands named '%s' in camera '%s'"
                     % (chan_dict["Band ID"], self.dir))
             band_name = str(self.name) + str(chan_dict["Band ID"])
-            if band_name in self.band_dict.keys():
-                band_file = self.band_dict[band_name]
+            if band_name in self._band_dict.keys():
+                band_file = self._band_dict[band_name]
             else:
                 band_file = None
-            self.channels.update(
+            self.chs.update(
                 {chan_dict["Band ID"]: ch.Channel(self, chan_dict, band_file)})
 
         # Store pixel dictionary
-        self.pixels = cl.OrderedDict({})
-        for ch in self.channels:
-            if self.channels[ch].pixel_id in self.pixels.keys():
-                self.pixels[
-                    self.channels[ch].pixel_id].append(self.channels[ch])
+        self.pixs = cl.OrderedDict({})
+        for ch in self.chs:
+            if self.chs[ch].pixel_id in self.pixs.keys():
+                self.pixs[
+                    self.chs[ch].pixel_id].append(self.chs[ch])
             else:
-                self.pixels[
-                    self.channels[ch].pixel_id] = [self.channels[ch]]
+                self.pixs[
+                    self.chs[ch].pixel_id] = [self.chs[ch]]
 
     # ***** Private Methods *****
     def _log(self):
@@ -89,8 +101,7 @@ class Camera:
     def _load(self):
         return self.tel.exp.sim.ld
 
-    # Collect band files
-    def _band_dict(self, dir):
+    def _gen_band_dict(self, dir):
         bandFiles = sorted(gb.glob(os.path.join(dir, '*')))
         if len(bandFiles):
             nameArr = [os.path.split(nm)[-1].split('.')[0]
@@ -103,7 +114,6 @@ class Camera:
         else:
             return None
 
-    # Sample camera parameters
     def _param_samp(self, param):
         if not ('instance' in str(type(param)) or 'class' in str(type(param))):
             return np.float(param)
@@ -123,7 +133,7 @@ class Camera:
             "fnum": pr.Parameter(
                     self._log(), "F Number",
                     params["F Number"], min=0.0, max=np.inf),
-            "bath_temp": pr.Parameter(
+            "tb": pr.Parameter(
                     self._log(), "Bath Temp",
                     params["Bath Temp"], min=0.0, max=np.inf)}
         return

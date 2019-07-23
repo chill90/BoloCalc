@@ -10,6 +10,19 @@ import src.parameter as pr
 
 
 class Experiment:
+    """
+    Experiment object gathers foreground parameters and contains
+    a dictionary of telescope objects
+
+    Args:
+    sim (src.Simulation): Simulation object
+
+    Attributes:
+    sim (src.Simulation): where the 'sim' arg is stored
+    dir (str): the input directory for the experiment
+    name (str): name of the experiment
+    tels (dict): dictionary of src.Telescope objects
+    """
     def __init__(self, sim):
         # Passed classes
         self.sim = sim
@@ -20,21 +33,21 @@ class Experiment:
         if not os.path.isdir(self.dir):
             self._log().err(
                 "Experiment dir '%s' does not exist" % (self.dir))
-        self.config_dir = os.path.join(self.dir, 'config')
-        if not os.path.isdir(self.config_dir):
+        config_dir = os.path.join(self.dir, 'config')
+        if not os.path.isdir(config_dir):
             self._log().err(
                 "Experiment config dir '%s' does not exist"
-                % (self.config_dir))
+                % (config_dir))
 
         # Name the experiment
         self.name = os.path.split(self.dir.rstrip('/'))[-1]
 
         # Store foreground parameter dictionary
         if self.sim.fetch("fgs"):
-            fgnd_file = os.path.join(self.config_dir, 'foregrounds.txt')
+            fgnd_file = os.path.join(config_dir, 'foregrounds.txt')
             self._store_param_dict(self._load().foregrounds(fgnd_file))
         else:
-            self.param_dict = None
+            self._param_dict = None
             self._log().log("Ignoring foregrounds", self.log.level["MODERATE"])
 
         # Generate experiment
@@ -42,7 +55,8 @@ class Experiment:
 
     # ***** Public Methods *****
     def generate(self):
-        # Generate foreground parameter values
+        """ Generate param dict and telescope dict"""
+        # Generate parameter values
         self._store_param_vals()
         # Store telescope objects in dictionary
         self._gen_tels()
@@ -50,16 +64,21 @@ class Experiment:
 
     # Fetch parameters from Simulation object
     def fetch(self, param):
-        return self.param_dict[param]
+        """
+        Fetch experiment parameter values
 
-    # ***** Private Methods *****
+        Args:
+        param (str): parameter name, param_vals key
+        """
+        return self._param_vals[param]
+
+    # ***** Helper Methods *****
     def _param_samp(self, param):
         if self.sim.fetch("nexp"):
             return param.getAvg()
         else:
             return param.sample(nsample=1)
 
-    # Pass preferred log object
     def _log(self):
         return self.sim.log
 
@@ -67,7 +86,7 @@ class Experiment:
         return self.sim.ld
 
     def _store_param_dict(self, params):
-        self.param_dict = {
+        self._param_dict = {
             "dust_temp": pr.Parameter(
                 self._log(), "Dust Temperature",
                 params["Dust Temperature"],
@@ -95,10 +114,10 @@ class Experiment:
         return
 
     def _store_param_vals(self):
-        if self.param_dict is not None:
-            self.param_vals = {}
-            for k in self.param_dict.keys():
-                self.param_vals[k] = self._param_samp(self.param_dict[k])
+        if self._param_dict is not None:
+            self._param_vals = {}
+            for k in self._param_dict.keys():
+                self._param_vals[k] = self._param_samp(self._param_dict[k])
         return
 
     def _gen_tels(self):

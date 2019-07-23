@@ -4,21 +4,11 @@ import numpy as np
 
 class Observation:
     def __init__(self, obs_set):
-        # Sample PWV and Elevation for the camera
-        self.pwv = self._sky().pwvSample()
-        self.elv = self._scn().elvSample()
-        if self.elv is not None:
-            self.elv += self.belv
+        # Store PWV and elevation
+        self._get_pwv_elev()
 
-        # Sample and store sky optical parameters
-        if detArray.nDet == 1:
-            elv = self.elv
-        else:
-            elv = self.elv + self.obs_set.sample_pix_elev()
-        elem, emiss, effic, temp = np.hsplit(
-            np.array([self.sky.generate(
-                self.pwv, self.elv, det.ch.freqs)
-                for det in self._det_arr().detectors]), 4)
+        # Store sky values
+        elem, emiss, effic, temp = self._get_sky_vals()
 
         # Store the element name
         self.elem = elem.reshape(
@@ -40,6 +30,24 @@ class Observation:
         self.temp = self.temp.tolist()
 
     # ***** Helper Methods *****
+    def _get_pwv_elev(self):
+        # Sample PWV and Elevation for the camera
+        pwv = self._sky().get_pwv()
+        cam_elev = self._scn().get_elev()
+        if self.elv is not None:
+            self.elv += self.belv
+        # Sample and store sky optical parameters
+        if self._ndet() == 1:
+            elev = cam_elev
+        else:
+            elev = cam_elv + obs_set.sample_pix_elev()
+        return
+
+    def _get_sky_vals(self):
+        return np.hsplit(np.array([self._sky().generate(
+            pwv, elv, det.ch.freqs)
+            for det in self._det_arr().dets]), 4)
+
     def _sky(self):
         return self.obs_set.ch.cam.tel.sky
 
@@ -48,3 +56,6 @@ class Observation:
 
     def _det_arr(self):
         return self.obs_set.ch.det_arr
+
+    def _ndet(self):
+        return self.cam.tel.exp.sim.fetch("ndet")

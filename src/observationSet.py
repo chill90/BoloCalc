@@ -8,30 +8,37 @@ import src.units as un
 
 
 class ObservationSet:
-    def __init__(self, ch):
-        # Store passed parameters
-        self.ch = ch
+    """
+    ObservationSet object holds a set of observations for a given channel
 
+    Args:
+    ch (src.Channel): Channel object
+
+    Attributes:
+    temps (np.array): sky temperatures for each observation
+    effs (np.array): sky efficiencies for each observation
+    """
+    def __init__(self, ch):
         # Store the elevation values and probabilities
-        if ch.elvDict is not None:
-            self.elev_vals = np.fromiter(ch.elev_dict.keys(),   dtype=np.float)
-            self.elev_frac = np.fromiter(ch.elev_dict.values(), dtype=np.float)
+        if ch.elev_dict is not None:
+            self._elev_vals = np.fromiter(ch.elev_dict.keys(),   dtype=np.float)
+            self._elev_frac = np.fromiter(ch.elev_dict.values(), dtype=np.float)
         else:
-            self.elVals = None
-            self.elFrac = None
+            self._elev_vals = None
+            self._elev_frac = None
 
         # Store observation objects
-        self.obs = [ob.Observation(self) for n in range(nobs)]
+        obs_arr = [ob.Observation(self) for n in range(nobs)]
         # Store sky temperatures and efficiencies
-        self.temps = np.array([obs.temp for obs in self.obs])
-        self.effics = np.array([obs.effic for obs in self.obs])
+        self.temps = np.array([obs.temp for obs in obs_arr])
+        self.effs = np.array([obs.effic for obs in obs_arr])
 
     # ***** Pubic Methods *****
-    # Sample elevation distribution
     def sample_pix_elev(self):
-        if self.elVals is not None and self.elFrac is not None:
+        """ Sample pixel elevation """
+        if self._elev_vals is not None and self._elev_frac is not None:
             return np.random.choice(
-                self.elVals, size=1,
-                p=self.elFrac/float(np.sum(self.elFrac)))[0]
+                self._elev_vals, size=1,
+                p=self._elev_frac/float(np.sum(self._elev_frac)))[0]
         else:
             return 0.

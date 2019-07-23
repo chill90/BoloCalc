@@ -19,11 +19,25 @@ import src.physics as ph
 import src.noise as ns
 
 
-
 class Simulation:
+    """
+    Simulation object generates experiments, calculates their parameters,
+    simulates their sensitivies, and displays the outputs
+
+    Args:
+    log_file (str): logging file
+    sim_file (str): simulation input file
+    exp_dir (str): experiment directory
+
+    Attributes:
+    log (src.Log): Log object
+    load (src.Load): Load object
+    phys (src.Physics): Physics object
+    noise (src.Noise): Noise object
+    """
     def __init__(self, log_file, sim_file, exp_dir):
         # Store experiment input file
-        self.exp_dir = exp_dir
+        self._exp_dir = exp_dir
 
         # Build simulation-wide objects
         self.log = lg.Log(log_file)
@@ -36,27 +50,27 @@ class Simulation:
 
         # Set up multiprocessing
         if self.fetch("mpss"):
-            self.pool = mp.Pool(self.fetch("core"))
-        
-        #Length of status bar
+            self._pool = mp.Pool(self.fetch("core"))
+
+        # Length of status bar
         self._bar_len = 100.
 
     # **** Public Methods ****
-    # Generate experiments
     def generate(self):
+        """ Generate experiments """
         if not self.fetch("mpss"):
             self.experiments = [
-                self._mp1(self.exp_dir, n)
+                self._mp1(self._exp_dir, n)
                 for n in range(self.fetch("nexp"))]
             self._done()
         else:
             designDirs = [
-                self.exp_dir
+                self._exp_dir
                 for n in range(self.fetch("nexp"))]
-            self.experiments = self.pool.map(self._mp1, designDirs)
+            self.experiments = self._pool.map(self._mp1, designDirs)
 
-    # Calculate experiments
     def calculate(self):
+        """ Calculate experiments """
         if not self.fetch("mpps"):
             calculates = [
                 self._mp2(self.experiments[n], n)
@@ -67,17 +81,21 @@ class Simulation:
                 for n in range(self.fetch("nexp"))]
             self._done()
         else:
-            calculates = self.pool.map(self._mp2, self.experiments)
-            calculates = self.pool.map(self._mp3, calculates)
+            calculates = self._pool.map(self._mp2, self.experiments)
+            calculates = self._pool.map(self._mp3, calculates)
         return self._mp4(calculates)
 
-    # Generate and calculate experiments
     def simulate(self):
+        """ Generate and calculate experiments """
         self.generate()
         self.calculate()
 
-    # Fetch simulation parameter
     def fetch(self, param):
+        """ Fetch parameter from param_dict
+
+        Args:
+        param (str): name or parameter, param_dict key
+        """
         return self._param_dict[param].fetch()
 
     # **** Helper Methods ****
