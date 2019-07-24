@@ -23,15 +23,15 @@ class DetectorArray:
         # Store detectors
         if self.ch.band is not None:
             if self.ch.band.eff is not None:
-                if nexp == 1:
-                    bands = self.ch.band.get_avg(nsample=ndet)
+                if ndet == 1:
+                    bands = self.ch.band.get_avg()
                 else:
                     bands = band.sample(nsample=ndet)
-                self.dets = [dt.Detector(log, self.ch, bands[i])
+                self.dets = [dt.Detector(self.ch, bands[i])
                              for i in range(ndet)]
             else:
-                self.dets = [dt.Detector(log, self.ch)
+                self.dets = [dt.Detector(self.ch)
                              for i in range(ndet)]
         else:
-            self.dets = [dt.Detector(log, self.ch)
+            self.dets = [dt.Detector(self.ch)
                          for i in range(ndet)]

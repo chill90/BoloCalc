@@ -11,6 +11,9 @@ class Sensitivity:
     def __init__(self, calc):
         # Store passed parameters
         self.calc = calc
+        self._phys = self.calc.sim.phys
+        self._noise = self.calc.sim.noise
+        self._corr = self.calc.sim.param("corr")
 
     # ***** Public Methods *****
     # Optical power given some array of optical elements
@@ -138,8 +141,6 @@ class Sensitivity:
             float(ch.clcDet) / float(ch.params['Yield']*ch.numDet))
         NETarrStd = np.std(NET)*np.sqrt(1./ch.numDet)
         MS = 1./(np.power(NETarr,    2.))
-        # MSStd = abs(1./(np.power(NETarr+NETarrStd, 2.) - 1.) /
-        # (np.power(NETarr-NETarrStd, 2.)))/2.
         MSStd = (NETarrStd/NETarr)*MS if (NETarrStd/NETarr) > 1.e-3 else 0.
 
         Sens = self.nse.sensitivity(
@@ -232,10 +233,10 @@ class Sensitivity:
         return means, stds
 
     def _phys(self):
-        return self.calc.sim.phys
+        return 
 
     def _noise(self):
-        return self.calc.sim.noise
+        return 
 
     def _corr(self):
-        return self.calc.sim.fetch("corr")
+        return 

@@ -8,7 +8,7 @@ class Detector:
 
     Args:
     det_arr (src.DetectorArray): DetectorArray object
-    band (src.Band): Band object. Defaults to None.
+    band (list): band transmission. Defaults to None.
 
     Attributes:
     elem (list): detector name of optical element 'Detector'
@@ -34,9 +34,9 @@ class Detector:
 
         # Store detector optical parameters
         self.elem = ["Detector"]
-        self.emis = [[0.000 for f in self.det_arr.ch.freqs]]
+        self.emis = [[0.000 for f in self._det_arr.ch.freqs]]
         self.tran = [self._eff]
-        self.temp = [[self._tb for f in self.det_arr.ch.freqs]]
+        self.temp = [[self._tb for f in self._det_arr.ch.freqs]]
 
     # ***** Public Methods *****
     def param(self, param):
@@ -79,13 +79,13 @@ class Detector:
     def _store_eff(self):
         # Load band
         if self._band is not None:
-            self._eff = self._band
-            if self._eff is not None:
-                self._eff = np.where(eff < 1, eff, 1.)
-                self._eff = np.where(eff > 0, eff, 0.)
+            self._tran = self._band
+            if self._tran is not None:
+                self._tran = np.where(self._tran < 1, self._tran, 1.)
+                self._tran = np.where(self._tran > 0, self._tran, 0.)
         else:
             # Default to top hat band
-            self._eff = [self.param("det_eff")
-                         if f > self.param("flo") and f < self.param("fhi")
-                         else 0. for f in self.det_arr.ch.freqs]
+            self._tran = [self.param("det_eff")
+                          if f > self.param("flo") and f < self.param("fhi")
+                          else 0. for f in self.det_arr.ch.freqs]
         return

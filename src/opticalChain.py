@@ -16,6 +16,7 @@ class OpticalChain:
     cam (src.Camera): Camera object for this optical chain
 
     Attributes:
+    cam (src.Camera): where 'cam' arg is stored
     elem (list): list of optic element names
     abso (list): list of optic element absorbtivities
     tran (list): list of optic element transmissions
@@ -41,11 +42,10 @@ class OpticalChain:
         ch (src.Channel): Channel objects
         """
         arr = [optic.generate(ch) for optic in list(self._optics.values())]
-        self.elem = [a[0] for a in arr]
-        self.emis = [a[1] for a in arr]
-        self.tran = [a[2] for a in arr]
-        self.temp = [a[3] for a in arr]
-        return
+        return [[a[0] for a in arr],
+                [a[1] for a in arr],
+                [a[2] for a in arr],
+                [a[3] for a in arr]]
 
     # ***** Private Methods *****
     def _gen_band_dict(self):

@@ -15,14 +15,14 @@ class Calculate:
     sim (src.Simulate): Simulation object
 
     Attributes:
-    sim (src.Simulate): where the 'sim' arg is stored
     chs (list): src.Channel objects
     cams (list): src.Camera objects
     tels (list): src.Telescope objects
     """
     def __init__(self, sim):
         # Store passed parameters
-        self.sim = sim
+        self._sim = sim
+        self._exp = self.sim.exp
 
         self.chs = [[[ch for ch in cm.chs.values()]
                     for cm in tp.cams.values()]
@@ -36,7 +36,6 @@ class Calculate:
         self.sens = sn.Sensitivity(self)
 
     # ***** Public Methods *****
-    # Calculate sensitivity for this channel
     def calc_sens(self, ch, tp):
         """
         Calculate sensitivity for a given channel in a given telescope
@@ -47,7 +46,6 @@ class Calculate:
         """
         return self.sens.sensitivity(ch, tp)
 
-    # Calculate optical power for this channel
     def calc_opt_pow(self, ch, tp):
         """
         Calculate optical power for a given channel in a given telescope
@@ -58,32 +56,39 @@ class Calculate:
         """
         return self.sens.opticalPower(ch, tp)
 
-    # Combine the sensitivities of multiple channels
-    def comb_sens(self, sensArr):
-        self.snsmeans = [[[[sensArr[i][j][k][0][m]
-                         for m in range(len(sensArr[i][j][k][0]))]
-                         for k in range(len(sensArr[i][j]))]
-                         for j in range(len(sensArr[i]))]
-                         for i in range(len(sensArr))]
-        self.snsstds = [[[[sensArr[i][j][k][1][m]
-                        for m in range(len(sensArr[i][j][k][1]))]
-                        for k in range(len(sensArr[i][j]))]
-                        for j in range(len(sensArr[i]))]
-                        for i in range(len(sensArr))]
+    def comb_sens(self, sens_arr):
+        """
+        Combine sensitivites of multiple Sensitivity objects
+
+        Args:
+        sens_arr (list): list of sensitivities to be combined
+        """
+        self.sns_means = [[[[sens_arr[i][j][k][0][m]
+                          for m in range(len(sens_arr[i][j][k][0]))]
+                          for k in range(len(sens_arr[i][j]))]
+                          for j in range(len(sens_arr[i]))]
+                          for i in range(len(sens_arr))]
+        self.sns_stds = [[[[sens_arr[i][j][k][1][m]
+                         for m in range(len(sens_arr[i][j][k][1]))]
+                         for k in range(len(sens_arr[i][j]))]
+                         for j in range(len(sens_arr[i]))]
+                         for i in range(len(sens_arr))]
 
     # Combine the optical powers of multiple channels
-    def comb_opt_pow(self, optArr):
-        self.optmeans = [[[[optArr[i][j][k][0][m]
-                         for m in range(len(optArr[i][j][k][0]))]
-                         for k in range(len(optArr[i][j]))]
-                         for j in range(len(optArr[i]))]
-                         for i in range(len(optArr))]
-        self.optstds = [[[[optArr[i][j][k][1][m]
-                        for m in range(len(optArr[i][j][k][1]))]
-                        for k in range(len(optArr[i][j]))]
-                        for j in range(len(optArr[i]))]
-                        for i in range(len(optArr))]
+    def comb_opt_pow(self, opt_arr):
+        """
+        Combine optical powers of multiple Sensitivity objects
 
-    # ***** Helper Methods *****
-    def _exp(self):
-        return self.sim.exp
+        Args:
+        opt_arr (list): list of optical powers to be combined
+        """
+        self.opt_means = [[[[opt_arr[i][j][k][0][m]
+                          for m in range(len(opt_arr[i][j][k][0]))]
+                          for k in range(len(opt_arr[i][j]))]
+                          for j in range(len(opt_arr[i]))]
+                          for i in range(len(opt_arr))]
+        self.opt_stds = [[[[opt_arr[i][j][k][1][m]
+                         for m in range(len(opt_arr[i][j][k][1]))]
+                         for k in range(len(opt_arr[i][j]))]
+                         for j in range(len(opt_arr[i]))]
+                         for i in range(len(opt_arr))]

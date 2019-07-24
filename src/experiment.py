@@ -20,7 +20,6 @@ class Experiment:
     Attributes:
     sim (src.Simulation): where the 'sim' arg is stored
     dir (str): the input directory for the experiment
-    name (str): name of the experiment
     tels (dict): dictionary of src.Telescope objects
     """
     def __init__(self, sim):
@@ -33,8 +32,6 @@ class Experiment:
 
         # Check whether experiment and config dir exists
         self._check_dirs()
-        # Name the experiment
-        self.name = os.path.split(self.dir.rstrip('/'))[-1]
 
         # Store foreground parameter dictionary
         self._store_param_dict()
@@ -99,14 +96,16 @@ class Experiment:
                     min=0.0, max=np.inf)}
         else:
             self._param_dict = None
-            self._log.log("Ignoring foregrounds", self.log.level["MODERATE"])
+            self._log.log("Ignoring foregrounds", self._log.level["MODERATE"])
         return
 
     def _store_param_vals(self):
+        self._param_vals = {}
         if self._param_dict is not None:
-            self._param_vals = {}
             for k in self._param_dict.keys():
                 self._param_vals[k] = self._param_samp(self._param_dict[k])
+        # Store other experiment parameters
+        self._param_vals["exp_name"] = os.path.split(self.dir.rstrip('/'))[-1]
         return
 
     def _gen_tels(self):
@@ -114,14 +113,15 @@ class Experiment:
         tel_dirs = [x for x in tel_dirs
                     if 'config' not in x and 'paramVary' not in x]
         if len(tel_dirs) == 0:
-            self.log.err(
+            self._log.err(
                 "Zero telescopes in '%s'" % (self.dir))
         tel_names = [tel_dir.split(os.sep)[-2] for tel_dir in tel_dirs]
         if len(tel_names) != len(set(tel_names)):
-            self.log.err("Duplicate telescope name in '%s'" % (self.dir))
+            self._log.err("Duplicate telescope name in '%s'" % (self.dir))
         self.tels = cl.OrderedDict({})
         for i in range(len(tel_names)):
-            self.tels.update({tel_names[i]: tp.Telescope(self, tel_dirs[i])})
+            self.tels.update({tel_names[i].strip():
+                              tp.Telescope(self, tel_dirs[i])})
         return
 
     def _check_dirs(self):

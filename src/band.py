@@ -1,64 +1,90 @@
 # Built-in modules
 import numpy as np
 
-# BoloCalc modules
-import src.loader as ld
-import src.units as un
-
 
 class Band:
     """
-    
+    Band object contains transmission vs frequency, with errrors
+    for detectors and optics
+
+    Args:
+    log (src.Log): Log object
+    load (src.Load): Load object
+    band_file (str): band file to be loaded
+    freq_inp (list): frequencies at which to evaluate the band.
+    Defaults to None.
+
+    Attributes:
+    freqs (list): list of frequencies [Hz] for this band
     """
-    def __init__(self, band_file, freq_inp=None):
-        self.ftype = self.band_file.split('.')[-1]
-        self._load = ld.Loader()
+    def __init__(self, log, load, band_file, freq_inp=None):
+        # Store passed parameters
+        self._log = log
+        self._load = load
+        self._band_file = band_file
+        self._ftype = band_file.split('.')[-1]
 
         # Parse band file
-        try:
-            data = self._load.band(band_file)
-            if len(data) == 3:
-                freqs, self.eff, self.err = data
-            elif len(data) == 2:
-                freqs, self.eff = data
-                self.err = None
-            else:
-                raise Exception(
-                    "Could not understand band CSV file '%s'. \
-                    Too many or too few colums." % (self.band_file))
-        except:
-            raise Exception('Unable to parse band file %s.' % (self.band_file))
-
-        # Convert to Hz if band file is in GHz
-        if not np.all(freqs) > 1.e5:
-            self.freqs = freqs * 1.e+09
-        # Equalize arrays
-        if freq_inp is not None:
-            mask = np.array([1. if f >= self.freqs[0] and
-                             f <= self.freqs[-1] else 0. for f in freq_inp])
-            self.eff = np.interp(freq_inp, self.freqs, self.eff) * mask
-            if self.err is not None:
-                self.err = np.interp(freq_inp, self.freqs, self.err) * mask
-            self.freqs = freq_inp
-
-        # Not allowed to have a standard deviation of zero or negative
-        if self.err is not None:
-            self.err[(self.err <= 0.)] = 1.e-6
+        self._load_band()
 
     # ***** Public Methods *****
-    # Return the average efficiency
     def get_avg(self, nsample=1):
-        return np.array([self.eff for n in range(nsample)])
+        """
+        Return the average transmission for each frequency
 
-    # Sample the band
+        Args:
+        nsample (int): number of lists to return
+        """
+        return np.array([self._tran for n in range(nsample)])
+
     def sample(self, nsample=1):
-        if self.eff is None:
+        """
+        Return a sampled of the band transmission given its errors
+
+        Args:
+        nsample (int): number of sample lists to return
+        """
+        if self._tran is None:
             return [None]
-        if self.err is None:
-            return self.getAvg(nsample)
+        if self._err is None:
+            return self.get_avg(nsample)
         else:
             if nsample == 1:
-                return np.array([np.random.normal(self.eff, self.err)])
+                return np.array([np.random.normal(self._tran, self._err)])
             else:
-                return np.random.normal(self.eff, self.err,
-                                        (nsample, len(self.eff)))
+                return np.random.normal(self._tran, self._err,
+                                        (nsample, len(self._tran)))
+
+    # ***** Helper Methods *****
+    def _load_band(self):
+        try:
+            data = self._load.band(self._band_file)
+            if len(data) == 3:
+                self._freqs, self._tran, self._err = data
+            elif len(data) == 2:
+                self._freqs, self._tran = data
+                self._err = None
+            else:
+                self._log.err(
+                    "Could not understand band CSV file '%s'. \
+                    Too many or too few colums." % (self._band_file))
+        except:
+            self._log.err('Unable to parse band file %s.' % (self._band_file))
+        return
+
+    def _store_data(self):
+        # Convert to Hz if band file is in GHz
+        if not np.all(freqs) > 1.e5:
+            self._freqs = self._freqs * 1.e+09
+        # Equalize arrays
+        if freq_inp is not None:
+            mask = (freq_inp < freqs[-1]) * (freq_inp > freqs[0])
+            self._tran = np.interp(freq_inp, self._freqs, self._tran) * mask
+            if self._err is not None:
+                self._err = np.interp(freq_inp, self._freqs, self._err) * mask
+            self.freqs = freq_inp
+        else:
+            self.freqs = self._freqs
+        # Not allowed to have a standard deviation of zero or negative
+        if self._err is not None:
+            self._err[(self._err <= 0.)] = 1.e-6

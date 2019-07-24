@@ -24,7 +24,6 @@ class Telescope:
     Attributes:
     exp (src.Experiment): where arg 'exp' is stored
     dir (str): where arg 'inp_dir' is stored
-    name (str): name of this telescope
     sky (src.Sky): Sky object
     scn (src.ScanStrategy): ScanStrategy object
     cams (dict): dictionary of Camera objects
@@ -38,8 +37,6 @@ class Telescope:
 
         # Check whether telescope and config dir exists
         self._check_dirs()
-        # Name the telescope
-        self.name = self.dir.rstrip(os.sep).split(os.sep)[-1]
 
         # Store the telescope parameters
         self._store_param_dict()
@@ -84,9 +81,9 @@ class Telescope:
         self._tel_file = os.path.join(self._config_dir, 'telescope.txt')
         if not os.path.isfile(self._tel_file):
             self._log.err(
-                "Telescope file '%s' does not exist" % (self.telFile))
+                "Telescope file '%s' does not exist" % (self._tel_file))
         else:
-            params = self._load().telescope(self.telFile)
+            params = self._load().telescope(self._tel_file)
             self._param_dict = {
                 "site": pr.Parameter(
                     self._log, 'Site', params['Site']),
@@ -115,6 +112,9 @@ class Telescope:
         self._param_vals = {}
         for k in self._param_dict:
             self._param_vals[k] = self._param_samp(self._param_dict[k])
+        # Store other telescope parameters
+        self._param_vals["tel_name"] = (
+            self.dir.rstrip(os.sep).split(os.sep)[-1])
         return
 
     def _handle_custom_atm(self):
@@ -160,12 +160,13 @@ class Telescope:
             self._log.err("Duplicate camera name in '%s'" % (self.dir))
         self.cams = cl.OrderedDict({})
         for i in range(len(cam_names)):
-            self.cams.update({cam_names[i]: cm.Camera(self, cam_dirs[i])})
+            self.cams.update({cam_names[i].strip():
+                              cm.Camera(self, cam_dirs[i])})
         return
 
     def _check_dirs(self):
         if not os.path.isdir(self.dir):
-            self._log.err("Telescope dir '%s' does not exist" % (self.dir))
+            self._log.err("Telescope '%s' does not exist" % (self.dir))
         self._config_dir = os.path.join(self.dir, 'config')
         if not os.path.isdir(self._config_dir):
             self._log.err(

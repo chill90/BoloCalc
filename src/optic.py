@@ -26,6 +26,7 @@ class Optic:
         self._inp_dict = inp_dict
         self._band_file = band_file
         self._log = self.opt_chn.cam.tel.exp.sim.log
+        self._load = self.opt_chn.cam.tel.exp.sim.load
         self._phys = self._opt_chn.cam.tel.exp.sim.phys
 
         # Names for the special optical elements
@@ -57,7 +58,7 @@ class Optic:
 
         # Efficiency and reflection from a band file
         if self._band_file is not None:
-            band = bd.Band(self._log, self._band_file, ch.freqs)
+            band = bd.Band(self._log, self._load, self._band_file, ch.freqs)
             eff = band.sample()[0]
             if eff is not None:
                 eff = np.array([e if e > 0 else 0. for e in eff])
@@ -152,13 +153,12 @@ class Optic:
 
         return (elem, emiss, effic, temp)
 
-    # ***** Private Methods *****
+    # ***** Helper Methods *****
     # Ratio of blackbody power between two temperatures
     def _pow_frac(self, T1, T2, freqs):
         return (np.trapz(self._ph.bbPowSpec(freqs, T1), freqs) /
                 float(np.trapz(self.__ph.bbPowSpec(freqs, T2), freqs)))
 
-    # Sample parameter values
     def _param_samp(self, param, band_id):
         if not ('instance' in str(type(param)) or 'class' in str(type(param))):
             return np.float(param)
