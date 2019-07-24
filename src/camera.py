@@ -26,32 +26,22 @@ class Camera:
     opt_chn (src.OpticalChain): OpticalChain object
     chs (dict): dictionary of Channel objects
     pixs (dict): dictionary of Channel objects grouped by pixel
+    config_dir (str): configuration directory for this camera
     """
     def __init__(self, tel, inp_dir):
         # Store passed parameters
         self.tel = tel
         self.dir = inp_dir
+        self._log = self.tel.exp.sim.log
+        self._load = self.tel.exp.sim.load
 
         # Check whether this camera exists
-        if not os.path.isdir(self.dir):
-            self._log().err("Camera dir '%s' does not exist" % (self.dir))
-
-        # Check whether configuration directory exists
-        self._config_dir = os.path.join(self.dir, 'config')
-        if not os.path.isdir(self._config_dir):
-            self._log().err(
-                "Camera config dir '%s' does not exist"
-                % (self._config_dir))
-
+        self._check_dirs()
         # Name the camera
         self.name = self.dir.rstrip(os.sep).split(os.sep)[-1]
 
         # Store camera parameters into a dictionary
-        cam_file = os.path.join(self._config_dir, 'camera.txt')
-        if not os.path.isfile(cam_file):
-            self._log().err(
-                "Camera file '%s' does not exist" % (cam_file))
-        self._store_param_dict(self._load().camera(cam_file))
+        self._store_param_dict()
 
         # Generate camera
         self.generate()
@@ -66,10 +56,10 @@ class Camera:
 
         # Store channel objects
         self._band_dict = self._gen_band_dict(
-            os.path.join(self._config_dir, "Bands", "Detectors"))
+            os.path.join(self.config_dir, "Bands", "Detectors"))
         chn_file = os.path.join(
-            self._config_dir, "channels.txt")
-        chan_dicts = self._load().channel(chn_file)
+            self.config_dir, "channels.txt")
+        chan_dicts = self._load.channel(chn_file)
         self.chs = cl.OrderedDict({})
         for chan_dict in chan_dicts:
             if chan_dict["Band ID"] in self.chs.keys():
@@ -95,12 +85,6 @@ class Camera:
                     self.chs[ch].pixel_id] = [self.chs[ch]]
 
     # ***** Private Methods *****
-    def _log(self):
-        return self.tel.exp.sim.log
-
-    def _load(self):
-        return self.tel.exp.sim.ld
-
     def _gen_band_dict(self, dir):
         bandFiles = sorted(gb.glob(os.path.join(dir, '*')))
         if len(bandFiles):
@@ -123,17 +107,23 @@ class Camera:
             return param.sample(nsample=1)
 
     def _store_param_dict(self, params):
-        self.param_dict = {
-            "bore_elev": pr.Parameter(
+        cam_file = os.path.join(self.config_dir, 'camera.txt')
+        if not os.path.isfile(cam_file):
+            self._log().err(
+                "Camera file '%s' does not exist" % (cam_file))
+        else:
+            params = self._load.camera(cam_file)
+            self.param_dict = {
+                "bore_elev": pr.Parameter(
                     self._log(), "Boresight Elevation",
                     params["Boresight Elevation"], min=-40.0, max=40.0),
-            "opt_coup": pr.Parameter(
+                "opt_coup": pr.Parameter(
                     self._log(), "Optical Coupling",
                     params["Optical Coupling"], min=0.0, max=1.0),
-            "fnum": pr.Parameter(
+                "fnum": pr.Parameter(
                     self._log(), "F Number",
                     params["F Number"], min=0.0, max=np.inf),
-            "tb": pr.Parameter(
+                "tb": pr.Parameter(
                     self._log(), "Bath Temp",
                     params["Bath Temp"], min=0.0, max=np.inf)}
         return
@@ -142,4 +132,16 @@ class Camera:
         self.param_vals = {}
         for k in self.param_dict:
             self.param_vals[k] = self._param_samp(self.params_dict[k])
+        return
+
+    def _check_dirs(self):
+        # Check that camera directory exists
+        if not os.path.isdir(self.dir):
+            self._log().err("Camera dir '%s' does not exist" % (self.dir))
+        # Check whether configuration directory exists
+        self.config_dir = os.path.join(self.dir, 'config')
+        if not os.path.isdir(self.config_dir):
+            self._log().err(
+                "Camera config dir '%s' does not exist"
+                % (self.config_dir))
         return

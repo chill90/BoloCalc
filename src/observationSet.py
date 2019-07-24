@@ -21,13 +21,16 @@ class ObservationSet:
     def __init__(self, ch):
         # Store the elevation values and probabilities
         if ch.elev_dict is not None:
-            self._elev_vals = np.fromiter(ch.elev_dict.keys(),   dtype=np.float)
-            self._elev_frac = np.fromiter(ch.elev_dict.values(), dtype=np.float)
+            self._elev_vals = np.fromiter(
+                ch.elev_dict.keys(), dtype=np.float)
+            self._elev_frac = np.fromiter(
+                ch.elev_dict.values(), dtype=np.float)
         else:
             self._elev_vals = None
             self._elev_frac = None
 
         # Store observation objects
+        nobs = ch.cam.tel.exp.sim.param("nobs")
         obs_arr = [ob.Observation(self) for n in range(nobs)]
         # Store sky temperatures and efficiencies
         self.temps = np.array([obs.temp for obs in obs_arr])
@@ -39,6 +42,6 @@ class ObservationSet:
         if self._elev_vals is not None and self._elev_frac is not None:
             return np.random.choice(
                 self._elev_vals, size=1,
-                p=self._elev_frac/float(np.sum(self._elev_frac)))[0]
+                p=self._elev_frac / float(np.sum(self._elev_frac)))[0]
         else:
             return 0.

@@ -24,8 +24,10 @@ class Channel:
 
     Attributes:
     cam (src.Camera): where the 'cam' arg is stored
-    band_file (str): where the 'inp_dict'
+    band_id (int): band ID for this channel on its pixel
+    band_file (str): where the 'band_file' is stored
     elev_dict (dict): dictionary containing pixel elevation distribution
+    det_dict (dict): dictionary of detector-specific parameters
     name (str): channel name
     band_id (int): channel band ID
     pixel_id (int): channel pixel ID
@@ -35,10 +37,13 @@ class Channel:
         self.cam = cam
         self._inp_dict = inp_dict
         self.band_file = band_file
+        self._log = self.cam.tel.exp.sim.log
+        self._load = self.cam.tel.exp.sim.load
+        self._fres = self.cam.tel.exp.sim.fetch("fres")
 
         # Name this channel
         self.band_id = int(self.inp_dict["Band ID"].fetch())
-        self.pixel_id = int(self.inp_dict["Band ID"].fetch())
+        self.pixel_id = int(self.inp_dict["Pixel ID"].fetch())
         self.name = (self.cam.name + str(self.band_id))
 
         # Store the channel parameters in a dictionary
@@ -58,7 +63,7 @@ class Channel:
         # Frequencies to integrate over
         if self.band_file is not None:
             # Use defined band
-            band = bd.Band(self._log(), self.band_file)
+            self.band = bd.Band(self._log, self.band_file)
             self.loFreq = np.amin(band.freqs)
             self.hiFreq = np.amax(band.freqs)
             # Band mask edges
@@ -67,18 +72,18 @@ class Channel:
         else:
             # Use wider than nominal band by 30% to cover tolerances/errors
             self.loFreq = (
-                self.det_dict["bc"].getAvg() *
-                (1. - 0.65*self.detectorDict["fbw"].getAvg()))
+                self.det_dict["bc"].get_avg() *
+                (1. - 0.65*self.det_dict["fbw"].get_avg()))
             self.hiFreq = (
-                self.detectorDict["bc"].getAvg() *
-                (1. + 0.65*self.detectorDict["fbw"].getAvg()))
+                self.det_dict["bc"].get_avg() *
+                (1. + 0.65*self.det_dict["fbw"].get_avg()))
             # Band mask edges defined using band center and fractional BW
             self.fLo = (
-                self.detectorDict["bc"].getAvg() *
-                (1. - 0.50*self.detectorDict["fbw"].getAvg()))
+                self.det_dict["bc"].get_avg() *
+                (1. - 0.50*self.det_dict["fbw"].get_avg()))
             self.fHi = (
-                self.detectorDict["bc"].getAvg() *
-                (1. + 0.50*self.detectorDict["fbw"].getAvg()))
+                self.det_dict["bc"].get_avg() *
+                (1. + 0.50*self.det_dict["fbw"].get_avg()))
         self.freqs = np.arange(
             self.loFreq, self.hiFreq+self._fres(), self._fres())
         self.nfreq = len(self.freqs)
@@ -88,15 +93,11 @@ class Channel:
         self.band_mask = (self.freqs > self.flo) * (self.freqs < self.fhi)
         self.bandDeltaF = self.fHi - self.fLo
 
-        # Sample the pixel parameters
-        self.apEff = None  # Calculated later
-        self.edgeTaper = None  # Calculated later
-
         # Store the detector array object
         self.det_arr = da.DetectorArray(self)
 
         # Store the observation set object
-        self.obsSet = ob.ObservationSet(self)
+        self.obs_set = ob.ObservationSet(self)
 
         # Build the element, emissivity, efficiency, and temperature arrays
         elem, emiss, effic, temp = self.cam.opt_chain.generate(self)
@@ -117,24 +118,19 @@ class Channel:
              for i in range(self.det_arr.nDet)]
              for obs in self.obsSet.observations]).astype(np.float)
 
-    def fetch(self, param):
+    def param(self, param):
         if param in self._param_vals.keys():
             return self._param_vals[param]
         else:
-            return self._cam_fetch(param)
+            return self._cam_param(param)
+
+    def set_param(self, param, val):
+        self._param_vals[param] = val
+        return
 
     # ***** Private Methods *****
-    def _log(self):
-        return self.cam.tel.exp.sim.log
-
-    def _load(self):
-        return self.cam.tel.exp.sim.load
-
-    def _fres(self):
-        return self.cam.tel.exp.sim.fetch("fres")
-
-    def _cam_fetch(self, param):
-        return self.cam.fetch(param)
+    def _cam_param(self, param):
+        return self.cam.param(param)
 
     def _param_samp(self, param, bandID):
         if not ("instance" in str(type(param)) or "class" in str(type(param))):
@@ -147,77 +143,77 @@ class Channel:
     def _store_param_dict(self, params):
         self._param_dict = {
             "det_per_waf": pr.Parameter(
-                self._log(), "Num Det per Wafer", params["Num Det per Wafer"],
+                self._log, "Num Det per Wafer", params["Num Det per Wafer"],
                 min=0.0, max=np.inf),
             "waf_per_ot": pr.Parameter(
-                self._log(), "Num Waf per OT", params["Num Waf per OT"],
+                self._log, "Num Waf per OT", params["Num Waf per OT"],
                 min=0.0, max=np.inf),
             "ot": pr.Parameter(
-                self._log(), "Num OT", params["Num OT"],
+                self._log, "Num OT", params["Num OT"],
                 min=0.0, max=np.inf),
             "yield": pr.Parameter(
-                self._log(), "Yield", params["Yield"],
+                self._log, "Yield", params["Yield"],
                 min=0.0, max=1.0),
             "pix_sz": pr.Parameter(
-                self._log(), "Pixel Size", params["Pixel Size"],
+                self._log, "Pixel Size", params["Pixel Size"],
                 un.Unit("mm"), min=0.0, max=np.inf),
             "wf": pr.Parameter(
-                self._log(), "Waist Factor", params["Waist Factor"],
+                self._log, "Waist Factor", params["Waist Factor"],
                 min=2.0, max=np.inf)}
 
         self.det_dict = {
             "bc": pr.Parameter(
-                self._log(), "Band Center", params["Band Center"],
+                self._log, "Band Center", params["Band Center"],
                 un.Unit("GHz"), min=0.0, max=np.inf),
             "fbw": pr.Parameter(
-                self._log(), "Fractional BW", params["Fractional BW"],
+                self._log, "Fractional BW", params["Fractional BW"],
                 min=0.0, max=2.0),
             "det_eff": pr.Parameter(
-                self._log(), "Det Eff", params["Det Eff"],
+                self._log, "Det Eff", params["Det Eff"],
                 min=0.0, max=1.0),
             "psat": pr.Parameter(
-                self._log(), "Psat", params["Psat"],
+                self._log, "Psat", params["Psat"],
                 un.Unit("pW"), min=0.0, max=np.inf),
             "psat_fact": pr.Parameter(
-                self._log(), "Psat Factor", params["Psat Factor"],
+                self._log, "Psat Factor", params["Psat Factor"],
                 min=0.0, max=np.inf),
             "n": pr.Parameter(
-                self._log(), "Carrier Index", params["Carrier Index"],
+                self._log, "Carrier Index", params["Carrier Index"],
                 min=0.0, max=np.inf),
             "tc": pr.Parameter(
-                self._log(), "Tc", params["Tc"],
+                self._log, "Tc", params["Tc"],
                 min=0.0, max=np.inf),
             "tc_frac": pr.Parameter(
-                self._log(), "Tc Fraction", params["Tc Fraction"],
+                self._log, "Tc Fraction", params["Tc Fraction"],
                 min=0.0, max=np.inf),
             "nei": pr.Parameter(
-                self._log(), "SQUID NEI", params["SQUID NEI"],
+                self._log, "SQUID NEI", params["SQUID NEI"],
                 un.Unit("pA/rtHz"), min=0.0, max=np.inf),
             "bolo_r": pr.Parameter(
-                self._log(), "Bolo Resistance", params["Bolo Resistance"],
+                self._log, "Bolo Resistance", params["Bolo Resistance"],
                 min=0.0, max=np.inf),
             "read_frac": pr.Parameter(
-                self._log(), "Read Noise Frac", params["Read Noise Frac"],
+                self._log, "Read Noise Frac", params["Read Noise Frac"],
                 min=0.0, max=1.0)}
 
         # Newly added parameters to BoloCalc
         # checked separately for backwards compatibility
         if "Flink" in self.param_dict.keys():
             self.det_dict["flink"] = pr.Parameter(
-                self._log(), "Flink", self._param_dict["Flink"],
+                self._log, "Flink", self._param_dict["Flink"],
                 min=0.0, max=np.inf)
         else:
             self.det_dict["flink"] = pr.Parameter(
-                self._log(), "Flink", "NA",
+                self._log, "Flink", "NA",
                 min=0.0, max=np.inf)
 
         if "G" in self.param_dict.keys():
             self.det_dict["g"] = pr.Parameter(
-                self._log(), "G", self._param_dict["G"],
+                self._log, "G", self._param_dict["G"],
                 un.Unit("pW"), min=0.0, max=np.inf)
         else:
             self.det_dict["g"] = pr.Parameter(
-                self._log(), "G", "NA",
+                self._log, "G", "NA",
                 un.Unit("pW"), min=0.0, max=np.inf)
 
         # Parameters that are the same for all detectors
@@ -236,12 +232,12 @@ class Channel:
             self._param_vals[k] = self.det_dict[k].get_avg(self.band_id)
         # Derived channel parameters
         self._param_vals["ndet"] = int(self.param_vals["det_per_waf"] *
-                                      self.param_vals["waf_per_ot"] *
-                                      self.param_vals["ot"])
+                                       self.param_vals["waf_per_ot"] *
+                                       self.param_vals["ot"])
         if self.det_arr.cam.tel.exp.sim.fetch("ndet") is "NA":
             self._param_vals["cdet"] = self._param_vals["ndet"]
         else:
-            self._param_vals["cdet"] = self.det_arr.cam.tel.exp.sim.fetch("ndet")
+            self._param_vals["cdet"] = self.cam.tel.exp.sim.fetch("ndet")
 
     def _store_elev_dict(self):
         elev_files = sorted(gb.glob(os.path.join(
@@ -249,14 +245,13 @@ class Channel:
         if len(elev_files) == 0:
             self.elev_dict = None
         elif len(elev_files) > 1:
-            self._log().err(
+            self._log.err(
                 "More than one pixel elevation distribution for camera '%s'"
                 % (self.cam.name))
             self.elev_dict = None
         else:
             elev_file = elv_files[0]
             self.elev_dict = self._load().elevation(elev_files[0])
-            self._log().log("Using pixel elevation distribution '%s'"
-                            % (self.cam.name, elev_file),
-                            self._log().level["MODERATE"])
-
+            self._log.log("Using pixel elevation distribution '%s'"
+                          % (self.cam.name, elev_file),
+                          self._log.level["MODERATE"])

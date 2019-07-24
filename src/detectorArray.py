@@ -4,32 +4,34 @@ import src.band as bd
 
 
 class DetectorArray:
+    """
+    DetectorArray object contains the Detector object for a given channel
+
+    Args:
+    ch (src.Channel): Channel object
+
+    Attributes:
+    dets (list): list of src.Detector objects
+    """
     def __init__(self, ch):
         # Store some passed parameters
         self.ch = ch
+        log = self.ch.cam.tel.exp.sim.log
+        nexp = self.ch.cam.tel.exp.sim.param("nexp")
+        ndet = self.ch.cam.tel.exp.sim.param("ndet")
 
         # Store detectors
-        if self.ch.band_file is not None:
-            band = bd.Band(self._log(), self.ch.band_file, self.ch.freqs)
-            if band.eff is not None:
-                if self._nexp() == 1:
-                    bands = band.get_avg(nsample=self._ndet())
+        if self.ch.band is not None:
+            if self.ch.band.eff is not None:
+                if nexp == 1:
+                    bands = self.ch.band.get_avg(nsample=ndet)
                 else:
-                    bands = band.sample(nsample=self._ndet())
-                self.dets = [dt.Detector(self._log(), self.ch, bands[i])
-                                  for i in range(self._ndet())]
+                    bands = band.sample(nsample=ndet)
+                self.dets = [dt.Detector(log, self.ch, bands[i])
+                             for i in range(ndet)]
             else:
-                self.dets = [dt.Detector(self._log(), self.ch)
-                                  for i in range(self._ndet())]
+                self.dets = [dt.Detector(log, self.ch)
+                             for i in range(ndet)]
         else:
-            self.dets = [dt.Detector(self._log(), self.ch)
-                              for i in range(self._ndet())]
-
-    def _log(self):
-        return self.ch.cam.tel.exp.sim.log
-
-    def _nexp(self):
-        return self.cam.tel.exp.sim.fetch("nexp")
-
-    def _ndet(self):
-        return self.cam.tel.exp.sim.fetch("ndet")
+            self.dets = [dt.Detector(log, self.ch)
+                         for i in range(ndet)]

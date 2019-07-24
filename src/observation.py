@@ -3,7 +3,27 @@ import numpy as np
 
 
 class Observation:
+    """
+    Observation object holds sky elements, absorbtivities, tranmissions,
+    and temperatures for a given observation, defined by PWV and the
+    elevation for the detector pixel being calculated
+
+    Args:
+    obs_set (src.ObservationSet): ObservationSet object
+
+    Attributes:
+    elem (list): sky element names
+    emis (list): sky element absorbtivities
+    tran (list): sky element transmissions
+    temp (list): sky element temperatures
+    """
     def __init__(self, obs_set):
+        # Store passed parameters
+        self._sky = self.obs_set.ch.cam.tel.sky
+        self._scn = self.obs_set.ch.cam.tel.scn
+        self._det_arr = self.obs_set.ch.det_arr
+        self._ndet = self.cam.tel.exp.sim.fetch("ndet")
+
         # Store PWV and elevation
         self._get_pwv_elev()
 
@@ -17,13 +37,13 @@ class Observation:
         self.elem.resize(len(self.elem), len(self.elem[0]))
         self.elem = self.elem.tolist()
         # Emissivity
-        self.emiss = emiss.reshape(
+        self.emis = emiss.reshape(
             len(emiss), len(emiss[0][0]), len(emiss[0][0][0])).astype(np.float)
-        self.emiss = self.emiss.tolist()
+        self.emis = self.emiss.tolist()
         # Efficiency
-        self.effic = effic.reshape(
+        self.tran = effic.reshape(
             len(effic), len(effic[0][0]), len(effic[0][0][0])).astype(np.float)
-        self.effic = self.effic.tolist()
+        self.tran = self.effic.tolist()
         # Temperature
         self.temp = temp.reshape(
             len(temp), len(temp[0][0]), len(temp[0][0][0])).astype(np.float)
@@ -47,15 +67,3 @@ class Observation:
         return np.hsplit(np.array([self._sky().generate(
             pwv, elv, det.ch.freqs)
             for det in self._det_arr().dets]), 4)
-
-    def _sky(self):
-        return self.obs_set.ch.cam.tel.sky
-
-    def _scn(self):
-        return self.obs_set.ch.cam.tel.scn
-
-    def _det_arr(self):
-        return self.obs_set.ch.det_arr
-
-    def _ndet(self):
-        return self.cam.tel.exp.sim.fetch("ndet")

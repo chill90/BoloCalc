@@ -7,6 +7,9 @@ import src.units as un
 
 
 class Band:
+    """
+    
+    """
     def __init__(self, band_file, freq_inp=None):
         self.ftype = self.band_file.split('.')[-1]
         self._load = ld.Loader()

@@ -9,54 +9,70 @@ import src.optic as op
 
 
 class OpticalChain:
+    """
+    OpticalChain object contains the Optics object for a given camera
+
+    Args:
+    cam (src.Camera): Camera object for this optical chain
+
+    Attributes:
+    elem (list): list of optic element names
+    abso (list): list of optic element absorbtivities
+    tran (list): list of optic element transmissions
+    temp (list): list of optic element temperatures
+    """
     def __init__(self, cam):
         # Store passed parameters
         self.cam = cam
+        self._log = self.cam.tel.exp.sim.log
+        self._load = self.cam.tel.exp.sim.load
 
         # Store optic objects
-        self.param_dicts = self._load().optics(
-            os.path.join(self.cam.config_dir, 'optics.txt'))
         self._gen_band_dict()
         self._store_optics()
 
     # ***** Public Methods *****
-    # Generate element, temperature, emissivity, and efficiency arrays
     def generate(self, ch):
-        arr = [optic.generate(ch) for optic in list(self.optics.values())]
-        elem = [a[0] for a in arr]
-        emiss = [a[1] for a in arr]
-        effic = [a[2] for a in arr]
-        temp = [a[3] for a in arr]
-        return elem, emiss, effic, temp
+        """
+        Generate names, absorbtivities, transmissions, and temperatures
+        for all optical elements in a given channel
+
+        Args:
+        ch (src.Channel): Channel objects
+        """
+        arr = [optic.generate(ch) for optic in list(self._optics.values())]
+        self.elem = [a[0] for a in arr]
+        self.emis = [a[1] for a in arr]
+        self.tran = [a[2] for a in arr]
+        self.temp = [a[3] for a in arr]
+        return
 
     # ***** Private Methods *****
-    def _log(self):
-        return self.cam.tel.exp.sim.log
-
-    def _load(self):
-        return self.cam.tel.exp.sim.ld
-
     def _gen_band_dict(self):
         band_dir = os.path.join(self.cam.config_dir, 'Optics')
-        self.band_dict = self._load().band_dir(band_dir)
+        self._band_dict = self._load.band_dir(band_dir)
         return
 
     def _store_optics(self):
-        self.optics = cl.OrderedDict({})
-        for param_dict in self.param_dicts:
+        param_dicts = self._load.optics(
+            os.path.join(self.cam.config_dir, 'optics.txt'))
+        self._optics = cl.OrderedDict({})
+        for param_dict in param_dicts:
             # Check for duplicate optic names
-            if param_dict["Element"].fetch() in self.optics.keys():
-                self._log().err(
+            if param_dict["Element"] in self._optics.keys():
+                self._log.err(
                     "Multiple optical elements named '%s' in camera '%s'"
-                    % (param_dict["Element"].fetch(), self.cam.dir))
+                    % (param_dict["Element"], self.cam.dir))
             # Check for optic band file
-            if (self.band_dict is not None and
-               param_dict["Element"].fetch() in self.band_dict.keys()):
-                band_file = self.band_dict[param_dict["Element"].fetch()]
-                self._log().log("Using user-input spectra for optic '%s'"
-                                % (param_dict["Element"].fetch()), 1)
+            if (self._band_dict is not None and param_dict["Element"] in
+               self._band_dict.keys()):
+                band_file = self._band_dict[param_dict["Element"]]
+                self._log.log("Using user-input spectra for optic '%s'"
+                              % (param_dict["Element"].fetch()),
+                              self._log.level["MODERATE"])
             else:
                 band_file = None
             # Store optic
-            self.optics.update({param_dict['Element'].fetch(): op.Optic(
-                param_dict, band_file=band_file)})
+            self._optics.update({param_dict['Element']: op.Optic(
+                self, param_dict, band_file=band_file)})
+        return

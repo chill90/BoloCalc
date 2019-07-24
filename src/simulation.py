@@ -34,6 +34,7 @@ class Simulation:
     load (src.Load): Load object
     phys (src.Physics): Physics object
     noise (src.Noise): Noise object
+    self.exps (list): list of src.Experiment objects
     """
     def __init__(self, log_file, sim_file, exp_dir):
         # Store experiment input file
@@ -45,12 +46,12 @@ class Simulation:
         self.phys = ph.Physics()
         self.noise = ns.Noise(self.phys)
 
-        # Store parameter dictionary
-        self._store_param_dict(ld.sim(sim_file))
+        # Store parameter values
+        self._store_param_dict(load.sim(sim_file))
 
         # Set up multiprocessing
-        if self.fetch("mpss"):
-            self._pool = mp.Pool(self.fetch("core"))
+        if self.param("mpss"):
+            self._pool = mp.Pool(self.param("core"))
 
         # Length of status bar
         self._bar_len = 100.
@@ -58,40 +59,40 @@ class Simulation:
     # **** Public Methods ****
     def generate(self):
         """ Generate experiments """
-        if not self.fetch("mpss"):
-            self.experiments = [
+        if not self.param("mpss"):
+            self.exps = [
                 self._mp1(self._exp_dir, n)
-                for n in range(self.fetch("nexp"))]
+                for n in range(self.param("nexp"))]
             self._done()
         else:
-            designDirs = [
+            design_dirs = [
                 self._exp_dir
-                for n in range(self.fetch("nexp"))]
-            self.experiments = self._pool.map(self._mp1, designDirs)
+                for n in range(self.param("nexp"))]
+            self.exps = self._pool.map(self._mp1, design_dirs)
 
     def calculate(self):
         """ Calculate experiments """
-        if not self.fetch("mpps"):
-            calculates = [
-                self._mp2(self.experiments[n], n)
-                for n in range(self.fetch("nexp"))]
+        if not self.param("mpps"):
+            calcs = [
+                self._mp2(self.exps[n], n)
+                for n in range(self.param("nexp"))]
             self._done()
-            calculates = [
-                self._mp3(calculates[n], n)
-                for n in range(self.fetch("nexp"))]
+            calcs = [
+                self._mp3(calcs[n], n)
+                for n in range(self.param("nexp"))]
             self._done()
         else:
-            calculates = self._pool.map(self._mp2, self.experiments)
-            calculates = self._pool.map(self._mp3, calculates)
-        return self._mp4(calculates)
+            calcs = self._pool.map(self._mp2, self.exps)
+            calcs = self._pool.map(self._mp3, calcs)
+        return self._mp4(calcs)
 
     def simulate(self):
         """ Generate and calculate experiments """
         self.generate()
         self.calculate()
 
-    def fetch(self, param):
-        """ Fetch parameter from param_dict
+    def param(self, param):
+        """ Return parameter from param_dict
 
         Args:
         param (str): name or parameter, param_dict key
@@ -99,12 +100,11 @@ class Simulation:
         return self._param_dict[param].fetch()
 
     # **** Helper Methods ****
-    # Multiprocessing functions
     def _mp1(self, drr, n=None):
         if n is not None and n == 0:
             self.log.log(
                 "Generating %d experiment realizations."
-                % (self.fetch("exp")))
+                % (self.param("exp")))
         self._status(n)
         return ex.Experiment(self)
 
@@ -120,22 +120,22 @@ class Simulation:
         if n is not None and n == 0:
             self.log.log(
                 "Calculating statistics for %d experiment realizations"
-                % (self.fetch("nexp")))
+                % (self.param("nexp")))
         self._status(n)
         chs = clc.chans
         tps = clc.teles
         senses = [[[
-            clc.calcSensitivity(chs[i][j][k], tps[i][j][k])
+            clc.calc_sens(chs[i][j][k], tps[i][j][k])
             for k in range(len(chs[i][j]))]
             for j in range(len(chs[i]))]
             for i in range(len(chs))]
-        optpow = [[[
-            clc.calcOpticalPower(chs[i][j][k], tps[i][j][k])
+        opt_pow = [[[
+            clc.calc_opt_pow(chs[i][j][k], tps[i][j][k])
             for k in range(len(chs[i][j]))]
             for j in range(len(chs[i]))]
             for i in range(len(chs))]
-        clc.combineSensitivity(senses)
-        clc.combineOpticalPower(optpow)
+        clc.comb_sens(senses)
+        clc.comb_opt_pow(opt_pow)
         return clc
 
     def _mp4(self, clcs):
@@ -145,11 +145,11 @@ class Simulation:
         return dsp
 
     def _status(self, rel):
-        frac = float(rel)/float(self.fetch("nexp"))
+        frac = float(rel) / float(self.param("nexp"))
         sy.stdout.write('\r')
         sy.stdout.write(
             "[%-*s] %02.1f%%" % (self._bar_len, '=' * int(
-                self._bar_len*frac), frac**100.))
+                self._bar_len*frac), frac*100.))
         sy.stdout.flush()
         return
 
