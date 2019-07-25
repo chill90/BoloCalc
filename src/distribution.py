@@ -17,7 +17,11 @@ class Distribution:
     prob (array): probabilities
     val (array): values
     """
-    def __init__(self, inp):
+    def __init__(self, inp, load=None):
+        # Store passed parameters
+        self._inp = inp
+        self._load = load
+
         # Load PDF from file if 'finput' is a string
         if isinstance(inp, str):
             self._load = ld.Loader()

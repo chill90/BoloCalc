@@ -5,238 +5,292 @@ import functools as ft
 
 # BoloCalc modules
 import src.units as un
+import src.distribution as ds
 
 
 class Sensitivity:
-    def __init__(self, calc):
+    def __init__(self, sim):
         # Store passed parameters
-        self.calc = calc
-        self._phys = self.calc.sim.phys
-        self._noise = self.calc.sim.noise
-        self._corr = self.calc.sim.param("corr")
+        self.sim = sim
+        self._log = self.sim.log
+        self._phys = self.sim.phys
+        self._noise = self.sim.noise
+        self._corr = self.sim.param("corr")
+        self._nobs = self.sim.param("nobs")
+        self._ndet = self.sim.param("ndet")
 
     # ***** Public Methods *****
-    # Optical power given some array of optical elements
-    def popt(self, elem, emiss, eff, temp, freqs):
-        eff = np.insert(eff, len(eff), [1. for f in freqs], axis=0)
-        eff = np.array(eff).astype(np.float)
-        return np.sum([np.trapz(
-            self._phys().bb_pow_spec(
-                freqs, temp[i], emiss[i] *
-                np.prod(eff[i+1:], axis=0)), freqs)
-                for i in range(len(elem))])
+    # Mapping speed given some channel and telescope
+    def sensitivity(self, ch):
+        tp = ch.cam.tp
+        # Calculate aperture efficiency
+        self._ap_eff = ch.param("ap_eff")
+        # Calculate optical power
+        self._calc_popt(ch)
+        # Calculate NEP
+        self._calc_photon_NEP(ch)
+        self._calc_bolo_NEP(ch)
+        self._calc_read_NEP(ch)
+        self._calc_tot_NEP(ch)
+        # Calculte NET
+        self._calc_NET(ch)
+        self._calc_NET_arr(ch)
+        # Calculate mapping speed
+        self._calc_MS()
+        # Calculate map depth
+        self._calc_sens()
 
-    # Photon NEP given some array of optical elements
-    def photon_NEP(self, elem, emiss, eff, temp, freqs, ch=None):
-        eff = np.insert(eff, len(eff), [1. for f in freqs], axis=0)
-        eff = np.array(eff).astype(np.float)
+        # Return a dictionary of distribution objects
+        ret_dict = {
+            "Stop Efficiency": ds.Distribution(self._ap_eff),
+            "Optical Power": ds.Distribution(self._popt_arr.flatten()),
+            "Photon NEP": ds.Distribution(self._NEP_ph_arr.flatten()),
+            "Bolometer NEP": ds.Distribution(self._NEP_bolo_arr.flatten()),
+            "Readout NEP": ds.Distribution(self._NEP_read_arr.flatten()),
+            "Detector NEP": ds.Distribution(self._NEP.flatten()),
+            "Detector NET": ds.Distribution(self._NET),
+            "Array NET": ds.Distribution(self._NET_arr),
+            "Mapping Speed": ds.Distribution(self._MS),
+            "Map Depth": ds.Distribution(self._sens)}
+
+        return ret_dict
+
+    # Optical power element by element given some channel and telescope
+    def opt_pow(self, ch):
+        # Store passed parameters
+        tp = ch.cam.tel
+        self._pow_sky_side = []
+        self._pow_det_side = []
+        self._eff_det_side = []
+        for i in range(len(ch.elem)):
+            pow_sky_side_1 = []
+            pow_det_side_1 = []
+            eff_det_side_1 = []
+            for j in range(len(ch.elem[i])):
+                pows = []
+                pow_sky_side_2 = []
+                pow_det_side_2 = []
+                eff_sky_side_2 = []
+                eff_det_side_2 = []
+                # Store efficiency towards sky and towards detector
+                for k in range(len(ch.elem[i][j])):
+                    eff_arr = np.vstack([ch.tran[i][j],
+                                         np.array([1. for f in ch.freqs])])
+                    cum_eff_det = ft.reduce(lambda x, y: x*y, eff_arr[k+1:])
+                    eff_det_side_2.append(cum_eff_det)
+                    if k == 0:
+                        # Zero elements sky side
+                        cum_eff_sky = [[0. for f in ch.freqs]]
+                    elif k == 1:
+                        # One element sky side
+                        cum_eff_sky = [[1. for f in ch.freqs],
+                                       [0. for f in ch.freqs]]
+                    else:
+                        cum_eff_sky = [ft.reduce(
+                            lambda x, y: x*y, eff_arr[m+1:k])
+                            if m < k-2 else eff_arr[m+1]
+                            for m in range(k-1)] + [[1. for f in ch.freqs],
+                                                    [0. for f in ch.freqs]]
+                    eff_sky_side_2.append(np.array(cum_eff_sky))
+                    pow = self.ph.bb_pow_spec(
+                        ch.freqs, ch.temp[i][j][k], ch.emis[i][j][k])
+                    pows.append(pow)
+                # Store power from sky and power on detector
+                for k in range(len(ch.elem[i][j])):
+                    pow_out = np.trapz(
+                        pows[k] * eff_det_side_2[k] * ch.band_mask, ch.freqs)
+                    eff_det_side_2[k] = np.trapz(
+                        eff_det_side_2[k] * ch.band_mask, ch.freqs) / (
+                            float(ch.freqs[-1] - ch.freqs[0]))
+                    pow_det_side_2.append(pow_out)
+                    pow_in = sum([np.trapz(
+                        pows[m]*eff_sky_side_2[k][m] * ch.band_mask, ch.freqs)
+                        for m in range(k+1)])
+                    pow_sky_side_2.append(pow_in)
+                pow_sky_side_1.append(pow_sky_side_2)
+                pow_det_side_1.append(pow_det_side_2)
+                eff_det_side_1.append(eff_det_side_2)
+            pow_sky_side.append(pow_sky_side_1)
+            pow_det_side.append(pow_det_side_1)
+            eff_det_side.append(eff_det_side_1)
+        # Build table of optical powers and efficiencies for each element
+        return self._opt_table()
+        return means, stds
+
+    # ***** Helper Methods *****
+    def _calc_popt(self, ch):
+        self._popt_arr = np.array([[self.popt(
+            ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
+            ch.temp[i][j], ch.freqs)
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        return
+
+    def _calc_photon_NEP(self, ch):
+        if self._corr:
+            pass_ch = ch
+        else:
+            pass_ch = None
+        NEP_ph_arr = np.array([[self.photon_NEP(
+            ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
+            ch.temp[i][j], ch.freqs, pass_ch)
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        NEP_ph_arr, NEP_ph_arr_corr = np.split(NEP_ph_arr, 2, axis=2)
+        self._NEP_ph_arr = np.reshape(
+            NEP_ph_arr, np.shape(NEP_ph_arr)[:2])
+        self._NEP_ph_arr_corr = np.reshape(
+            NEP_ph_arr_corr, np.shape(NEP_ph_arr_corr)[:2])
+        return
+
+    def _calc_bolo_NEP(self, ch):
+        self._NEP_bol_arr = np.array([[self.bolo_NEP(
+            popt_arr[i][j], ch.det_arr.dets[j])
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        return
+
+    def _calc_read_NEP(self, ch):
+        NEP_read_arr = np.array([[self.read_NEP(
+            popt_arr[i][j], ch.det_arr.dets[j])
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+
+        if 'NA' in NEP_read_arr:
+            self._NEP_read_arr = np.array([[np.sqrt(
+                (1. + ch.det_arr.dets[j].param("read_frac"))**2 - 1.) *
+                np.sqrt(self._NEP_ph_arr[i][j]**2 +
+                        self._NEP_bolo_arr[i][j]**2)
+                for j in range(self._ndet)]
+                for i in range(self._nobs)])
+        else:
+            self._NEP_read_arr = NEP_read_arr
+        return
+
+    def _calc_tot_NEP(self, ch):
+        self._NEP = np.sqrt(self._NEP_ph_arr**2 +
+                            self._NEP_bolo_arr**2 +
+                            self._NEP_read_arr**2)
+        # Total NEP with correlation adjustment
+        self._NEP_corr = np.sqrt(self._NEP_ph_arr_corr**2 +
+                                 self._NEP_bolo_arr**2 +
+                                 self._NEP_read_arr**2)
+        return
+
+    def _calc_NET(self, ch):
+        # Total NET
+        self._NET = np.array([[self._noise.NET_from_NEP(
+            self._NEP[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
+            ch.cam.param("opt_coup"))
+            for j in range(self._ndet)]
+            for i in range(self._nobs)]).flatten() * tp.params("net_mgn")
+        # Total NET with correlation adjustment
+        self._NET_corr = np.array([[self._noise.NET_from_NEP(
+            self._NEP_corr[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
+            ch.cam.param("opt_coup"))
+            for j in range(self._ndet)]
+            for i in range(self._nobs)]).flatten() * tp.params("net_mgn")
+        return
+
+    def _calc_NET_arr(self, ch):
+        self._NET_arr = self._phys.inv_var(self._NET_corr) * np.sqrt(
+            float(self._nobs)) * np.sqrt(
+                float(self._ndet) / float(
+                    ch.params("yield") * ch.param("ndet")))
+        return
+
+    def _calc_MS(self):
+        self._MS = 1./(np.power(self._NET_arr, 2.))
+
+    def _calc_sens(self):
+        self._sens = self._noise.sensitivity(
+            NET_arr, tp.params("sky_frac"),
+            tp.params("obs_time") *
+            tp.params("obs_eff"))
+        return
+
+    def _popt(self, elem, emis, tran, temp, freqs):
+        tran = self._buffer_tran(tran)
+        tot_pow = np.sum([np.trapz(
+            self._phys.bb_pow_spec(
+                freqs, temp[i], emis[i] *
+                np.prod(tran[i+1:], axis=0)), freqs)
+                for i in range(len(elem))])
+        return tot_pow
+
+    def _photon_NEP(self, elem, emis, tran, temp, freqs, ch=None):
+        tran = self._buffer_tran(tran)
         if ch:
             corrs = True
         else:
             corrs = False
-        pow_ints = np.array([self._phys().bb_pow_spec(
-            freqs, temp[i], emiss[i]*np.prod(eff[i+1:], axis=0))
+        pow_ints = np.array([self._phys.bb_pow_spec(
+            freqs, temp[i], emis[i]*np.prod(tran[i+1:], axis=0))
             for i in range(len(elem))])
         if corrs:
-            NEP_ph, NEP_ph_arr = self._noise().photon_nep(
+            # Photon NEP both without and with correlations
+            NEP_ph, NEP_ph_arr = self._noise.photon_nep(
                 pow_ints, freqs, elem, (
-                    ch.fetch("pix_sz") /
-                    float(ch.cam.fetch("fnum") * self._ph().lamb(
-                        ch.fetch("bc")))))
+                    ch.param("pix_sz") /
+                    float(ch.cam.param("fnum") * self._ph.lamb(
+                        ch.param("bc")))))
         else:
-            NEP_ph, NEP_ph_arr = self.nse.photon_nep(pow_ints, freqs)
+            # Both outputs are identical
+            NEP_ph, NEP_ph_arr = self._noise.photon_NEP(pow_ints, freqs)
         return NEP_ph, NEP_ph_arr
 
-    # Thermal carrier NEP given some optical power on the bolometer
-    def bolo_NEP(self, opt_pow, det):
-        if 'NA' in str(det.fetch("g")):
-            if 'NA' in str(det.fetch("psat")):
-                g = self._noise().G(
-                    det.fetch("psat_fact") * opt_pow, det.fetch("n"),
-                    det.fetch("tb"), det.fetch("tc"))
+    def _bolo_NEP(self, opt_pow, det):
+        if 'NA' in str(det.param("g")):
+            if 'NA' in str(det.param("psat")):
+                g = self._noise.G(
+                    det.param("psat_fact") * opt_pow, det.param("n"),
+                    det.param("tb"), det.param("tc"))
             else:
                 g = self.nse.G(
-                    det.fetch("psat"), det.fetch("n"),
-                    det.fetch("tb"), det.fetch("tc"))
+                    det.param("psat"), det.param("n"),
+                    det.param("tb"), det.param("tc"))
         else:
-            g = det.fetch("g")
-        if 'NA' in str(det.Flink):
-            return self.nse.bolo_NEP(
-                self.nse.Flink(
-                    det.fetch("n"), det.fetch("tb"), det.fetch("tc")),
-                g, det.fetch("tc"))
+            g = det.param("g")
+        if 'NA' in str(det.param("flink")):
+            return self._noise.bolo_NEP(
+                self._noise.Flink(
+                    det.param("n"), det.param("tb"), det.param("tc")),
+                g, det.param("tc"))
         else:
-            return self.nse.bolometerNEP(
-                det.fetch("flink"), g, det.fetch("tc"))
+            return self._noise.bolo_NEP(
+                det.param("flink"), g, det.param("tc"))
 
-    # Readout NEP given some optical power on the bolometer
-    def read_NEP(self, optPow, det):
+    def _read_NEP(self, optPow, det):
         if 'NA' in str(det.float("nei")):
             return 'NA'
-        elif 'NA' in str(det.fetch("bolo_r")):
+        elif 'NA' in str(det.param("bolo_r")):
             return 'NA'
-        elif 'NA' in str(det.fetch("psat")):
-            return self.nse.readoutNEP(
-                (det.fetch("psat_fact") - 1.) * optPow,
-                det.fetch("bolo_r"), det.fetch("nei"))
+        elif 'NA' in str(det.param("psat")):
+            p_bias = (det.param("psat_fact") - 1.) * optPow
+            return self._noise.readoutNEP(
+                p_bias, det.param("bolo_r"), det.param("nei"))
         else:
-            if optPow >= det.psat:
+            if optPow >= det.param("psat"):
                 return 0.
             else:
-                return self.nse.readoutNEP(
-                    (det.psat-optPow), det.boloR, det.nei)
+                p_bias = det.param("psat") - optPow
+                return self.nse.read_NEP(
+                    p_bias, det.param("bolo_r") det.param("nei"))
 
-    # Mapping speed given some channel and telescope
-    def sensitivity(self, ch, tp):
+    def _buffer_tran(self, tran):
+        tran = np.insert(tran, len(tran), [1. for f in freqs], axis=0)
+        return np.array(tran).astype(np.float)
 
-        ApEff = ch.apEff
-        PoptArr = np.array([[self.Popt(
-            ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
-            ch.temp[i][j], ch.freqs)
-            for j in range(ch.detArray.nDet)]
-            for i in range(ch.nobs)])
-        if self._corr():
-            NEPPhArr = np.array([[self.NEPph(
-                ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
-                ch.temp[i][j], ch.freqs, ch)
-                for j in range(ch.detArray.nDet)]
-                for i in range(ch.nobs)])
-        else:
-            NEPPhArr = np.array([[self.NEPph(
-                ch.elem[i][j], ch.emiss[i][j], ch.effic[i][j],
-                ch.temp[i][j], ch.freqs)
-                for j in range(ch.detArray.nDet)]
-                for i in range(ch.nobs)])
-        NEPboloArr = np.array([[self.NEPbolo(
-            PoptArr[i][j], ch.detArray.detectors[j])
-            for j in range(ch.detArray.nDet)]
-            for i in range(ch.nobs)])
-        NEPrdArr = np.array([[self.NEPrd(
-            PoptArr[i][j], ch.detArray.detectors[j])
-            for j in range(ch.detArray.nDet)]
-            for i in range(ch.nobs)])
-
-        NEPPhArr, NEPPhArrArr = np.split(NEPPhArr, 2, axis=2)
-        NEPPhArr = np.reshape(NEPPhArr, np.shape(NEPPhArr)[:2])
-        NEPPhArrArr = np.reshape(NEPPhArrArr, np.shape(NEPPhArrArr)[:2])
-
-        if 'NA' in NEPrdArr:
-            NEPrdArr = np.array([[np.sqrt(
-                (1. + ch.detArray.detectors[j].readN)**2 - 1.) *
-                np.sqrt(NEPPhArr[i][j]**2 + NEPboloArr[i][j]**2)
-                for j in range(ch.detArray.nDet)]
-                for i in range(ch.nobs)])
-        NEP = np.sqrt(NEPPhArr**2 + NEPboloArr**2 + NEPrdArr**2)
-        NEParr = np.sqrt(NEPPhArrArr**2 + NEPboloArr**2 + NEPrdArr**2)
-        NET = np.array([[self.nse.NETfromNEP(
-            NEP[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0), ch.optCouple)
-            for j in range(ch.detArray.nDet)]
-            for i in range(ch.nobs)]).flatten() * tp.params['NET Margin']
-        NETar = np.array([[self.nse.NETfromNEP(
-            NEParr[i][j], ch.freqs, np.prod(ch.effic[i][j], axis=0),
-            ch.optCouple)
-            for j in range(ch.detArray.nDet)]
-            for i in range(ch.nobs)]).flatten() * tp.params['NET Margin']
-        NETarr = self.ph.invVar(NETar) * np.sqrt(float(ch.nobs)) * np.sqrt(
-            float(ch.clcDet) / float(ch.params['Yield']*ch.numDet))
-        NETarrStd = np.std(NET)*np.sqrt(1./ch.numDet)
-        MS = 1./(np.power(NETarr,    2.))
-        MSStd = (NETarrStd/NETarr)*MS if (NETarrStd/NETarr) > 1.e-3 else 0.
-
-        Sens = self.nse.sensitivity(
-            NETarr, tp.params['Sky Fraction'],
-            tp.params['Observation Time'] *
-            tp.params['Observation Efficiency'])
-        SensStd = self.nse.sensitivity(
-            NETarrStd, tp.params['Sky Fraction'],
-            tp.params['Observation Time'] *
-            tp.params['Observation Efficiency'])
-
-        # Return a dictionary of output parameters
-        ret_dict = {
-            "Stop Efficiency": 
-        }
-        means = [ch.apEff,
-                 np.mean(PoptArr.flatten()),
-                 np.mean(NEPPhArr.flatten()),
-                 np.mean(NEPboloArr.flatten()),
-                 np.mean(NEPrdArr.flatten()),
-                 np.mean(NEP.flatten()),
-                 np.mean(NET),
-                 NETarr,
-                 MS,
-                 Sens]
-        stds  = [0.,
-                 np.std(PoptArr.flatten()),
-                 np.std(NEPPhArr.flatten()),
-                 np.std(NEPboloArr.flatten()),
-                 np.std(NEPrdArr.flatten()),
-                 np.std(NEP.flatten()),
-                 np.std(NET),
-                 NETarrStd,
-                 MSStd,
-                 SensStd]
-
+    def _opt_table(self):
+        shape = np.shape(self._pow_sky_side)
+        new_shape = (shape[0] * shape[1], shape[2])
+        pow_sky_side = np.transpose(np.reshape(self._pow_sky_side, new_shape))
+        pow_det_side = np.transpose(np.reshape(self._pow_det_side, new_shape))
+        eff_det_side = np.transpose(np.reshape(self._eff_det_side, new_shape))
+        means = [np.mean(pow_sky_side, axis=1),
+                 np.mean(pow_det_side, axis=1),
+                 np.mean(eff_det_side, axis=1)]
+        stds = [np.std(pow_sky_side,  axis=1),
+                np.std(pow_det_side,  axis=1),
+                np.std(eff_det_side,  axis=1)]
         return means, stds
-
-    # Optical power element by element given some channel and telescope
-    def opticalPower(self, ch, tp):
-        powSkySide = []
-        powDetSide = []
-        effDetSide = []
-        for i in range(len(ch.elem)):
-            powSkySide1 = []
-            powDetSide1 = []
-            effDetSide1 = []
-            for j in range(len(ch.elem[i])):
-                powers      = []
-                powSkySide2 = []
-                powDetSide2 = []
-                effSkySide2 = []
-                effDetSide2 = []
-                #Store efficiency towards sky and towards detector
-                for k in range(len(ch.elem[i][j])):
-                    effArr = np.vstack([ch.effic[i][j], np.array([1. for f in ch.freqs])])
-                    cumEffDet = ft.reduce(lambda x, y: x*y, effArr[k+1:])
-                    effDetSide2.append(cumEffDet)
-                    if   k == 0: cumEffSky = [[0. for f in ch.freqs]]                         #Nothing sky-side
-                    elif k == 1: cumEffSky = [[1. for f in ch.freqs], [0. for f in ch.freqs]] #Only one element sky-side
-                    else:        cumEffSky = [ft.reduce(lambda x, y: x*y, effArr[m+1:k]) if m < k-2 else effArr[m+1] for m in range(k-1)] + [[1. for f in ch.freqs], [0. for f in ch.freqs]]
-                    effSkySide2.append(np.array(cumEffSky))
-                    pow = self.ph.bbPowSpec(ch.freqs, ch.temp[i][j][k], ch.emiss[i][j][k])
-                    powers.append(pow)
-                #Store power from sky and power on detector
-                for k in range(len(ch.elem[i][j])):
-                    powOut = np.trapz(powers[k]*effDetSide2[k]*ch.bandMask, ch.freqs)
-                    effDetSide2[k] = np.trapz(effDetSide2[k]*ch.bandMask, ch.freqs)/float(ch.bandDeltaF)
-                    powDetSide2.append(powOut)
-                    powIn = sum([np.trapz(powers[m]*effSkySide2[k][m]*ch.bandMask, ch.freqs) for m in range(k+1)])
-                    powSkySide2.append(powIn)
-                powSkySide1.append(powSkySide2)
-                powDetSide1.append(powDetSide2)
-                effDetSide1.append(effDetSide2)
-            powSkySide.append(powSkySide1)
-            powDetSide.append(powDetSide1)
-            effDetSide.append(effDetSide1)
-        #Build table of optical powers and efficiencies for each element
-        shape = np.shape(powSkySide)
-        newshape = (shape[0]*shape[1], shape[2])
-        powSkySide = np.transpose(np.reshape(powSkySide, newshape))
-        powDetSide = np.transpose(np.reshape(powDetSide, newshape))
-        effDetSide = np.transpose(np.reshape(effDetSide, newshape))
-        means = [np.mean(powSkySide, axis=1),
-                 np.mean(powDetSide, axis=1),
-                 np.mean(effDetSide, axis=1)]
-        stds  = [np.std(powSkySide,  axis=1),
-                 np.std(powDetSide,  axis=1),
-                 np.std(effDetSide,  axis=1)]
-        return means, stds
-
-    def _phys(self):
-        return 
-
-    def _noise(self):
-        return 
-
-    def _corr(self):
-        return 

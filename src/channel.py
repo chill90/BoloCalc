@@ -24,6 +24,7 @@ class Channel:
 
     Attributes:
     cam (src.Camera): where the 'cam' arg is stored
+    det_arr (src.DetectorArray): the DetectorArray object for this channel
     band (src.Band): detector band for this channel
     elev_dict (dict): pixel elevation distribution for ObservationSet object
     det_dict (dict): detector-specific parameters for DetectorArray object
@@ -60,7 +61,7 @@ class Channel:
         self._store_band()
 
         # Store the detector array object
-        self._det_arr = da.DetectorArray(self)
+        self.det_arr = da.DetectorArray(self)
 
         # Store the observation set object
         self._obs_set = ob.ObservationSet(self)
@@ -222,6 +223,9 @@ class Channel:
         self._param_vals["pix_id"] = int(self._inp_dict["Pixel ID"].fetch())
         self._param_vals["ch_name"] = (self.cam.param("cam_name") +
                                        str(self._param_vals["band_id"]))
+        # To be stored by specific optic
+        self._param_vals["ap_eff"] = None
+        self._param_vals["edge_tap"] = None
         return
 
     def _store_elev_dict(self):
@@ -279,19 +283,19 @@ class Channel:
     def _calculate(self):
         elem, emiss, effic, temp = self.cam.opt_chain.generate(self)
         self.elem = np.array(
-            [[obs.elem[i] + elem + self._det_arr.detectors[i].elem
+            [[obs.elem[i] + elem + self.det_arr.detectors[i].elem
              for i in range(self._ndet)]
              for obs in self._obs_set.observations]).astype(np.str)
         self.emis = np.array(
-            [[obs.emis[i] + emiss + self._det_arr.detectors[i].emis
+            [[obs.emis[i] + emiss + self.det_arr.detectors[i].emis
              for i in range(self._ndet)]
              for obs in self._obs_set.observations]).astype(np.float)
         self.tran = np.array(
-            [[obs.tran[i] + effic + self._det_arr.detectors[i].tran
+            [[obs.tran[i] + effic + self.det_arr.detectors[i].tran
              for i in range(self._ndet)]
              for obs in self._obs_set.observations]).astype(np.float)
         self.temp = np.array(
-            [[obs.temp[i] + temp + self._det_arr.detectors[i].temp
+            [[obs.temp[i] + temp + self.det_arr.detectors[i].temp
              for i in range(self._ndet)]
              for obs in self._obs_set.observations]).astype(np.float)
         return

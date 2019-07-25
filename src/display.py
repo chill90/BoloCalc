@@ -4,18 +4,17 @@ import collections as cl
 import os
 
 # BoloCalc modules
-import src.physics as ph
 import src.units as un
 
 
 class Display:
-    def __init__(self, log, calcs):
+    def __init__(self, sim):
         # Store passed parameters
-        self._log = log
-        self._calcs = calcs
-        self._ph = ph.Physics()
+        self._sim = sim
+        self._calcs = self.sim.calcs
+        self._phys = self._sim.phys
         # Get experiment info
-        self.exp = self._calcs[0].exp
+        #   self.exp = self._calcs[0].exp
 
         # Extract means and standard deviations from calcs
         self._store_means_stds(calcs)

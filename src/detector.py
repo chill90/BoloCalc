@@ -29,8 +29,8 @@ class Detector:
         self._store_param_dict()
         self._store_param_vals()
 
-        # Store efficiency
-        self._store_eff()
+        # Store detector efficiency
+        self._store_tran()
 
         # Store detector optical parameters
         self.elem = ["Detector"]
@@ -76,7 +76,7 @@ class Detector:
                 self._param_vals["bc"], self._param_vals["fbw"]))
         return
 
-    def _store_eff(self):
+    def _store_tran(self):
         # Load band
         if self._band is not None:
             self._tran = self._band

@@ -36,7 +36,7 @@ class Calculate:
         self.sens = sn.Sensitivity(self)
 
     # ***** Public Methods *****
-    def calc_sens(self, ch, tp):
+    def calc_sens(self, ch):
         """
         Calculate sensitivity for a given channel in a given telescope
 
@@ -44,9 +44,9 @@ class Calculate:
         ch (src.Channel): input Channel object
         tp (src.Telescope): input Telescope object
         """
-        return self.sens.sensitivity(ch, tp)
+        return self.sens.sensitivity(ch)
 
-    def calc_opt_pow(self, ch, tp):
+    def calc_opt_pow(self, ch):
         """
         Calculate optical power for a given channel in a given telescope
 
@@ -54,7 +54,7 @@ class Calculate:
         ch (src.Channel): input Channel object
         tp (src.Telescope): input Telescope object
         """
-        return self.sens.opticalPower(ch, tp)
+        return self.sens.opt_pow(ch)
 
     def comb_sens(self, sens_arr):
         """

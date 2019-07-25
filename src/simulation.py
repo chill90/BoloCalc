@@ -73,18 +73,18 @@ class Simulation:
     def calculate(self):
         """ Calculate experiments """
         if not self.param("mpps"):
-            calcs = [
+            self.calcs = [
                 self._mp2(self.exps[n], n)
                 for n in range(self.param("nexp"))]
             self._done()
-            calcs = [
+            self.calcs = [
                 self._mp3(calcs[n], n)
                 for n in range(self.param("nexp"))]
             self._done()
         else:
-            calcs = self._pool.map(self._mp2, self.exps)
-            calcs = self._pool.map(self._mp3, calcs)
-        return self._mp4(calcs)
+            self.calcs = self._pool.map(self._mp2, self.exps)
+            self.calcs = self._pool.map(self._mp3, calcs)
+        return self._mp4()
 
     def simulate(self):
         """ Generate and calculate experiments """
@@ -138,8 +138,8 @@ class Simulation:
         clc.comb_opt_pow(opt_pow)
         return clc
 
-    def _mp4(self, clcs):
-        dsp = dp.Display(self.log, clcs)
+    def _mp4(self):
+        dsp = dp.Display(self)
         dsp.sensitivity()
         dsp.opticalPowerTables()
         return dsp
