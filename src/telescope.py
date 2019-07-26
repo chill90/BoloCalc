@@ -93,10 +93,10 @@ class Telescope:
                 "pwv": pr.Parameter(
                     self._log, 'PWV', params['PWV'],
                     min=0.0, max=8.0),
-                "obs_tm": pr.Parameter(
+                "tobs": pr.Parameter(
                     self._log, 'Observation Time', params['Observation Time'],
                     un.Unit("year"), min=0.0, max=np.inf),
-                "sky_frac": pr.Parameter(
+                "fsky": pr.Parameter(
                     self._log, 'Sky Fraction', params['Sky Fraction'],
                     min=0.0, max=1.0),
                 "obs_eff": pr.Parameter(

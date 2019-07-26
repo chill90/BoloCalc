@@ -15,15 +15,16 @@ class Log:
         else:
             self._log_level = log_level
         # Log level enums
-        self.level{"CRUCIAL": 0,
-                   "MODERATE": 1,
-                   "NOTIFY": 2}
+        self.level = {"CRUCIAL": 0,
+                      "MODERATE": 1,
+                      "NOTIFY": 2}
         # Open log file
         self._log_file = log_file
         self._f = open(self._log_file, 'w')
         self.log(
             "Logging to file '%s,' printing with verbosity = %d"
-            % (logFile, self.verbosity), 1)
+            % (self._log_file, self._log_level),
+            self.level["MODERATE"])
         # Error preamble
         self._err_preamble = "BoloCalc Error: "
         return

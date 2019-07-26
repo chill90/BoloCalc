@@ -37,10 +37,13 @@ class Units:
             else:
                 self.name = unit
                 self._SI = self._to_SI_dict[self.name]
-        else isinstance(unit, np.float):
+        elif isinstance(unit, np.float):
             self.name = "NA"
             self._SI = unit
 
     def to_SI(self, val):
         """Convert value to SI unit """
         return val * self._SI
+
+    def from_SI(self, val):
+        return val / self._SI

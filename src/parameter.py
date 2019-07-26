@@ -3,13 +3,13 @@ import numpy as np
 import sys as sy
 
 # BoloCalc modules
-import src.Units as un
+import src.units as un
 
 
 class Parameter:
     """
-    The Parameter object contains attributes for input and output parameters.
-    If 'input' argument is a float, one band is assumed; if it is a list,
+    Parameter object contains attributes for input and output parameters.
+    If 'inp' argument is a float, one band is assumed; if it is a list,
     len(list) bands are assumed.
 
     Args:

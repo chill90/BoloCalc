@@ -30,6 +30,7 @@ class Simulation:
     exp_dir (str): experiment directory
 
     Attributes:
+    exp_dir (str): experiment directory
     log (src.Log): Log object
     load (src.Load): Load object
     phys (src.Physics): Physics object
@@ -38,7 +39,7 @@ class Simulation:
     """
     def __init__(self, log_file, sim_file, exp_dir):
         # Store experiment input file
-        self._exp_dir = exp_dir
+        self.exp_dir = exp_dir
 
         # Build simulation-wide objects
         self.log = lg.Log(log_file)
@@ -61,14 +62,12 @@ class Simulation:
         """ Generate experiments """
         if not self.param("mpss"):
             self.exps = [
-                self._mp1(self._exp_dir, n)
+                self._mp1(n)
                 for n in range(self.param("nexp"))]
             self._done()
         else:
-            design_dirs = [
-                self._exp_dir
-                for n in range(self.param("nexp"))]
-            self.exps = self._pool.map(self._mp1, design_dirs)
+            iters = [n for n in range(self.param("nexp"))]
+            self.exps = self._pool.map(self._mp1, iters)
 
     def calculate(self):
         """ Calculate experiments """
@@ -78,12 +77,12 @@ class Simulation:
                 for n in range(self.param("nexp"))]
             self._done()
             self.calcs = [
-                self._mp3(calcs[n], n)
+                self._mp3(self.calcs[n], n)
                 for n in range(self.param("nexp"))]
             self._done()
         else:
             self.calcs = self._pool.map(self._mp2, self.exps)
-            self.calcs = self._pool.map(self._mp3, calcs)
+            self.calcs = self._pool.map(self._mp3, self.calcs)
         return self._mp4()
 
     def simulate(self):
@@ -100,7 +99,7 @@ class Simulation:
         return self._param_dict[param].fetch()
 
     # **** Helper Methods ****
-    def _mp1(self, drr, n=None):
+    def _mp1(self, n=None):
         if n is not None and n == 0:
             self.log.log(
                 "Generating %d experiment realizations."
@@ -112,7 +111,8 @@ class Simulation:
         if n is not None and n == 0:
             self.log.log(
                 "Calculating sensitivity for %d experiment realizations"
-                % (self._param_dict["nexp"].fetch()))
+                % (self._param_dict["nexp"].fetch()),
+                self.log.level["MODERATE"])
         self._status(n)
         return cl.Calculate(self.log, exp, self.corr)
 
@@ -120,22 +120,19 @@ class Simulation:
         if n is not None and n == 0:
             self.log.log(
                 "Calculating statistics for %d experiment realizations"
-                % (self.param("nexp")))
+                % (self.param("nexp")), self.log.level["MODERATE"])
         self._status(n)
-        chs = clc.chans
-        tps = clc.teles
-        senses = [[[
-            clc.calc_sens(chs[i][j][k], tps[i][j][k])
+        chs = clc.chs
+        self.senses = [[[
+            clc.calc_sens(chs[i][j][k])
             for k in range(len(chs[i][j]))]
             for j in range(len(chs[i]))]
             for i in range(len(chs))]
-        opt_pow = [[[
-            clc.calc_opt_pow(chs[i][j][k], tps[i][j][k])
+        self.opt_pows = [[[
+            clc.calc_opt_pow(chs[i][j][k])
             for k in range(len(chs[i][j]))]
             for j in range(len(chs[i]))]
             for i in range(len(chs))]
-        clc.comb_sens(senses)
-        clc.comb_opt_pow(opt_pow)
         return clc
 
     def _mp4(self):
@@ -180,6 +177,6 @@ class Simulation:
                 self.log, params["Resolution"], unit=un.Units("GHz"),
                 inp_type=np.float,),
             "infg": pr.Parameter(
-                self.log, params["Foregrounds"], inp_type=bool)
+                self.log, params["Foregrounds"], inp_type=bool),
             "corr": pr.Parameter(
                 self.log, params["Correlations"], inp_type=bool)}

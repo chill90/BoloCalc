@@ -70,14 +70,18 @@ class Distribution:
 
     def one_sigma(self):
         """ Return the 15.9% and 84.1% values """
+        med = self.median()
         if self.prob is not None:
-            return np.interp((0.159, 0.841), self._cum, self.val)
+            lo, hi = np.interp((0.159, 0.841), self._cum, self.val)
         else:
-            return np.pecentile(self.val, [0.159, 0.841])
+            lo, hi = np.pecentile(self.val, [0.159, 0.841])
+        return (hi-med, med-lo)
 
     def two_sigma(self):
         """ Return the 2.3% and 97.7% values """
+        med = self.median()
         if self.prob is not None:
-            return np.interp((0.023, 0.977), self._cum, self.val)
+            lo, hi = np.interp((0.023, 0.977), self._cum, self.val)
         else:
-            return np.percentile(self.val, [0.023, 0.977])
+            lo, hi = np.percentile(self.val, [0.023, 0.977])
+        return (hi-med, med-lo)

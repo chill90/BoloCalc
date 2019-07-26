@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 # BoloCalc modules
-import distribution as ds
+import src.distribution as ds
 
 
 class Loader:

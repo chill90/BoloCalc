@@ -160,7 +160,7 @@ class Camera:
         self.pixs = cl.OrderedDict({})
         for ch in self.chs.keys():
             pix_id = self.chs[ch].param("pix_id")
-            if self.chs[ch]. in self.pixs.keys():
+            if self.chs[ch] in self.pixs.keys():
                 self.pixs[pix_id].append(self.chs[ch])
             else:
                 self.pixs[pix_id] = [self.chs[ch]]

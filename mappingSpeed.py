@@ -19,9 +19,9 @@ except:
 # Simulation file
 sim_file = os.path.join(os.path.dirname(os.path.normpath(__file__)),
                         'config', 'simulationInputs.txt')
-if not os.path.isfile(simFile):
+if not os.path.isfile(sim_file):
     print
-    print('Could not find simulation input parameter file %s' % (simFile))
+    print('Could not find simulation input parameter file %s' % (sim_file))
     print
     sy.exit(1)
 # Logging file

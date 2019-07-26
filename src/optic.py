@@ -170,7 +170,7 @@ class Optic:
     def _store_param_dict(self, params):
         self._param_dict = {
             "elem": pr.Parameter(
-                self._log(), "Element", self._inp_dict["Element"])
+                self._log(), "Element", self._inp_dict["Element"]),
             "temp": pr.Parameter(
                 self._log(), "Temperature", self._inp_dict["Temperature"],
                 min=0.0, max=np.inf),

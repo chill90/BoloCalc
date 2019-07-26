@@ -22,9 +22,6 @@ class Sensitivity:
     # ***** Public Methods *****
     # Mapping speed given some channel and telescope
     def sensitivity(self, ch):
-        tp = ch.cam.tp
-        # Calculate aperture efficiency
-        self._ap_eff = ch.param("ap_eff")
         # Calculate optical power
         self._calc_popt(ch)
         # Calculate NEP
@@ -41,19 +38,12 @@ class Sensitivity:
         self._calc_sens()
 
         # Return a dictionary of distribution objects
-        ret_dict = {
-            "Stop Efficiency": ds.Distribution(self._ap_eff),
-            "Optical Power": ds.Distribution(self._popt_arr.flatten()),
-            "Photon NEP": ds.Distribution(self._NEP_ph_arr.flatten()),
-            "Bolometer NEP": ds.Distribution(self._NEP_bolo_arr.flatten()),
-            "Readout NEP": ds.Distribution(self._NEP_read_arr.flatten()),
-            "Detector NEP": ds.Distribution(self._NEP.flatten()),
-            "Detector NET": ds.Distribution(self._NET),
-            "Array NET": ds.Distribution(self._NET_arr),
-            "Mapping Speed": ds.Distribution(self._MS),
-            "Map Depth": ds.Distribution(self._sens)}
-
-        return ret_dict
+        return [self._popt_arr.flatten(),
+                self._NEP_ph_arr.flatten(),
+                self._NEP_bolo_arr.flatten(),
+                self._NEP_read_arr.flatten(),
+                self._NEP.flatten(),
+                self._NET.flatten()]
 
     # Optical power element by element given some channel and telescope
     def opt_pow(self, ch):
@@ -62,18 +52,18 @@ class Sensitivity:
         self._pow_sky_side = []
         self._pow_det_side = []
         self._eff_det_side = []
-        for i in range(len(ch.elem)):
+        for i in range(len(ch.elem)):  # nobs
             pow_sky_side_1 = []
             pow_det_side_1 = []
             eff_det_side_1 = []
-            for j in range(len(ch.elem[i])):
+            for j in range(len(ch.elem[i])):  # ndet
                 pows = []
                 pow_sky_side_2 = []
                 pow_det_side_2 = []
                 eff_sky_side_2 = []
                 eff_det_side_2 = []
                 # Store efficiency towards sky and towards detector
-                for k in range(len(ch.elem[i][j])):
+                for k in range(len(ch.elem[i][j])):  # nelem
                     eff_arr = np.vstack([ch.tran[i][j],
                                          np.array([1. for f in ch.freqs])])
                     cum_eff_det = ft.reduce(lambda x, y: x*y, eff_arr[k+1:])
@@ -110,12 +100,11 @@ class Sensitivity:
                 pow_sky_side_1.append(pow_sky_side_2)
                 pow_det_side_1.append(pow_det_side_2)
                 eff_det_side_1.append(eff_det_side_2)
-            pow_sky_side.append(pow_sky_side_1)
-            pow_det_side.append(pow_det_side_1)
-            eff_det_side.append(eff_det_side_1)
+            self._pow_sky_side.append(pow_sky_side_1)
+            self._pow_det_side.append(pow_det_side_1)
+            self._eff_det_side.append(eff_det_side_1)
         # Build table of optical powers and efficiencies for each element
         return self._opt_table()
-        return means, stds
 
     # ***** Helper Methods *****
     def _calc_popt(self, ch):
@@ -193,10 +182,14 @@ class Sensitivity:
         return
 
     def _calc_NET_arr(self, ch):
-        self._NET_arr = self._phys.inv_var(self._NET_corr) * np.sqrt(
+        NET_arr = self._phys.inv_var(self._NET_corr) * np.sqrt(
             float(self._nobs)) * np.sqrt(
                 float(self._ndet) / float(
                     ch.params("yield") * ch.param("ndet")))
+        self._NET_arr = np.array(
+            [[ch.param("ap_eff")
+             for j in range(self._ndet)]
+             for i in range(self._nobs)])
         return
 
     def _calc_MS(self):
@@ -275,7 +268,7 @@ class Sensitivity:
             else:
                 p_bias = det.param("psat") - optPow
                 return self.nse.read_NEP(
-                    p_bias, det.param("bolo_r") det.param("nei"))
+                    p_bias, det.param("bolo_r"), det.param("nei"))
 
     def _buffer_tran(self, tran):
         tran = np.insert(tran, len(tran), [1. for f in freqs], axis=0)
@@ -287,10 +280,6 @@ class Sensitivity:
         pow_sky_side = np.transpose(np.reshape(self._pow_sky_side, new_shape))
         pow_det_side = np.transpose(np.reshape(self._pow_det_side, new_shape))
         eff_det_side = np.transpose(np.reshape(self._eff_det_side, new_shape))
-        means = [np.mean(pow_sky_side, axis=1),
-                 np.mean(pow_det_side, axis=1),
-                 np.mean(eff_det_side, axis=1)]
-        stds = [np.std(pow_sky_side,  axis=1),
-                np.std(pow_det_side,  axis=1),
-                np.std(eff_det_side,  axis=1)]
-        return means, stds
+        return [pow_sky_side,
+                pow_det_side,
+                eff_det_side]
