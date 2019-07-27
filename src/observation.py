@@ -19,16 +19,17 @@ class Observation:
     """
     def __init__(self, obs_set):
         # Store passed parameters
-        self._sky = self.obs_set.ch.cam.tel.sky
-        self._scn = self.obs_set.ch.cam.tel.scn
-        self._det_arr = self.obs_set.ch.det_arr
-        self._ndet = self.cam.tel.exp.sim.fetch("ndet")
+        self._obs_set = obs_set
+        self._sky = self._obs_set.ch.cam.tel.sky
+        self._scn = self._obs_set.ch.cam.tel.scn
+        self._det_arr = self._obs_set.ch.det_arr
+        self._ndet = self._obs_set.ch.cam.tel.exp.sim.param("ndet")
 
         # Store PWV and elevation
         self._get_pwv_elev()
 
         # Store sky values
-        elem, emiss, effic, temp = self._get_sky_vals()
+        elem, emis, tran, temp = self._get_sky_vals()
 
         # Store the element name
         self.elem = elem.reshape(
@@ -37,13 +38,13 @@ class Observation:
         self.elem.resize(len(self.elem), len(self.elem[0]))
         self.elem = self.elem.tolist()
         # Emissivity
-        self.emis = emiss.reshape(
-            len(emiss), len(emiss[0][0]), len(emiss[0][0][0])).astype(np.float)
-        self.emis = self.emiss.tolist()
+        self.emis = emis.reshape(
+            len(emis), len(emis[0][0]), len(emis[0][0][0])).astype(np.float)
+        self.emis = self.emis.tolist()
         # Efficiency
-        self.tran = effic.reshape(
-            len(effic), len(effic[0][0]), len(effic[0][0][0])).astype(np.float)
-        self.tran = self.effic.tolist()
+        self.tran = tran.reshape(
+            len(tran), len(tran[0][0]), len(tran[0][0][0])).astype(np.float)
+        self.tran = self.tran.tolist()
         # Temperature
         self.temp = temp.reshape(
             len(temp), len(temp[0][0]), len(temp[0][0][0])).astype(np.float)
@@ -51,19 +52,19 @@ class Observation:
 
     # ***** Helper Methods *****
     def _get_pwv_elev(self):
-        # Sample PWV and Elevation for the camera
-        pwv = self._sky().get_pwv()
-        cam_elev = self._scn().get_elev()
-        if self.elv is not None:
-            self.elv += self.belv
+        # Sample PWV
+        self._pwv = self._sky.pwv_sample()
+        # Sample Elevation
+        tel_elev = self._scn.elev_sample()
+        cam_elev = self._obs_set.ch.cam.param("bore_elev")
         # Sample and store sky optical parameters
-        if self._ndet() == 1:
-            elev = cam_elev
+        if self._ndet == 1:
+            self._elev = tel_elev + cam_elev
         else:
-            elev = cam_elv + obs_set.sample_pix_elev()
+            self._elev = tel_elev + cam_elv + self._obs_set.sample_pix_elev()
         return
 
     def _get_sky_vals(self):
-        return np.hsplit(np.array([self._sky().generate(
-            pwv, elv, det.ch.freqs)
-            for det in self._det_arr().dets]), 4)
+        return np.hsplit(np.array([self._sky.generate(
+            self._pwv, self._elev, det.det_arr.ch.freqs)
+            for det in self._det_arr.dets]), 4)

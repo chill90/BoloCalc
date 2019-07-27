@@ -1,5 +1,6 @@
 # Built-in modules
 import numpy as np
+import glob as gb
 import os
 
 # BoloCalc modules
@@ -15,7 +16,7 @@ class Loader:
     """
     def __init__(self, log):
         self._log = log
-        self._dist_dir = "pdf/"
+        self._dir = "Dist/"
         self._ftypes = [".csv", ".txt"]
         return
 
@@ -189,8 +190,8 @@ class Loader:
 
     def _txt_2D(self, fname):
         output = np.loadtxt(fname, dtype=np.str, delimiter='|')
-        keys = chans[0]
-        elems = chans[1:]
+        keys = output[0]
+        elems = output[1:]
         return [{keys[i].strip(): elem[i].strip()
                 for i in range(len(keys))}
                 for elem in elems]
@@ -211,10 +212,9 @@ class Loader:
         return data
 
     def _dist_dir(self, fname):
-        dist_dir = '/'.join(fname.split('/')[:-2]) + self._dist_dir
+        dist_dir = os.path.join(*fname.split(os.sep)[:-1], self._dir)
         if not os.path.exists(dist_dir):
-            self._log.err(
-                "Distribution dir '%s' does not exist" % (dist_dir))
+            return None
         else:
             return dist_dir
 

@@ -195,7 +195,7 @@ class Noise:
         freqs (float): observation frequencies [Hz]
         """
         temp = np.array([self._phys.Tcmb for f in freqs])
-        return np.trapz(self._phys.aniPowSpec(
+        return np.trapz(self._phys.ani_pow_spec(
             np.array(freqs), temp, np.array(eff)), freqs)
 
     def photon_NET(self, freqs, popts, sky_eff,

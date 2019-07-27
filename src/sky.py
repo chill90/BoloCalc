@@ -24,6 +24,7 @@ class Sky:
     tel (src.Telescope): Telescope object
 
     Attributes:
+    tel (src.Telescope): there arg 'tel' is stored
     elem (list): list of sky element names
     abso (list): list of sky element absorbtivities
     tran (list): list of sky element transmissions
@@ -96,7 +97,7 @@ class Sky:
 
     def pwv_sample(self):
         """ Sample the PWV distribution """
-        samp = tel.param("pwv").sample()
+        samp = self.tel.pwv_sample()
         if samp < self._min_pwv:
             self._log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead'
                           % (samp, self._min_pwv, self._min_pwv),
@@ -171,7 +172,7 @@ class Sky:
                         ('atmDict_%d.pkl' % (i))), 'rb'))
                 else:
                     sub_dict = pk.load(io.open(os.path.join(
-                        self.siteDirs[site], 'PKL',
+                        self._site_dirs[site], 'PKL',
                         ('atmDict_%d.pkl' % (i))), 'rb'), encoding='latin1')
                 self._atm_dict.update(sub_dict)
 
@@ -184,6 +185,6 @@ class Sky:
             self._atm_dir, '*' + os.sep)))
         self._site_names = np.array(
             [site_dir.split(os.sep)[-2] for site_dir in self._site_dirs])
-        self._site_dirs = {self._site_names[i].upper(): self.siteDirs[i]
-                           for i in range(len(self.siteNames))}
+        self._site_dirs = {self._site_names[i].upper(): self._site_dirs[i]
+                           for i in range(len(self._site_names))}
         return

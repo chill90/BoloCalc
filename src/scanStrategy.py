@@ -17,9 +17,7 @@ class ScanStrategy:
     # ***** Public Methods *****
     def elev_sample(self):
         """ Sample elevation """
-        if self._tel.exp.sim.param("nexp") == 1:
-            return self._tel.param("elev")
-        samp = self._tel.param("elev").sample()
+        samp = self._tel.elev_sample()
         if samp < self._min_elev:
             self._log.log(
                 "Cannot have elevation %.1f < %.1f. Using %.1f instead"

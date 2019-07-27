@@ -9,7 +9,7 @@ import src.parameter as pr
 import src.camera as cm
 import src.sky as sk
 import src.scanStrategy as sc
-import src.units as un
+import src.unit as un
 
 
 class Telescope:
@@ -48,7 +48,7 @@ class Telescope:
     def generate(self):
         """ Generate camera """
         # Generate parameter values
-        self._store_param_vals(self)
+        self._store_param_vals()
 
         # Handle custom atmospheres
         self._handle_custom_atm()
@@ -70,20 +70,28 @@ class Telescope:
         """
         return self._param_vals[param]
 
+    def pwv_sample(self):
+        """ Sample PWV for this telescope """
+        return self._param_samp(self._param_dict["pwv"])
+
+    def elev_sample(self):
+        """ Sample elevation for this telescope """
+        return self._param_samp(self._param_dict["elev"])
+
     # ***** Helper Methods *****
     def _param_samp(self, param):
         if self.exp.sim.param("nexp") == 1:
-            return param.getAvg()
+            return param.get_avg()
         else:
             return param.sample(nsample=1)
 
-    def _store_param_dict(self, params):
+    def _store_param_dict(self):
         self._tel_file = os.path.join(self._config_dir, 'telescope.txt')
         if not os.path.isfile(self._tel_file):
             self._log.err(
                 "Telescope file '%s' does not exist" % (self._tel_file))
         else:
-            params = self._load().telescope(self._tel_file)
+            params = self._load.telescope(self._tel_file)
             self._param_dict = {
                 "site": pr.Parameter(
                     self._log, 'Site', params['Site']),
@@ -95,7 +103,7 @@ class Telescope:
                     min=0.0, max=8.0),
                 "tobs": pr.Parameter(
                     self._log, 'Observation Time', params['Observation Time'],
-                    un.Unit("year"), min=0.0, max=np.inf),
+                    un.Unit("yr"), min=0.0, max=np.inf),
                 "fsky": pr.Parameter(
                     self._log, 'Sky Fraction', params['Sky Fraction'],
                     min=0.0, max=1.0),

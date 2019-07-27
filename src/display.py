@@ -4,7 +4,7 @@ import collections as cl
 import os
 
 # BoloCalc modules
-import src.units as un
+import src.unit as un
 import src.distribution as ds
 
 

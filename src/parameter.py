@@ -3,7 +3,7 @@ import numpy as np
 import sys as sy
 
 # BoloCalc modules
-import src.units as un
+import src.unit as un
 
 
 class Parameter:
@@ -28,89 +28,91 @@ class Parameter:
     """
 
     def __init__(self, log, name, inp, unit=None,
-                 min=None, max=None, inp_type=np.float):
+                 min=None, max=None, inp_type=float):
         # Store passed arguments
         self._log = log
         self.name = name
         if unit is not None:
             self.unit = unit
         else:
-            self.unit = un.Units("NA")
+            self.unit = un.Unit("NA")
         self._min = self._float(min)
         self._max = self._float(max)
-        self.type = inp_type
+        self._type = inp_type
 
         # Store the parameter value, mean, and standard deviation
-        self._store_param()
-
+        self._store_param(inp)
         # Check that the value is within the allowed range
         self._check_range()
 
     # ***** Public Methods *****
     def is_empty(self):
         """ Check if a parameter is 'NA' """
-        if 'NA' in str(self.avg):
+        if 'NA' in str(self._avg):
             return True
         else:
             return False
 
     def convolve(self, param):
         """
-        Multiply self.avg with param.avg
-        and quadrature sum self.std with param.std
-        The new avg and std replace self.avg and self.std
+        Multiply self._avg with param.avg
+        and quadrature sum self._std with param.std
+        The new avg and std replace self._avg and self._std
 
         Args:
         param (src.Parameter): parameter to convolve with this object.
         """
         if not self.is_empty() and not param.is_empty():
-            self.avg = self.avg * param.avg
-            self.std = np.sqrt(self.std**2 + param.std**2)
+            self._avg = self._avg * param.avg
+            self._std = np.sqrt(self._std**2 + param.std**2)
 
     def multiply(self, factor):
         """
-        Multiply self.avg and self.std by factor
+        Multiply self._avg and self._std by factor
 
         Args:
-        factor (float): factor to multiply self.avg and self.std by
+        factor (float): factor to multiply self._avg and self._std by
         """
         if not self.is_empty():
-            self.avg = self.avg * factor
-            self.std = self.std * factor
+            self._avg = self._avg * factor
+            self._std = self._std * factor
 
     def fetch(self, band_id=1):
         """
-        Return self.avg and self.std given a band_id,
-        or return the parameter value
+        Return (avg, std) given a band_id, or return (val)
 
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
         if self._val is not None:
-            return self._val
+            return (self._val, 0.)
         elif self.is_empty():
             return ('NA', 'NA')
         else:
-            if 'array' in str(type(self.avg)):
-                return (self.avg[band_id - 1], self.std[band_id - 1])
+            if type(self._avg) is np.ndarray:
+                return (self._avg[band_id - 1], self._std[band_id - 1])
             else:
-                return (self.avg, self.std)
+                return (self._avg, self._std)
 
     def change(self, new_avg, new_std=None, band_id=1):
         """
-        Change self.avg to new_avg and self.std to new_std
+        Change self._avg to new_avg and self._std to new_std
 
         Args:
         new_avg (int or list): new
         """
-        if 'array' in str(type(self.avg)):
-            self.avg[band_id-1] = self.unit.to_SI(new_avg)
+        if type(self._avg) is np.ndarray:
+            self._avg[band_id-1] = self.unit.to_SI(new_avg)
             if new_std is not None:
-                self.std[band_id-1] = self.unit.to_SI(new_std)
+                self._std[band_id-1] = self.unit.to_SI(new_std)
         else:
-            self.avg = self.unit.to_SI(new_avg)
+            self._avg = self.unit.to_SI(new_avg)
             if new_std is not None:
-                self.std = self.unit.to_SI(new_std)
+                self._std = self.unit.to_SI(new_std)
+
+    def get_val(self):
+        """ Return the input value """
+        return self._val
 
     def get_avg(self, band_id=1):
         """
@@ -142,6 +144,10 @@ class Parameter:
         min (float): the minimum allowed value to be returned
         max (float): the maximum allowed value to be returned
         """
+        if min is None:
+            min = self._min
+        if max is None:
+            max = self._max
         if self.is_empty():
             return 'NA'
         elif isinstance(self._val, Distribution):
@@ -165,11 +171,14 @@ class Parameter:
     # ***** Private Methods *****
     def _float(self, val):
         """Convert val to an array of or single float(s)"""
+        if val is None:
+            return None
         try:
             return self.unit.to_SI(float(val))
         except:
             try:
-                return self.unit.to_SI(np.array(eval(val)).astype(np.float))
+                return self.unit.to_SI(
+                    np.array(eval(val)).astype(float))
             except:
                 return str(val)
 
@@ -181,42 +190,49 @@ class Parameter:
             return 0.
 
     def _check_range(self):
-        if self.avg is None:
+        if self._avg is None or isinstance(self._avg, str):
             return True
         else:
-            if np.any(self._avg < self._min):
+            avg = np.array(self._avg)
+            if self._min is not None and np.any(avg < self._min):
                 self.log.err(
-                    "Passed value %f for parameter %s lower than the mininum \
-                    allowed value %f" % (self.avg, self.name, self._min), 0)
-            elif np.any(self._avg > self._max):
+                    "Passed value %s for parameter %s lower than the mininum \
+                    allowed value %f" % (
+                        str(self._avg), self.name, self._min), 0)
+            elif self._max is not None and np.any(avg > self._max):
                 self.log.err(
-                    "Passed value %f for parameter %s greater than the maximum \
-                    allowed value %f" % (self.avg, self.name, self._max), 0)
+                    "Passed value %s for parameter %s greater than the maximum \
+                    allowed value %f" % (
+                        str(self._avg), self.name, self._max), 0)
             else:
                 return True
 
-    def _store_param(self):
-        if self.type is bool:
-            self._val = self._bool(inp)
+    def _store_param(self, inp):
+        if self._type is bool:
+            self._val = bool(eval(inp.lower().capitalize()))
             self._avg = None
             self._std = None
-        elif self.type is np.float or self.type is np.int:
+        elif self._type is float:
             if isinstance(inp, str):
                 self._spread_delim = '+/-'
                 if self._spread_delim in inp:
                     self._val = None
-                    values = inp.split(self._spread_delim)
+                    vals = inp.split(self._spread_delim)
                     self._avg = self._float(vals[0])
                     self._std = self._float(vals[1])
                 else:
-                    self._val = None
+                    self._val = self._float(inp)
                     self._avg = self._float(inp)
-                    self._std = self._zero(self.avg)
+                    self._std = self._zero(self._avg)
             elif isinstance(inp, Distribution):
                 self._val = inp
                 self._avg = inp.mean()
                 self._std = inp.std()
-        elif self.type is np.str:
+        elif self._type is int:
+            self._val = int(inp)
+            self._avg = None
+            self._std = None
+        elif self._type is str:
             self._val = str(inp)
             self._avg = None
             self._std = None

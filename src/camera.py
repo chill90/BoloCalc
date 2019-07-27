@@ -116,7 +116,7 @@ class Camera:
 
     def _store_param_vals(self):
         self._param_vals = {}
-        for k in self.param_dict:
+        for k in self._param_dict:
             self._param_vals[k] = self._param_samp(self._param_dict[k])
         # Generate additional camera parameters
         self._param_vals["cam_name"] = (

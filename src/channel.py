@@ -9,7 +9,7 @@ import src.band as bd
 import src.detectorArray as da
 import src.observationSet as ob
 import src.parameter as pr
-import src.units as un
+import src.unit as un
 
 
 class Channel:
@@ -25,7 +25,8 @@ class Channel:
     Attributes:
     cam (src.Camera): where the 'cam' arg is stored
     det_arr (src.DetectorArray): the DetectorArray object for this channel
-    band (src.Band): detector band for this channel
+    det_band (src.Band): detector band for this channel
+    band_mask (list): frequencies for which the band is defined
     elev_dict (dict): pixel elevation distribution for ObservationSet object
     det_dict (dict): detector-specific parameters for DetectorArray object
     elem (list): sky, optics, and detector element names
@@ -40,6 +41,7 @@ class Channel:
         self._band_file = band_file
         self._log = self.cam.tel.exp.sim.log
         self._load = self.cam.tel.exp.sim.load
+        self._nexp = self.cam.tel.exp.sim.param("nexp")
         self._fres = self.cam.tel.exp.sim.param("fres")
         self._ndet = self.cam.tel.exp.sim.param("ndet")
 
@@ -56,13 +58,10 @@ class Channel:
     def generate(self):
         # Generate parameter values
         self._store_param_vals()
-
         # Store frequencies to integrate over and detector band
         self._store_band()
-
         # Store the detector array object
         self.det_arr = da.DetectorArray(self)
-
         # Store the observation set object
         self._obs_set = ob.ObservationSet(self)
 
@@ -96,13 +95,11 @@ class Channel:
     def _cam_param(self, param):
         return self.cam.param(param)
 
-    def _param_samp(self, param, bandID):
-        if not ("instance" in str(type(param)) or "class" in str(type(param))):
-            return np.float(param)
-        if self.nrealize == 1:
-            return param.get_avg(band_id)
+    def _param_samp(self, param):
+        if self._nexp == 1:
+            return param.get_avg(self.param("band_id"))
         else:
-            return param.sample(band_id=band_id, nsample=1)
+            return param.sample(band_id=self.param("band_id"), nsample=1)
 
     def _store_param_dict(self):
         self._param_dict = {
@@ -178,7 +175,7 @@ class Channel:
 
         # Newly added parameters to BoloCalc
         # checked separately for backwards compatibility
-        if "Flink" in self.param_dict.keys():
+        if "Flink" in self._param_dict.keys():
             self.det_dict["flink"] = pr.Parameter(
                 self._log, "Flink", self._param_dict["Flink"],
                 min=0.0, max=np.inf)
@@ -187,7 +184,7 @@ class Channel:
                 self._log, "Flink", "NA",
                 min=0.0, max=np.inf)
 
-        if "G" in self.param_dict.keys():
+        if "G" in self._param_dict.keys():
             self.det_dict["g"] = pr.Parameter(
                 self._log, "G", self._param_dict["G"],
                 un.Unit("pW"), min=0.0, max=np.inf)
@@ -202,27 +199,28 @@ class Channel:
         return
 
     def _store_param_vals(self):
-        # Generate channel parameters
         self._param_vals = {}
-        for k in self._param_dict.keys():
+        # Store ID parameters first
+        self._param_vals["band_id"] = int(self._inp_dict["Band ID"])
+        self._param_vals["pix_id"] = int(self._inp_dict["Pixel ID"])
+        self._param_vals["ch_name"] = (self.cam.param("cam_name") +
+                                       str(self.param("band_id")))
+        # Store channel parameters
+        for k in self._param_dict:
             self._param_vals[k] = self._param_samp(
-                self._param_dict[k], self.band_id)
+                self._param_dict[k])
         # Store average values for detector-specific parameters
-        for k in self.det_dict.keys():
-            self._param_vals[k] = self.det_dict[k].get_avg(self.band_id)
+        for k in self.det_dict:
+            self._param_vals[k] = self.det_dict[k].get_avg(
+                self.param("band_id"))
         # Derived channel parameters
-        self._param_vals["ndet"] = int(self._param_vals["det_per_waf"] *
-                                       self._param_vals["waf_per_ot"] *
-                                       self._param_vals["ot"])
-        if self.det_arr.cam.tel.exp.sim.fetch("ndet") is "NA":
+        self._param_vals["ndet"] = int(self.param("det_per_waf") *
+                                       self.param("waf_per_ot") *
+                                       self.param("ot"))
+        if self.cam.tel.exp.sim.param("ndet") is "NA":
             self._param_vals["cdet"] = self._param_vals["ndet"]
         else:
-            self._param_vals["cdet"] = self.cam.tel.exp.sim.fetch("ndet")
-        # Other channel parameters
-        self._param_vals["band_id"] = int(self._inp_dict["Band ID"].fetch())
-        self._param_vals["pix_id"] = int(self._inp_dict["Pixel ID"].fetch())
-        self._param_vals["ch_name"] = (self.cam.param("cam_name") +
-                                       str(self._param_vals["band_id"]))
+            self._param_vals["cdet"] = self.cam.tel.exp.sim.param("ndet")
         # To be stored by specific optic
         self._param_vals["ap_eff"] = None
         self._param_vals["edge_tap"] = None
@@ -247,9 +245,9 @@ class Channel:
         return
 
     def _store_band(self):
-        if self.band_file is not None:
+        if self._band_file is not None:
             # Use defined band
-            self.det_band = bd.Band(self._log, self.band_file)
+            self.det_band = bd.Band(self._log, self._load, self._band_file)
             # Define edges of frequencies to integrate over
             lo_freq = np.amin(self.det_band.freqs)
             hi_freq = np.amax(self.det_band.freqs)
@@ -257,45 +255,49 @@ class Channel:
             f_lo = lo_freq
             f_hi = hi_freq
         else:
+            self.det_band = None
             # Define edges of frequencies to integrate over
             # Use wider than nominal band by 30% to cover tolerances/errors
             lo_freq = (
                 self.det_dict["bc"].get_avg() *
-                (1. - 0.65*self.det_dict["fbw"].get_avg()))
+                (1. - 0.65 * self.det_dict["fbw"].get_avg()))
             hi_freq = (
                 self.det_dict["bc"].get_avg() *
-                (1. + 0.65*self.det_dict["fbw"].get_avg()))
+                (1. + 0.65 * self.det_dict["fbw"].get_avg()))
             # Define band edges
             # Band mask edges defined using band center and fractional BW
             f_lo = (
                 self.det_dict["bc"].get_avg() *
-                (1. - 0.50*self.det_dict["fbw"].get_avg()))
+                (1. - 0.50 * self.det_dict["fbw"].get_avg()))
             f_hi = (
                 self.det_dict["bc"].get_avg() *
-                (1. + 0.50*self.det_dict["fbw"].get_avg()))
+                (1. + 0.50 * self.det_dict["fbw"].get_avg()))
         # Frequencies to integrate over
         self.freqs = np.arange(
-            lo_freq, hi_freq+self._fres, self._fres)
+                lo_freq, hi_freq + self._fres, self._fres)
+        # Interpolate band
+        if self._band_file is not None:
+            self.det_band.interp_freqs(self.freqs)
         # Band mask
-        self.band_mask = (self.freqs > self.f_lo) * (self.freqs < self.fhi)
+        self.band_mask = (self.freqs > f_lo) * (self.freqs < f_hi)
         return
 
     def _calculate(self):
-        elem, emiss, effic, temp = self.cam.opt_chain.generate(self)
+        elem, emis, tran, temp = self.cam.opt_chn.generate(self)
         self.elem = np.array(
-            [[obs.elem[i] + elem + self.det_arr.detectors[i].elem
+            [[obs.elem[i] + elem + self.det_arr.dets[i].elem
              for i in range(self._ndet)]
-             for obs in self._obs_set.observations]).astype(np.str)
+             for obs in self._obs_set.obs_arr]).astype(np.str)
         self.emis = np.array(
-            [[obs.emis[i] + emiss + self.det_arr.detectors[i].emis
+            [[obs.emis[i] + emis + self.det_arr.dets[i].emis
              for i in range(self._ndet)]
-             for obs in self._obs_set.observations]).astype(np.float)
+             for obs in self._obs_set.obs_arr]).astype(np.float)
         self.tran = np.array(
-            [[obs.tran[i] + effic + self.det_arr.detectors[i].tran
+            [[obs.tran[i] + tran + self.det_arr.dets[i].tran
              for i in range(self._ndet)]
-             for obs in self._obs_set.observations]).astype(np.float)
+             for obs in self._obs_set.obs_arr]).astype(np.float)
         self.temp = np.array(
-            [[obs.temp[i] + temp + self.det_arr.detectors[i].temp
+            [[obs.temp[i] + temp + self.det_arr.dets[i].temp
              for i in range(self._ndet)]
-             for obs in self._obs_set.observations]).astype(np.float)
+             for obs in self._obs_set.obs_arr]).astype(np.float)
         return

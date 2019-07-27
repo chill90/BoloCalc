@@ -2,7 +2,7 @@
 import numpy as np
 
 # BoloCalc modules
-import src.units as un
+import src.unit as un
 
 
 class Physics:
@@ -43,7 +43,7 @@ class Physics:
         freq (float): frequencies [Hz]
         ind: index of refraction. Defaults to 1
         """
-        freq, index = self._check_inputs(freq, [index])
+        freq, ind = self._check_inputs(freq, [ind])
         return self.c/(freq*ind)
 
     def phase_to_thick(self, freq, phase, ind=1.0):
@@ -55,7 +55,7 @@ class Physics:
         phase (float): wave phase
         ind (float): index of refraction
         """
-        freq, phase, index = self._check_inputs(freq, [phase, ind])
+        freq, phase, ind = self._check_inputs(freq, [phase, ind])
         return self.lamb(freq, ind) * phase
 
     def thick_to_phase(self, freq, thick, ind=1.0):
@@ -93,8 +93,8 @@ class Physics:
         """
         pol_ang = self.deg_to_rad(pol_ang)
         return np.matrix([[1.],
-                          [pol_frac*np.cos(2.*pol_ang)],
-                          [pol_frac*np.sin(2.*pol_ang)],
+                          [pol_frac * np.cos(2. * pol_ang)],
+                          [pol_frac * np.sin(2. * pol_ang)],
                           [0]])
 
     def band_edges(self, fcent, fbw):
@@ -326,7 +326,7 @@ class Physics:
         freq = self._check_inputs(freq)
         return self.lamb(freq)**2
 
-    def bb_spec_rad(self, freq, temp, emiss=1.0):
+    def bb_spec_rad(self, freq, temp, emis=1.0):
         """
         Blackbody spectral radiance [W/(m^2-Hz)] given a frequency [Hz],
         blackbody temperature [K], and blackbody emissivity
@@ -336,9 +336,9 @@ class Physics:
         temp (float): blackbody temperature [K]
         emiss (float): blackbody emissivity. Defaults to 1.
         """
-        freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
-        return (emiss * (2 * self.h * (freq**3) /
-                (self.c**2)) * self.nOcc(freq, temp))
+        freq, temp, emis = self._check_inputs(freq, [temp, emis])
+        return (emis * (2 * self.h * (freq**3) /
+                (self.c**2)) * self.n_occ(freq, temp))
 
     def bb_pow_spec(self, freq, temp, emiss=1.0):
         """
@@ -412,7 +412,7 @@ class Physics:
         """
         freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
         return (((self.h**2) / self.kB) * emiss *
-                (self.nOcc(freq, temp)**2) * ((freq**2)/(temp**2)) *
+                (self.n_occ(freq, temp)**2) * ((freq**2)/(temp**2)) *
                 np.exp((self.h * freq)/(self.kB * temp)))
 
     def ani_power(self, freq, temp, emiss=1.0):

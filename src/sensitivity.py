@@ -4,20 +4,20 @@ import warnings as wn
 import functools as ft
 
 # BoloCalc modules
-import src.units as un
+import src.unit as un
 import src.distribution as ds
 
 
 class Sensitivity:
-    def __init__(self, sim):
+    def __init__(self, clc):
         # Store passed parameters
-        self.sim = sim
-        self._log = self.sim.log
-        self._phys = self.sim.phys
-        self._noise = self.sim.noise
-        self._corr = self.sim.param("corr")
-        self._nobs = self.sim.param("nobs")
-        self._ndet = self.sim.param("ndet")
+        self.clc = clc
+        self._log = self.clc.exp.sim.log
+        self._phys = self.clc.exp.sim.phys
+        self._noise = self.clc.exp.sim.noise
+        self._corr = self.clc.exp.sim.param("corr")
+        self._nobs = self.clc.exp.sim.param("nobs")
+        self._ndet = self.clc.exp.sim.param("ndet")
 
     # ***** Public Methods *****
     # Mapping speed given some channel and telescope
@@ -31,11 +31,6 @@ class Sensitivity:
         self._calc_tot_NEP(ch)
         # Calculte NET
         self._calc_NET(ch)
-        self._calc_NET_arr(ch)
-        # Calculate mapping speed
-        self._calc_MS()
-        # Calculate map depth
-        self._calc_sens()
 
         # Return a dictionary of distribution objects
         return [self._popt_arr.flatten(),
@@ -82,7 +77,7 @@ class Sensitivity:
                             for m in range(k-1)] + [[1. for f in ch.freqs],
                                                     [0. for f in ch.freqs]]
                     eff_sky_side_2.append(np.array(cum_eff_sky))
-                    pow = self.ph.bb_pow_spec(
+                    pow = self._phys.bb_pow_spec(
                         ch.freqs, ch.temp[i][j][k], ch.emis[i][j][k])
                     pows.append(pow)
                 # Store power from sky and power on detector
@@ -108,7 +103,7 @@ class Sensitivity:
 
     # ***** Helper Methods *****
     def _calc_popt(self, ch):
-        self._popt_arr = np.array([[self.popt(
+        self._popt_arr = np.array([[self._popt(
             ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
             ch.temp[i][j], ch.freqs)
             for j in range(self._ndet)]
@@ -120,7 +115,7 @@ class Sensitivity:
             pass_ch = ch
         else:
             pass_ch = None
-        NEP_ph_arr = np.array([[self.photon_NEP(
+        NEP_ph_arr = np.array([[self._photon_NEP(
             ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
             ch.temp[i][j], ch.freqs, pass_ch)
             for j in range(self._ndet)]
@@ -133,15 +128,15 @@ class Sensitivity:
         return
 
     def _calc_bolo_NEP(self, ch):
-        self._NEP_bol_arr = np.array([[self.bolo_NEP(
-            popt_arr[i][j], ch.det_arr.dets[j])
+        self._NEP_bolo_arr = np.array([[self._bolo_NEP(
+            self._popt_arr[i][j], ch.det_arr.dets[j])
             for j in range(self._ndet)]
             for i in range(self._nobs)])
         return
 
     def _calc_read_NEP(self, ch):
-        NEP_read_arr = np.array([[self.read_NEP(
-            popt_arr[i][j], ch.det_arr.dets[j])
+        NEP_read_arr = np.array([[self._read_NEP(
+            self._popt_arr[i][j], ch.det_arr.dets[j])
             for j in range(self._ndet)]
             for i in range(self._nobs)])
 
@@ -172,38 +167,19 @@ class Sensitivity:
             self._NEP[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
             ch.cam.param("opt_coup"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)]).flatten() * tp.params("net_mgn")
+            for i in range(self._nobs)]).flatten() * (
+                ch.cam.tel.param("net_mgn"))
         # Total NET with correlation adjustment
         self._NET_corr = np.array([[self._noise.NET_from_NEP(
             self._NEP_corr[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
             ch.cam.param("opt_coup"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)]).flatten() * tp.params("net_mgn")
-        return
-
-    def _calc_NET_arr(self, ch):
-        NET_arr = self._phys.inv_var(self._NET_corr) * np.sqrt(
-            float(self._nobs)) * np.sqrt(
-                float(self._ndet) / float(
-                    ch.params("yield") * ch.param("ndet")))
-        self._NET_arr = np.array(
-            [[ch.param("ap_eff")
-             for j in range(self._ndet)]
-             for i in range(self._nobs)])
-        return
-
-    def _calc_MS(self):
-        self._MS = 1./(np.power(self._NET_arr, 2.))
-
-    def _calc_sens(self):
-        self._sens = self._noise.sensitivity(
-            NET_arr, tp.params("sky_frac"),
-            tp.params("obs_time") *
-            tp.params("obs_eff"))
+            for i in range(self._nobs)]).flatten() * (
+                ch.cam.tel.param("net_mgn"))
         return
 
     def _popt(self, elem, emis, tran, temp, freqs):
-        tran = self._buffer_tran(tran)
+        tran = self._buffer_tran(tran, freqs)
         tot_pow = np.sum([np.trapz(
             self._phys.bb_pow_spec(
                 freqs, temp[i], emis[i] *
@@ -212,7 +188,7 @@ class Sensitivity:
         return tot_pow
 
     def _photon_NEP(self, elem, emis, tran, temp, freqs, ch=None):
-        tran = self._buffer_tran(tran)
+        tran = self._buffer_tran(tran, freqs)
         if ch:
             corrs = True
         else:
@@ -222,10 +198,10 @@ class Sensitivity:
             for i in range(len(elem))])
         if corrs:
             # Photon NEP both without and with correlations
-            NEP_ph, NEP_ph_arr = self._noise.photon_nep(
+            NEP_ph, NEP_ph_arr = self._noise.photon_NEP(
                 pow_ints, freqs, elem, (
                     ch.param("pix_sz") /
-                    float(ch.cam.param("fnum") * self._ph.lamb(
+                    float(ch.cam.param("fnum") * self._phys.lamb(
                         ch.param("bc")))))
         else:
             # Both outputs are identical
@@ -253,24 +229,24 @@ class Sensitivity:
             return self._noise.bolo_NEP(
                 det.param("flink"), g, det.param("tc"))
 
-    def _read_NEP(self, optPow, det):
-        if 'NA' in str(det.float("nei")):
+    def _read_NEP(self, opt_pow, det):
+        if 'NA' in str(det.param("nei")):
             return 'NA'
         elif 'NA' in str(det.param("bolo_r")):
             return 'NA'
         elif 'NA' in str(det.param("psat")):
-            p_bias = (det.param("psat_fact") - 1.) * optPow
-            return self._noise.readoutNEP(
+            p_bias = (det.param("psat_fact") - 1.) * opt_pow
+            return self._noise.read_NEP(
                 p_bias, det.param("bolo_r"), det.param("nei"))
         else:
-            if optPow >= det.param("psat"):
+            if opt_pow >= det.param("psat"):
                 return 0.
             else:
-                p_bias = det.param("psat") - optPow
+                p_bias = det.param("psat") - opt_pow
                 return self.nse.read_NEP(
                     p_bias, det.param("bolo_r"), det.param("nei"))
 
-    def _buffer_tran(self, tran):
+    def _buffer_tran(self, tran, freqs):
         tran = np.insert(tran, len(tran), [1. for f in freqs], axis=0)
         return np.array(tran).astype(np.float)
 

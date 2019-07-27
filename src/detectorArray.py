@@ -21,17 +21,13 @@ class DetectorArray:
         ndet = self.ch.cam.tel.exp.sim.param("ndet")
 
         # Store detectors
-        if self.ch.band is not None:
-            if self.ch.band.eff is not None:
-                if ndet == 1:
-                    bands = self.ch.band.get_avg()
-                else:
-                    bands = band.sample(nsample=ndet)
-                self.dets = [dt.Detector(self.ch, bands[i])
-                             for i in range(ndet)]
+        if self.ch.det_band is not None:
+            if ndet == 1:
+                bands = self.ch.det_band.get_avg()
             else:
-                self.dets = [dt.Detector(self.ch)
-                             for i in range(ndet)]
+                bands = self.ch.det_band.sample(nsample=ndet)
+            self.dets = [dt.Detector(self, band)
+                         for band in bands]
         else:
-            self.dets = [dt.Detector(self.ch)
+            self.dets = [dt.Detector(self)
                          for i in range(ndet)]

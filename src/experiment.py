@@ -65,8 +65,8 @@ class Experiment:
         else:
             return param.sample(nsample=1)
 
-    def _store_param_dict(self, params):
-        if self.sim.fetch("fgs"):
+    def _store_param_dict(self):
+        if self.sim.param("infg"):
             fgnd_file = os.path.join(self._config_dir, 'foregrounds.txt')
             params = self._load.foregrounds(fgnd_file)
             self._param_dict = {

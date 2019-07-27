@@ -19,14 +19,13 @@ class Calculate:
     cams (list): src.Camera objects
     tels (list): src.Telescope objects
     """
-    def __init__(self, sim):
+    def __init__(self, exp):
         # Store passed parameters
-        self._sim = sim
-        self._exp = self._sim.exp
+        self.exp = exp
 
         self.chs = [[[ch for ch in cm.chs.values()]
                     for cm in tp.cams.values()]
-                    for tp in self._exp.tels.values()]
+                    for tp in self.exp.tels.values()]
         self.sens = sn.Sensitivity(self)
 
     # ***** Public Methods *****

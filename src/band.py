@@ -22,10 +22,12 @@ class Band:
         self._log = log
         self._load = load
         self._band_file = band_file
+        self._freq_inp = freq_inp
         self._ftype = band_file.split('.')[-1]
 
         # Parse band file
         self._load_band()
+        self._store_data()
 
     # ***** Public Methods *****
     def get_avg(self, nsample=1):
@@ -55,6 +57,20 @@ class Band:
                 return np.random.normal(self._tran, self._err,
                                         (nsample, len(self._tran)))
 
+    def interp_freqs(self, freq_inp):
+        if freq_inp is not None:
+            mask = (freq_inp < self._freqs[-1]) * (
+                freq_inp > self._freqs[0])
+            self._tran = np.interp(
+                freq_inp, self._freqs, self._tran) * mask
+            if self._err is not None:
+                self._err = np.interp(
+                    freq_inp, self._freqs, self._err) * mask
+            self.freqs = freq_inp
+        else:
+            self.freqs = self._freqs
+        return
+
     # ***** Helper Methods *****
     def _load_band(self):
         try:
@@ -74,17 +90,11 @@ class Band:
 
     def _store_data(self):
         # Convert to Hz if band file is in GHz
-        if not np.all(freqs) > 1.e5:
+        if not np.all(self._freqs) > 1.e5:
             self._freqs = self._freqs * 1.e+09
-        # Equalize arrays
-        if freq_inp is not None:
-            mask = (freq_inp < freqs[-1]) * (freq_inp > freqs[0])
-            self._tran = np.interp(freq_inp, self._freqs, self._tran) * mask
-            if self._err is not None:
-                self._err = np.interp(freq_inp, self._freqs, self._err) * mask
-            self.freqs = freq_inp
-        else:
-            self.freqs = self._freqs
+        #Equalize arrays
+        self.interp_freqs(self._freq_inp)
         # Not allowed to have a standard deviation of zero or negative
         if self._err is not None:
             self._err[(self._err <= 0.)] = 1.e-6
+        return
