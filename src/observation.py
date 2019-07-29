@@ -61,7 +61,7 @@ class Observation:
         if self._ndet == 1:
             self._elev = tel_elev + cam_elev
         else:
-            self._elev = tel_elev + cam_elv + self._obs_set.sample_pix_elev()
+            self._elev = tel_elev + cam_elev + self._obs_set.sample_pix_elev()
         return
 
     def _get_sky_vals(self):

@@ -72,7 +72,10 @@ class Telescope:
 
     def pwv_sample(self):
         """ Sample PWV for this telescope """
-        return self._param_samp(self._param_dict["pwv"])
+        if self.exp.sim.param("nobs") == 1:
+            return self._param_dict["pwv"].get_avg()
+        else:
+            return self._param_dict["pwv"].sample(nsample=1)
 
     def elev_sample(self):
         """ Sample elevation for this telescope """

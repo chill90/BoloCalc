@@ -96,10 +96,11 @@ class Channel:
         return self.cam.param(param)
 
     def _param_samp(self, param):
+        band_id = self.param("band_id")
         if self._nexp == 1:
-            return param.get_avg(self.param("band_id"))
+            return param.get_avg(band_id)
         else:
-            return param.sample(band_id=self.param("band_id"), nsample=1)
+            return param.sample(band_id=band_id, nsample=1)
 
     def _store_param_dict(self):
         self._param_dict = {
@@ -284,6 +285,11 @@ class Channel:
 
     def _calculate(self):
         elem, emis, tran, temp = self.cam.opt_chn.generate(self)
+        #for obs in self._obs_set.obs_arr:
+            #print(obs.tran[:10])
+            #print(obs.temp[:10])
+            #print("\n")
+        #print("\n\n\n\n\n")
         self.elem = np.array(
             [[obs.elem[i] + elem + self.det_arr.dets[i].elem
              for i in range(self._ndet)]

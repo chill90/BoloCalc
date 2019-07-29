@@ -293,7 +293,7 @@ class Noise:
         """
         return np.sqrt(
             (4. * self._phys.PI * fsky * 2. * np.power(net_arr, 2.)) /
-            float(tobs)) * (10800. / self._phys.PI)
+            tobs) * (10800. / self._phys.PI)
 
     def mapping_speed(self, net, n_det, det_yield=1.0):
         """

@@ -216,7 +216,7 @@ class Physics:
         """
         return 2 * (ant_temp * self.kB * (freq**2) / (self.c**2)) * bw
 
-    def antenna_to_cmb_temp(self, freq, ant_temp):
+    def Trj_over_Tb(self, freq, thermo_temp):
         """
         CMB temperature [K_CMB] given an antenna temperature [K_RJ]
         and frequency [Hz]
@@ -225,11 +225,11 @@ class Physics:
         freq (float): frequencies [Hz]
         ant_temp (float): antenna temperature [K_RJ]
         """
-        freq, ant_temp = self._check_inputs(freq, [ant_temp])
-        x = (self.h * freq)/(self.Tcmb * self.kB)
+        freq, thermo_temp = self._check_inputs(freq, [thermo_temp])
+        x = (self.h * freq)/(thermo_temp * self.kB)
         thermo_fact = np.power(
             (np.exp(x) - 1.), 2.) / (np.power(x, 2.) * np.exp(x))
-        return ant_temp * thermo_fact
+        return 1. / thermo_fact
 
     def deg_to_rad(self, deg):
         """

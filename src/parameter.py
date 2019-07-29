@@ -4,6 +4,7 @@ import sys as sy
 
 # BoloCalc modules
 import src.unit as un
+import src.distribution as ds
 
 
 class Parameter:
@@ -150,7 +151,7 @@ class Parameter:
             max = self._max
         if self.is_empty():
             return 'NA'
-        elif isinstance(self._val, Distribution):
+        elif isinstance(self._val, ds.Distribution):
             return self._val.sample()
         else:
             avg, std = self.fetch(band_id)
@@ -158,6 +159,9 @@ class Parameter:
                 return avg
             else:
                 if nsample == 1:
+                    #print("taking a real sample of %s"
+                    #      "with avg %f an std %f"
+                    #      % (self.name, avg, std))
                     samp = np.random.normal(avg, std, nsample)[0]
                 else:
                     samp = np.random.normal(avg, std, nsample)

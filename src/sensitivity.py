@@ -24,6 +24,7 @@ class Sensitivity:
     def sensitivity(self, ch):
         # Calculate optical power
         self._calc_popt(ch)
+        self._calc_rj_temp(ch)
         # Calculate NEP
         self._calc_photon_NEP(ch)
         self._calc_bolo_NEP(ch)
@@ -31,14 +32,21 @@ class Sensitivity:
         self._calc_tot_NEP(ch)
         # Calculte NET
         self._calc_NET(ch)
+        self._calc_NET_RJ(ch)
 
         # Return a dictionary of distribution objects
-        return [self._popt_arr.flatten(),
-                self._NEP_ph_arr.flatten(),
-                self._NEP_bolo_arr.flatten(),
-                self._NEP_read_arr.flatten(),
-                self._NEP.flatten(),
-                self._NET.flatten()]
+        return [self._tel_eff_arr.flatten().tolist(),
+                self._popt_arr.flatten().tolist(),
+                self._tel_rj_temp.flatten().tolist(),
+                self._sky_rj_temp.flatten().tolist(),
+                self._NEP_ph_arr.flatten().tolist(),
+                self._NEP_bolo_arr.flatten().tolist(),
+                self._NEP_read_arr.flatten().tolist(),
+                self._NEP.flatten().tolist(),
+                self._NET.flatten().tolist(),
+                self._NET_corr.flatten().tolist(),
+                self._NET_RJ.flatten().tolist(),
+                self._NET_corr_RJ.flatten().tolist()]
 
     # Optical power element by element given some channel and telescope
     def opt_pow(self, ch):
@@ -110,6 +118,32 @@ class Sensitivity:
             for i in range(self._nobs)])
         return
 
+    def _calc_rj_temp(self, ch):
+        # Calculate experiment RJ temperature
+        n_sky_elem = self._num_sky_elem(ch)
+        self._tel_eff_arr = np.array([[self._eff(
+            ch.tran[i][j][n_sky_elem:],
+            ch.freqs)
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        self._tel_rj_temp = np.array([[self._rj_temp(
+            ch.elem[i][j][n_sky_elem:],
+            ch.emis[i][j][n_sky_elem:],
+            ch.tran[i][j][n_sky_elem:],
+            ch.temp[i][j][n_sky_elem:],
+            ch.freqs, self._tel_eff_arr[i][j])
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        self._sky_rj_temp = np.array([[self._rj_temp(
+            ch.elem[i][j][:n_sky_elem],
+            ch.emis[i][j][:n_sky_elem],
+            ch.tran[i][j],
+            ch.temp[i][j][:n_sky_elem],
+            ch.freqs, self._tel_eff_arr[i][j])
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        return
+
     def _calc_photon_NEP(self, ch):
         if self._corr:
             pass_ch = ch
@@ -167,16 +201,33 @@ class Sensitivity:
             self._NEP[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
             ch.cam.param("opt_coup"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)]).flatten() * (
+            for i in range(self._nobs)]) * (
                 ch.cam.tel.param("net_mgn"))
         # Total NET with correlation adjustment
         self._NET_corr = np.array([[self._noise.NET_from_NEP(
             self._NEP_corr[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
             ch.cam.param("opt_coup"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)]).flatten() * (
+            for i in range(self._nobs)]) * (
                 ch.cam.tel.param("net_mgn"))
         return
+
+    def _calc_NET_RJ(self, ch):
+        self._NET_RJ = np.array([[self._Trj_over_Tcmb(
+            ch.freqs)*self._NET[i][j]
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        self._NET_corr_RJ = np.array([[self._Trj_over_Tcmb(
+            ch.freqs)*self._NET_corr[i][j]
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        return
+
+    def _eff(self, tran, freqs):
+        tran = self._buffer_tran(tran, freqs)
+        bw = freqs[-1] - freqs[0]
+        tot_eff = np.trapz(np.prod(tran, axis=0), freqs)/bw
+        return tot_eff
 
     def _popt(self, elem, emis, tran, temp, freqs):
         tran = self._buffer_tran(tran, freqs)
@@ -186,6 +237,12 @@ class Sensitivity:
                 np.prod(tran[i+1:], axis=0)), freqs)
                 for i in range(len(elem))])
         return tot_pow
+
+    def _rj_temp(self, elem, emis, tran, temp, freqs, eff):
+        opt_pow = self._popt(elem, emis, tran, temp, freqs)
+        bw = freqs[-1] - freqs[0]
+        rj_temp = self._phys.rj_temp(opt_pow, bw, eff)
+        return rj_temp
 
     def _photon_NEP(self, elem, emis, tran, temp, freqs, ch=None):
         tran = self._buffer_tran(tran, freqs)
@@ -246,6 +303,12 @@ class Sensitivity:
                 return self.nse.read_NEP(
                     p_bias, det.param("bolo_r"), det.param("nei"))
 
+    def _Trj_over_Tcmb(self, freqs):
+        factor_spec = self._phys.Trj_over_Tb(freqs, self._phys.Tcmb)
+        bw = freqs[-1] - freqs[0]
+        factor = np.trapz(factor_spec, freqs)/bw
+        return factor
+
     def _buffer_tran(self, tran, freqs):
         tran = np.insert(tran, len(tran), [1. for f in freqs], axis=0)
         return np.array(tran).astype(np.float)
@@ -259,3 +322,16 @@ class Sensitivity:
         return [pow_sky_side,
                 pow_det_side,
                 eff_det_side]
+
+    def _num_sky_elem(self, ch):
+        if ch.cam.tel.param("site").upper() == "SPACE":
+            if ch.cam.tel.exp.sim.param("infg"):
+                nelem = 3
+            else:
+                nelem = 1
+        else:
+            if ch.cam.tel.exp.sim.param("infg"):
+                nelem = 4
+            else:
+                nelem = 2
+        return nelem

@@ -7,15 +7,15 @@ Multiprocess | False   | Whether or not to use multiprocessing
 #---------------------------------------------------------------------------------------------------------------------------
 Cores        | 1       | Number of cores to use for parallel processing. Positive integer
 #---------------------------------------------------------------------------------------------------------------------------
-Verbosity    | 1       | Verbosity for printing logging messages to standard output. 0 for low, 1 for moderate, 2 for high
+Verbosity    | 0       | Verbosity for printing logging messages. 0 for low (recommended), 1 for moderate, 2 for high
 #---------------------------------------------------------------------------------------------------------------------------
 Experiments  | 1       | Number of Experiment MC realizations. Positive integer
 #---------------------------------------------------------------------------------------------------------------------------
-Observations | 1       | Number of Observation MC realizations per experiment realization. Positive integer.
+Observations | 100     | Number of Observation MC realizations per experiment realization. Positive integer.
 #---------------------------------------------------------------------------------------------------------------------------
 Detectors    | 1       | Number of Detector MC realizations per observation realization. Positive Integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Resolution   | 0.100   | Spectral resolution for integration over bands and spectra in GHz. Positive floating point value.
+Resolution   | 1.000   | Spectral resolution for integration over bands and spectra in GHz. Positive floating point value.
 #---------------------------------------------------------------------------------------------------------------------------
 Foregrounds  | False   | Include Foregrounds? True or False
 #---------------------------------------------------------------------------------------------------------------------------

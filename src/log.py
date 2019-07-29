@@ -32,8 +32,8 @@ class Log:
         self._log_file = log_file
         self._f = open(self._log_file, 'w')
         self.log(
-            "Logging to file '%s,' printing with verbosity = %d"
-            % (self._log_file, self._log_level),
+            "Logging to file '%s,'"
+            % (self._log_file),
             self.level["MODERATE"])
         # Error preamble
         self._err_preamble = "BoloCalc Error: "
@@ -68,6 +68,16 @@ class Log:
         err_msg = self._err_preamble + msg
         self._write(err_msg)
         raise Exception(err_msg)
+
+    def set_level(self, level):
+        """
+        Set the logging level
+
+        Args:
+        level (int): new logging level
+        """
+        self._log_level = level
+        return
 
     # ***** Private methods *****
     def _write(self, msg):

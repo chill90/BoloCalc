@@ -4,6 +4,7 @@ import glob as gb
 import collections as cl
 import os
 import io
+import sqlite3 as sq
 
 # BoloCalc modules
 import src.foregrounds as fg
@@ -40,9 +41,17 @@ class Sky:
 
         # Store some internal parameters
         self._store_private_params()
+        # Connect to atm database
+        self._conn = sq.connect("%s/atm.db" % (self._atm_dir))
+        self._c = self._conn.cursor()
         # Initialize the atmosphere
-        if not self.tel.param("site").upper() == 'SPACE':
-            self._init_atm(create=False)
+        # if not self.tel.param("site").upper() == 'SPACE':
+        #     self._init_atm(create=False)
+
+    def __del__(self):
+        self._c.close()
+        self._conn.close()
+        return
 
     # ***** Public Methods ******
     # Generate the sky
@@ -56,6 +65,7 @@ class Sky:
         elev (float): elevation
         freqs (float): frequencies [Hz] at which to evlauate the sky
         """
+        #print(freqs[:10])
         Ncmb = ['CMB' for f in freqs]
         Tcmb = [2.725 for f in freqs]
         Ecmb = [1. for f in freqs]
@@ -64,6 +74,9 @@ class Sky:
             Natm = ['ATM' for f in freqs]
             freq, Tatm, Eatm = self._atm_spectrum(pwv, elev, freqs)
             Aatm = [1. for f in freqs]
+            #print(Tatm[:10])
+            #print(Eatm[:10])
+            #print("\n")
         if self.tel.exp.sim.param("infg"):
             Nsyn = ['SYNC' for f in freqs]
             Tsyn = self._syn_spectrum(freqs)
@@ -117,12 +130,28 @@ class Sky:
         if self.tel.param("atm_file") is not None:
             freq, tran, temp = self._load.atm(self.tel.param("atm_file"))
         else:
-            freq, temp, tran = self._atm_dict[
-                (int(round(elev, 0)), round(pwv, 1))]
+            # freq, temp, tran = self._atm_dict[
+            #    (int(round(elev, 0)), round(pwv, 1))]
+            freq, tran, temp = self._sql_select(
+                int(round(pwv, 1)*1000), int(round(elev, 0)))
         freq = (freq * GHz_to_Hz).flatten().tolist()
         temp = np.interp(freqs, freq, temp).flatten().tolist()
         tran = np.interp(freqs, freq, tran).flatten().tolist()
         return freq, temp, tran
+
+    def _sql_select(self, pwv, elev):
+        cmd = ("SELECT * FROM atm WHERE site='%s' AND pwv=%d AND elev=%d"
+               % (self.tel.param("site").lower().capitalize(), pwv, elev))
+        self._c.execute(cmd)
+        rows = self._c.fetchall()
+        if not len(rows) == 1:
+            self._log.err("ATM database file returned multiple selections for"
+                          "site = '%s', PWV = %d um, and elevation = %d deg"
+                          % (self.tel.param("site"), pwv, elev))
+        else:
+            row = rows[0]
+            freq, depth, temp, tran = pk.loads(row[-1])
+        return (freq, tran, temp)
 
     def _syn_spectrum(self, freqs):
         return self._fg.sync_spec_rad(freqs)
@@ -130,6 +159,7 @@ class Sky:
     def _dst_spectrum(self, freqs):
         return self._fg.dust_spec_rad(freqs)
 
+    """
     def _init_atm(self, create=False):
         um_to_mm = 1.e-3
         n_files = 20  # Number of files to break .pkl file into
@@ -175,7 +205,7 @@ class Sky:
                         self._site_dirs[site], 'PKL',
                         ('atmDict_%d.pkl' % (i))), 'rb'), encoding='latin1')
                 self._atm_dict.update(sub_dict)
-
+    """
     def _store_private_params(self):
         self._max_pwv = 8.0
         self._min_pwv = 0.0

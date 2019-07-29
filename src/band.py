@@ -92,7 +92,7 @@ class Band:
         # Convert to Hz if band file is in GHz
         if not np.all(self._freqs) > 1.e5:
             self._freqs = self._freqs * 1.e+09
-        #Equalize arrays
+        # Equalize arrays
         self.interp_freqs(self._freq_inp)
         # Not allowed to have a standard deviation of zero or negative
         if self._err is not None:

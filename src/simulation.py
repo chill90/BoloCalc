@@ -51,6 +51,9 @@ class Simulation:
         # Store parameter values
         self._store_param_dict()
 
+        # Set the logging level
+        self.log.set_level(self.param("vrbs"))
+
         # Set up multiprocessing
         if self.param("mpps"):
             self._pool = mp.Pool(self.param("core"))
@@ -77,9 +80,11 @@ class Simulation:
                 self._mp2(self.exps[n], n)
                 for n in range(self.param("nexp"))]
             self._done()
-            self.calcs = [
+            self.senses, self.opt_pows = np.split(np.array([
                 self._mp3(self.calcs[n], n)
-                for n in range(self.param("nexp"))]
+                for n in range(self.param("nexp"))]), 2, axis=1)
+            self.senses = self.senses[0].tolist()
+            self.opt_pows = self.opt_pows[0].tolist()
             self._done()
         else:
             self.calcs = self._pool.map(self._mp2, self.exps)
@@ -114,8 +119,7 @@ class Simulation:
         if n is not None and n == 0:
             self.log.log(
                 "Calculating sensitivity for %d experiment realizations"
-                % (self.param("nexp")),
-                self.log.level["MODERATE"])
+                % (self.param("nexp")))
         self._status(n)
         return cl.Calculate(exp)
 
@@ -124,23 +128,24 @@ class Simulation:
         if n is not None and n == 0:
             self.log.log(
                 "Calculating statistics for %d experiment realizations"
-                % (self.param("nexp")), self.log.level["MODERATE"])
+                % (self.param("nexp")))
         self._status(n)
         chs = clc.chs
-        self.senses = [[[
+        senses = [[[
             clc.calc_sens(chs[i][j][k])
             for k in range(len(chs[i][j]))]
             for j in range(len(chs[i]))]
             for i in range(len(chs))]
-        self.opt_pows = [[[
+        opt_pows = [[[
             clc.calc_opt_pow(chs[i][j][k])
             for k in range(len(chs[i][j]))]
             for j in range(len(chs[i]))]
             for i in range(len(chs))]
-        return clc
+        return [senses, opt_pows]
 
     def _mp4(self):
         """ Multiprocessing #4 -- generate output tables """
+
         dsp = dp.Display(self)
         dsp.sensitivity()
         dsp.opt_pow_tables()
@@ -160,7 +165,7 @@ class Simulation:
         """ Print filled status bar """
         sy.stdout.write('\r')
         sy.stdout.write(
-            "[%-*s] %d%%" % (self._bar_len, '='*self._bar_len, 100))
+            "[%-*s] %.1f%%" % (self._bar_len, '='*self._bar_len, 100.))
         sy.stdout.write('\n')
         sy.stdout.flush()
         return
