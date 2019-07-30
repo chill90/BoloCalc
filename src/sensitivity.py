@@ -67,10 +67,13 @@ class Sensitivity:
                 eff_det_side_2 = []
                 # Store efficiency towards sky and towards detector
                 for k in range(len(ch.elem[i][j])):  # nelem
+                    # Buffer the efficiency array
                     eff_arr = np.vstack([ch.tran[i][j],
                                          np.array([1. for f in ch.freqs])])
+                    # Efficiency towards the detector
                     cum_eff_det = ft.reduce(lambda x, y: x*y, eff_arr[k+1:])
-                    eff_det_side_2.append(cum_eff_det)
+                    eff_det_side_2.append(np.array(cum_eff_det))
+                    # Efficiency towards the sky
                     if k == 0:
                         # Zero elements sky side
                         cum_eff_sky = [[0. for f in ch.freqs]]
@@ -84,7 +87,7 @@ class Sensitivity:
                             if m < k-2 else eff_arr[m+1]
                             for m in range(k-1)] + [[1. for f in ch.freqs],
                                                     [0. for f in ch.freqs]]
-                    eff_sky_side_2.append(np.array(cum_eff_sky))
+                    eff_sky_side_2.append(cum_eff_sky)
                     pow = self._phys.bb_pow_spec(
                         ch.freqs, ch.temp[i][j][k], ch.emis[i][j][k])
                     pows.append(pow)
@@ -97,9 +100,21 @@ class Sensitivity:
                             float(ch.freqs[-1] - ch.freqs[0]))
                     pow_det_side_2.append(pow_out)
                     pow_in = sum([np.trapz(
-                        pows[m]*eff_sky_side_2[k][m] * ch.band_mask, ch.freqs)
+                        pows[m] * eff_sky_side_2[k][m] * ch.band_mask, ch.freqs)
                         for m in range(k+1)])
                     pow_sky_side_2.append(pow_in)
+                    """
+                    pow_out = np.trapz(
+                        pows[k] * eff_det_side_2[k], ch.freqs)
+                    eff_det_side_2[k] = np.trapz(
+                        eff_det_side_2[k], ch.freqs) / (
+                            float(ch.freqs[-1] - ch.freqs[0]))
+                    pow_det_side_2.append(pow_out)
+                    pow_in = sum([np.trapz(
+                        pows[m]*eff_sky_side_2[k][m], ch.freqs)
+                        for m in range(k+1)])
+                    pow_sky_side_2.append(pow_in)
+                    """
                 pow_sky_side_1.append(pow_sky_side_2)
                 pow_det_side_1.append(pow_det_side_2)
                 eff_det_side_1.append(eff_det_side_2)

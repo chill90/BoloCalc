@@ -32,10 +32,10 @@ class Observation:
         elem, emis, tran, temp = self._get_sky_vals()
 
         # Store the element name
-        self.elem = elem.reshape(
+        elem = elem.reshape(
             len(elem), len(elem[0][0]), len(elem[0][0][0])).astype(np.str)
-        self.elem = np.array(self.elem,  order='F')
-        self.elem.resize(len(self.elem), len(self.elem[0]))
+        elem = np.array(elem,  order='F')
+        self.elem = np.resize(elem, (len(elem), len(elem[0])))
         self.elem = self.elem.tolist()
         # Emissivity
         self.emis = emis.reshape(

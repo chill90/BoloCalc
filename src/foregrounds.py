@@ -19,7 +19,7 @@ class Foregrounds:
         amp = emiss * self._param("dust_amp")
         fscale = ((freq / float(self._param("dust_freq"))))**(
                     self._param("dust_ind"))
-        spec = self._phys.bbSpecRad(freq, self._param("dust_temp"))
+        spec = self._phys.bb_spec_rad(freq, self._param("dust_temp"))
         return (amp * fscale * spec)
 
     def sync_spec_rad(self, freq, emiss=1.0):

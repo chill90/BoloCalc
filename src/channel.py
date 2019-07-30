@@ -249,12 +249,22 @@ class Channel:
         if self._band_file is not None:
             # Use defined band
             self.det_band = bd.Band(self._log, self._load, self._band_file)
-            # Define edges of frequencies to integrate over
+            # Frequencies to integrate over
             lo_freq = np.amin(self.det_band.freqs)
             hi_freq = np.amax(self.det_band.freqs)
-            # Define band edges
-            f_lo = lo_freq
-            f_hi = hi_freq
+            self.freqs = np.arange(
+                lo_freq, hi_freq + self._fres, self._fres)
+            # Interpolate band using defined frequencies
+            self.det_band.interp_freqs(self.freqs)
+            # Define band edges to be -3 dB point
+            tran = self.det_band.tran
+            max_tran = np.amax(tran)
+            lo_point = np.argmin(
+                abs(tran[:len(tran)//2] - 0.5 * max_tran))
+            hi_point = np.argmin(
+                abs(tran[len(tran)//2:] - 0.5 * max_tran)) + len(tran)//2
+            f_lo = self.det_band.freqs[lo_point]
+            f_hi = self.det_band.freqs[hi_point]
         else:
             self.det_band = None
             # Define edges of frequencies to integrate over
@@ -265,6 +275,8 @@ class Channel:
             hi_freq = (
                 self.det_dict["bc"].get_avg() *
                 (1. + 0.65 * self.det_dict["fbw"].get_avg()))
+            self.freqs = np.arange(
+                lo_freq, hi_freq + self._fres, self._fres)
             # Define band edges
             # Band mask edges defined using band center and fractional BW
             f_lo = (
@@ -273,23 +285,12 @@ class Channel:
             f_hi = (
                 self.det_dict["bc"].get_avg() *
                 (1. + 0.50 * self.det_dict["fbw"].get_avg()))
-        # Frequencies to integrate over
-        self.freqs = np.arange(
-                lo_freq, hi_freq + self._fres, self._fres)
-        # Interpolate band
-        if self._band_file is not None:
-            self.det_band.interp_freqs(self.freqs)
         # Band mask
         self.band_mask = (self.freqs > f_lo) * (self.freqs < f_hi)
         return
 
     def _calculate(self):
         elem, emis, tran, temp = self.cam.opt_chn.generate(self)
-        #for obs in self._obs_set.obs_arr:
-            #print(obs.tran[:10])
-            #print(obs.temp[:10])
-            #print("\n")
-        #print("\n\n\n\n\n")
         self.elem = np.array(
             [[obs.elem[i] + elem + self.det_arr.dets[i].elem
              for i in range(self._ndet)]

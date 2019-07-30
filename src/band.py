@@ -67,8 +67,10 @@ class Band:
                 self._err = np.interp(
                     freq_inp, self._freqs, self._err) * mask
             self.freqs = freq_inp
+            self.tran = self._tran
         else:
             self.freqs = self._freqs
+            self.tran = self._tran
         return
 
     # ***** Helper Methods *****

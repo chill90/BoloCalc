@@ -17,6 +17,7 @@ import src.parameter as pr
 import src.unit as un
 import src.physics as ph
 import src.noise as ns
+import src.profile as pf
 
 
 class Simulation:

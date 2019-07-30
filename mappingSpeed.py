@@ -6,6 +6,7 @@ import os
 # BoloCalc modules
 import src.simulation as sm
 
+
 # Experiment files
 try:
     exp_file = sy.argv[1]

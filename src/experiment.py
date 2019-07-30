@@ -61,7 +61,7 @@ class Experiment:
     # ***** Helper Methods *****
     def _param_samp(self, param):
         if self.sim.param("nexp"):
-            return param.getAvg()
+            return param.get_avg()
         else:
             return param.sample(nsample=1)
 
