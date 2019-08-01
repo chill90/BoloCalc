@@ -80,7 +80,10 @@ class Telescope:
 
     def elev_sample(self):
         """ Sample elevation for this telescope """
-        return self._param_samp(self._param_dict["elev"])
+        if self.exp.sim.param("nobs") == 1:
+            return self._param_dict["elev"].get_avg()
+        else:
+            return self._param_dict["elev"].sample(nsample=1)
 
     # ***** Helper Methods *****
     def _param_samp(self, param):

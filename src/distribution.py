@@ -19,21 +19,20 @@ class Distribution:
     """
     def __init__(self, inp, load=None):
         # Store passed parameters
-        self._inp = inp
+        self._inp = np.array(inp)
         self._load = load
 
         # Load PDF from file if 'finput' is a string
-        if isinstance(inp, str):
-            self._load = ld.Loader()
-            self.prob, self.val = self._load.pdf(inp)
-            # Rescale probabilities to 1 in case they are not already
-            self.prob = self.prob / np.sum(self.prob)
-            self._cum = np.cumsum(self.prob)
-        # Store values if 'finput' is a data array
-        if isinstance(inp, list) or isinstance(inp, np.array):
+        if len(self._inp.shape) == 1:
             self.val = inp
             self.prob = None
             self._cum = None
+        elif len(self._inp.shape) == 2:
+            self.val = self._inp[0]
+            self.prob = self._inp[1]
+            # Rescale probabilities to 1 in case they are not already
+            self.prob = self.prob / np.sum(self.prob)
+            self._cum = np.cumsum(self.prob)
 
     # ***** Public Methods *****
     def sample(self, nsample=1):
@@ -43,7 +42,10 @@ class Distribution:
         Args:
         nsample (int): the number of times to sample the distribution
         """
-        return np.random.choice(self.val, size=nsample, p=self.prob)
+        if nsample == 1:
+            return np.random.choice(self.val, size=nsample, p=self.prob)[0]
+        else:
+            return np.random.choice(self.val, size=nsample, p=self.prob)
 
     def mean(self):
         """ Return the mean of the distribution """

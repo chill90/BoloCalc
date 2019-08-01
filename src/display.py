@@ -42,19 +42,23 @@ class Display:
 
                 # Loop over channels
                 self._cam_vals = []
+                self._cam_data = []
                 for k in range(len(cam.chs)):
                     ch = list(cam.chs.values())[k]
                     # Write channel sensitivity
                     self._write_cam_table_row(ch, (i, j, k))
 
                 # Write camera sensitivity
-                self._finish_cam_table(cam, (i, j))
+                self._finish_cam_table()
+                self._write_cam_output()
 
             # Write telescope sensitivity
             self._write_tel_table()
+            # self._write_tel_output()
 
         # Write experiment sensitivity
         self._write_exp_table()
+        # self._write_exp_output()
 
         return
 
@@ -79,7 +83,7 @@ class Display:
         return
 
     def _table_format(self):
-        # Camera file
+        # Camera sensitivity file
         self._title_cam = ("%-10s | %-7s | %-23s | %-23s | %-23s | %-23s | "
                            "%-23s | %-23s | %-23s | %-23s | %-26s | %-26s | "
                            "%-23s | %-23s | %-23s\n"
@@ -97,8 +101,15 @@ class Display:
                              "[aW/rtHz]", "[aW/rtHz]", "[aW/rtHz]",
                              "[aW/rtHz]", "[uK_CMB-rts]", "[uK_RJ-rts]",
                              "[uK_CMB-rts]", "[uK_RJ-rts]", "[uK_CMB-amin]"))
+        # Camera output file
+        self._title_cam_d = (("%-9s "*10
+                              % ("Eff", "OptPow",
+                                 "TelTemp", "SkyTemp",
+                                 "PhNEP", "BoloNEP", "ReadNEP",
+                                 "DetNEP", "DetNET",
+                                 "DetNETRJ"))+" | ")
         self._break_cam = "-"*364+"\n"
-        # Telescope and experiment files
+        # Telescope and experiment sensitivity files
         self._title_tel = ("%-10s | %-7s | %-23s | %-23s | %-23s\n"
                            % ("Chan", "Num Det", "Array NET",
                               "Array NET_RJ", "Map Depth"))
@@ -109,6 +120,9 @@ class Display:
         self._title_exp = self._title_tel
         self._unit_exp = self._unit_tel
         self._break_exp = self._break_tel
+        # Telescope and experiment output files
+        # self._title_tel_d = (("%-9s "*3
+        #                     % ("ArrNET", "ArrNETRJ", "MapDep"))+" | ")
         # Optical power files
         self._title_opt = ("| %-15s | %-23s | %-23s | %-23s |\n"
                            % ("Element", "Power from Sky",
@@ -121,6 +135,8 @@ class Display:
     def _init_exp_table(self):
         self._exp_f = open(
             os.path.join(self._sim.exp_dir, 'sensitivity.txt'), 'w')
+        # self._exp_d = open(
+        #    os.path.join(self._sim.exp_dir, 'output.txt'), 'w')
         self._exp_f.write(self._title_exp)
         self._exp_f.write(self._break_exp)
         self._exp_f.write(self._unit_exp)
@@ -130,6 +146,8 @@ class Display:
     def _init_tel_table(self, tel):
         self._tel_f = open(
             os.path.join(tel.dir, 'sensitivity.txt'), 'w')
+        # self._tel_d = open(
+        #    os.path.join(tel.dir, 'output.txt'), 'w')
         self._tel_f.write(self._title_tel)
         self._tel_f.write(self._break_tel)
         self._tel_f.write(self._unit_tel)
@@ -139,6 +157,8 @@ class Display:
     def _init_cam_table(self, cam):
         self._cam_f = open(os.path.join(
             cam.dir, 'sensitivity.txt'), 'w')
+        self._cam_d = open(os.path.join(
+            cam.dir, 'output.txt'), 'w')
         self._cam_f.write(self._title_cam)
         self._cam_f.write(self._break_cam)
         self._cam_f.write(self._unit_cam)
@@ -149,6 +169,9 @@ class Display:
         # Write channel values to camera file
         # tup (i,j,k) = (tel,cam,ch) tuple
         sns = self._sns[tup[0]][tup[1]][tup[2]]
+        # Save the camera data
+        self._cam_data.append(
+            self._output_units(np.concatenate((sns[:9], sns[10:11]))))
         # Values to be stored for combining later
         ch_name = ch.param("ch_name")
         ndet = ch.param("ndet")
@@ -227,7 +250,7 @@ class Display:
         self._opt_f.write("\n\n")
         return
 
-    def _finish_cam_table(self, cam, tup):
+    def _finish_cam_table(self):
         # Write cumulative sensitivity for all channels for camera
         # tup (i,j) = (tel,cam) tuple
         grouped_vals = np.concatenate(np.transpose(self._cam_vals), axis=0)
@@ -246,6 +269,38 @@ class Display:
                    *tot_map_depth))
         self._cam_f.write(wstr)
         self._cam_f.close()
+
+    def _write_output(self, fname, title_str, data_arr):
+        # Write the title string
+        for i, data in enumerate(data_arr):
+            fname.write(title_str)
+        fname.write("\n")
+        for i in range(len(data_arr[0][0])):  # outputs
+            for j in range(len(data_arr)):  # chans
+                row = np.transpose(data_arr[j])[i]
+                wrstr = ""
+                for k in range(10):
+                    wrstr += ("%-9.4f " % (row[k]))
+                wrstr += " | "
+                fname.write(wrstr)
+            fname.write("\n")
+        return
+
+    def _write_cam_output(self):
+        self._write_output(
+            self._cam_d, self._title_cam_d, self._cam_data)
+        return
+
+    # def _write_tel_output(self):
+    #    self._tel_data = self._tel_vals.values()
+    #    self._write_output(
+    #        self._tel_d, self._title_tel_d, self._tel_data)
+    #    return
+
+    # def _write_exp_output(self):
+    #    self._exp_data = self._exp_vals.values()
+    #    self._write_output(
+    #        self._exp_d, self._title_exp_d, self._exp_data)
 
     def _write_tel_exp(self, val_dict, f):
         # Store totals for the telescope / experiment
@@ -331,3 +386,13 @@ class Display:
             med_ret - self._noise.NET_arr(
                 lo, ch.param("ndet"), ch.param("yield")))
         return [med_ret, hi_ret, lo_ret]
+
+    def _output_units(self, data_arr):
+        data_arr[1] = un.Unit("pW").from_SI(data_arr[1])
+        data_arr[4] = un.Unit("aW/rtHz").from_SI(data_arr[4])
+        data_arr[5] = un.Unit("aW/rtHz").from_SI(data_arr[5])
+        data_arr[6] = un.Unit("aW/rtHz").from_SI(data_arr[6])
+        data_arr[7] = un.Unit("aW/rtHz").from_SI(data_arr[7])
+        data_arr[8] = un.Unit("uK").from_SI(data_arr[8])
+        data_arr[9] = un.Unit("uK").from_SI(data_arr[9])
+        return data_arr

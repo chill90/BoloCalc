@@ -203,8 +203,9 @@ class Loader:
             for key, val in data.items():
                 if 'NA' in val.upper():
                     for fname in self._dist_fnames(dist_dir, key):
-                        if os.file.exists(fname):
-                            val = ds.Distribution(self.pdf(fname))
+                        fpath = os.path.join(dist_dir, fname)
+                        if os.path.exists(fpath):
+                            data[key] = ds.Distribution(self.pdf(fpath))
                         else:
                             continue
                 else:

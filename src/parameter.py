@@ -159,9 +159,6 @@ class Parameter:
                 return avg
             else:
                 if nsample == 1:
-                    #print("taking a real sample of %s"
-                    #      "with avg %f an std %f"
-                    #      % (self.name, avg, std))
                     samp = np.random.normal(avg, std, nsample)[0]
                 else:
                     samp = np.random.normal(avg, std, nsample)
@@ -228,7 +225,7 @@ class Parameter:
                     self._val = self._float(inp)
                     self._avg = self._float(inp)
                     self._std = self._zero(self._avg)
-            elif isinstance(inp, Distribution):
+            elif isinstance(inp, ds.Distribution):
                 self._val = inp
                 self._avg = inp.mean()
                 self._std = inp.std()

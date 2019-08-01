@@ -84,8 +84,8 @@ class Simulation:
             self.senses, self.opt_pows = np.split(np.array([
                 self._mp3(self.calcs[n], n)
                 for n in range(self.param("nexp"))]), 2, axis=1)
-            self.senses = self.senses[0].tolist()
-            self.opt_pows = self.opt_pows[0].tolist()
+            self.senses = np.squeeze(self.senses, axis=1).tolist()
+            self.opt_pows = np.squeeze(self.opt_pows, axis=1).tolist()
             self._done()
         else:
             self.calcs = self._pool.map(self._mp2, self.exps)
