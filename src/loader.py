@@ -31,7 +31,7 @@ class Loader:
         try:
             params, vals = np.loadtxt(
                 fname, unpack=True, skiprows=1, usecols=[0, 1],
-                dtype='U', delimiter='|')
+                dtype=bytes, delimiter='|').astype(str)
         except:
             self._log.err("Failed to load simulation file '%s'" % (fname))
         return self._dict(params, vals)
@@ -110,7 +110,7 @@ class Loader:
         try:
             params, vals = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2],
-                dtype='U', delimiter='|')
+                dtype=bytes, delimiter='|').astype(str)
         except:
             self._log.err(
                 "Failed to load telescope file '%s'" % (fname))
@@ -125,8 +125,8 @@ class Loader:
         """
         try:
             params, vals = np.loadtxt(
-                fname, dtype='U', unpack=True,
-                usecols=[0, 2], delimiter='|')
+                fname, dtype=bytes, unpack=True,
+                usecols=[0, 2], delimiter='|').astype(str)
         except:
             self._log.err(
                 "Failed to load camera file '%s'" % (fname))
@@ -160,7 +160,7 @@ class Loader:
         try:
             params, vals = np.loadtxt(
                 fname, unpack=True, usecols=[0, 1],
-                dtype='U', delimiter="|")
+                dtype=bytes, delimiter="|").astype(str)
         except:
             self._log.err(
                 "Failed to load elevation file '%s'" % (fname))
@@ -189,7 +189,7 @@ class Loader:
         return np.loadtxt(fname, unpack=True, dtype=np.float)
 
     def _txt_2D(self, fname):
-        output = np.loadtxt(fname, dtype='U', delimiter='|')
+        output = np.loadtxt(fname, dtype=bytes, delimiter='|').astype(str)
         keys = output[0]
         elems = output[1:]
         return [{keys[i].strip(): elem[i].strip()

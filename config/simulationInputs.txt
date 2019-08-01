@@ -9,15 +9,15 @@ Cores        | 1       | Number of cores to use for parallel processing. Positiv
 #---------------------------------------------------------------------------------------------------------------------------
 Verbosity    | 0       | Verbosity for printing logging messages. 0 for low (recommended), 1 for moderate, 2 for high
 #---------------------------------------------------------------------------------------------------------------------------
-Experiments  | 7      | Number of Experiment MC realizations. Positive integer
+Experiments  | 10      | Number of Experiment MC realizations. Positive integer
 #---------------------------------------------------------------------------------------------------------------------------
-Observations | 3      | Number of Observation MC realizations per experiment realization. Positive integer.
+Observations | 10      | Number of Observation MC realizations per experiment realization. Positive integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Detectors    | 5      | Number of Detector MC realizations per observation realization. Positive Integer.
+Detectors    | 10      | Number of Detector MC realizations per observation realization. Positive Integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Resolution   | 1.000   | Spectral resolution for integration over bands and spectra in GHz. Positive floating point value.
+Resolution   | 0.500   | Spectral resolution for integration over bands and spectra in GHz. Positive floating point value.
 #---------------------------------------------------------------------------------------------------------------------------
-Foregrounds  | True    | Include Foregrounds? True or False
+Foregrounds  | False   | Include Foregrounds? True or False
 #---------------------------------------------------------------------------------------------------------------------------
 Correlations | True    | Include white noise correlations? True or False
 #---------------------------------------------------------------------------------------------------------------------------
