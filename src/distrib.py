@@ -1,9 +1,6 @@
 # Built-in modules
 import numpy as np
 
-# BoloCalc modules
-import src.loader as ld
-
 
 class Distribution:
     """
