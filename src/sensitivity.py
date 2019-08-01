@@ -5,7 +5,7 @@ import functools as ft
 
 # BoloCalc modules
 import src.unit as un
-import src.distribution as ds
+import src.distrib as ds
 
 
 class Sensitivity:
@@ -100,7 +100,8 @@ class Sensitivity:
                             float(ch.freqs[-1] - ch.freqs[0]))
                     pow_det_side_2.append(pow_out)
                     pow_in = sum([np.trapz(
-                        pows[m] * eff_sky_side_2[k][m] * ch.band_mask, ch.freqs)
+                        pows[m] * eff_sky_side_2[k][m] *
+                        ch.band_mask, ch.freqs)
                         for m in range(k+1)])
                     pow_sky_side_2.append(pow_in)
                     """

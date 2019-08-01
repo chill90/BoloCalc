@@ -4,7 +4,7 @@ import sys as sy
 
 # BoloCalc modules
 import src.unit as un
-import src.distribution as ds
+import src.distrib as ds
 
 
 class Parameter:
