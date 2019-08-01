@@ -31,7 +31,7 @@ class Loader:
         try:
             params, vals = np.loadtxt(
                 fname, unpack=True, skiprows=1, usecols=[0, 1],
-                dtype=str, delimiter='|')
+                dtype='U', delimiter='|')
         except:
             self._log.err("Failed to load simulation file '%s'" % (fname))
         return self._dict(params, vals)
@@ -110,7 +110,7 @@ class Loader:
         try:
             params, vals = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2],
-                dtype=str, delimiter='|')
+                dtype='U', delimiter='|')
         except:
             self._log.err(
                 "Failed to load telescope file '%s'" % (fname))
@@ -125,7 +125,7 @@ class Loader:
         """
         try:
             params, vals = np.loadtxt(
-                fname, dtype=str, unpack=True,
+                fname, dtype='U', unpack=True,
                 usecols=[0, 2], delimiter='|')
         except:
             self._log.err(
@@ -160,7 +160,7 @@ class Loader:
         try:
             params, vals = np.loadtxt(
                 fname, unpack=True, usecols=[0, 1],
-                dtype=np.str, delimiter="|")
+                dtype='U', delimiter="|")
         except:
             self._log.err(
                 "Failed to load elevation file '%s'" % (fname))
@@ -189,7 +189,7 @@ class Loader:
         return np.loadtxt(fname, unpack=True, dtype=np.float)
 
     def _txt_2D(self, fname):
-        output = np.loadtxt(fname, dtype=str, delimiter='|')
+        output = np.loadtxt(fname, dtype='U', delimiter='|')
         keys = output[0]
         elems = output[1:]
         return [{keys[i].strip(): elem[i].strip()
