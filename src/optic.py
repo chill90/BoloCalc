@@ -38,7 +38,7 @@ class Optic:
         self._store_param_dict()
 
     # ***** Public Functions *****
-    def generate(self, ch):
+    def evaluate(self, ch):
         """
         Generate optic element, absorbtivity, transmission, and
         temperature for a given channel
@@ -154,6 +154,10 @@ class Optic:
             ch.set_param("edge_tap", ch_taper)
 
         return (elem, emiss, effic, temp)
+
+    def change_param(self, param, new_val, band_id=None):
+        self._param_dict[param].change(new_val, band_id)
+        return
 
     # ***** Helper Methods *****
     # Ratio of blackbody power between two temperatures

@@ -25,6 +25,7 @@ class Observation:
         self._det_arr = self._obs_set.ch.det_arr
         self._ndet = self._obs_set.ch.cam.tel.exp.sim.param("ndet")
 
+    def evaluate(self):
         # Store PWV and elevation
         self._get_pwv_elev()
 
@@ -65,6 +66,6 @@ class Observation:
         return
 
     def _get_sky_vals(self):
-        return np.hsplit(np.array([self._sky.generate(
-            self._pwv, self._elev, det.det_arr.ch.freqs)
+        return np.hsplit(np.array([self._sky.evaluate(
+            self._pwv, self._elev, self._det_arr.ch.freqs)
             for det in self._det_arr.dets]), 4)

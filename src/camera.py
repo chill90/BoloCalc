@@ -41,24 +41,19 @@ class Camera:
 
         # Store camera parameters into a dictionary
         self._store_param_dict()
-
-        # Generate camera
-        self.generate()
-
-    # ***** Public Methods *****
-    def generate(self):
-        """ Generate camera parameters """
-        # Generate camera parameters
-        self._store_param_vals()
-
-        # Store optical chain
+        # Generate optical chain
         self.opt_chn = oc.OpticalChain(self)
-
-        # Store channel objects
+        # Generate channels
         self._store_chs()
 
-        # Store pixel dictionary
-        self._store_pixs()
+    # ***** Public Methods *****
+    def evaluate(self):
+        # Evaluate camera parameters
+        self._store_param_vals()
+        # Evaluate channels, which also evaluate the optical chain
+        for ch in self.chs.values():
+            ch.evaluate()
+        return
 
     def param(self, param):
         """
@@ -68,6 +63,13 @@ class Camera:
         param (str): parameter to return
         """
         return self._param_vals[param]
+
+    def change_param(self, param, new_val):
+        self._param_dict[param].change(new_val)
+        return
+
+    def get_param(self, param):
+        return self._param_dict[param].get_avg()
 
     # ***** Helper Methods *****
     def _gen_band_dict(self, band_dir):
@@ -147,7 +149,8 @@ class Camera:
                 self._log.err(
                     "Multiple bands named '%s' in camera '%s'"
                     % (chan_dict["Band ID"], self.dir))
-            band_name = str(self.param("cam_name")) + str(chan_dict["Band ID"])
+            cam_name = str(self.dir.rstrip(os.sep).split(os.sep)[-1])
+            band_name = (cam_name + str(chan_dict["Band ID"]))
             if band_name in self._band_dict.keys():
                 band_file = self._band_dict[band_name]
             else:
@@ -155,12 +158,3 @@ class Camera:
             self.chs.update(
                 {chan_dict["Band ID"].strip():
                  ch.Channel(self, chan_dict, band_file)})
-
-    def _store_pixs(self):
-        self.pixs = cl.OrderedDict({})
-        for ch in self.chs.keys():
-            pix_id = self.chs[ch].param("pix_id")
-            if self.chs[ch] in self.pixs.keys():
-                self.pixs[pix_id].append(self.chs[ch])
-            else:
-                self.pixs[pix_id] = [self.chs[ch]]

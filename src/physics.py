@@ -310,10 +310,16 @@ class Physics:
         freq (float): frequency [Hz]
         temp (float): blackbody temperature [K]
         """
-        np.seterr(divide='ignore')
-        np.seterr(over='ignore')
         freq, temp = self._check_inputs(freq, [temp])
-        return 1. / (np.exp((self.h * freq)/(self.kB * temp)) - 1.)
+        temp = np.where(temp <= 0, 1.e-3, temp)  # 1 mK is minimum allowed temp
+        with np.errstate(divide='raise'):
+            try:
+                return 1. / (np.exp((self.h * freq)/(self.kB * temp)) - 1.)
+            except:
+                print("problem dividing!")
+                print(temp[0])
+                print(freq)
+                raise Exception()
 
     def a_omega(self, freq):
         """

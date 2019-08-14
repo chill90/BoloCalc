@@ -1,307 +1,162 @@
+# Built-in modules
 import numpy as np
-import sys   as sy
-import          os
+import sys as sy
+import os
 
-import src.physics    as ph
-import src.units      as un
+# BoloCalc modules
+import src.physics as ph
+import src.units as un
 import src.compatible as cm
 
+
 class Vary:
-    def __init__(self, sim, paramFile, fileHandle=None, varyTogether=False):
-        #For logging
-        self.sim          = sim
-        self.log          = self.sim.log
-        self.paramFile    = paramFile
-        self.fileHandle   = fileHandle
-        self.varyTogether = varyTogether
+    def __init__(self, sim, param_file, file_id=None, vary_tog=False):
+        # For logging
+        self._sim = sim
+        self._exp = self._sim.exp
+        self._log = self._sim.log
+        self._ph = self._sim.ph
+        self._param_file = param_file
+        self._file_id = file_id
+        self._vary_tog = vary_tog
 
-        #Private instances
-        self.__ph = ph.Physics()
-        self.__cm = cm.Compatible()
+        # Status bar length
+        self._bar_len = 100
 
-        #Status bar length
-        self.barLen = 100
+        # Delimiters
+        self._param_delim = '|'
+        self._xy_delim = '|||'
 
-        #Delimiters
-        self.__paramDelim_str = '|'
-        self.__xyDelim_str = '|||'
-        
-        #Parameter ID flags/enums
-        self.POPT_FLAG   = 1
-        self.NEPPH_FLAG  = 2
-        self.NETARR_FLAG = 3
-        self.PARAM_FLAGS = np.arange(1, 4)
+        # Output parameter IDs
+        self._save_dir = "paramVary"
 
-        #Output parameter IDs
-        self.savedir = "paramVary"
-        self.vary_id   = "vary"
-        self.Popt_id   = "Popt"
-        self.NEPph_id  = "NEPph"
-        self.NETarr_id = "NETarr"
-        
-        #Load parameters to vary
-        self.log.log("Loading parameters to vary from %s" % (os.path.join(os.path.dirname(sy.argv[0]), 'config', 'paramsToVary.txt')))
-        self.tels, self.cams, self.chs, self.opts, self.params, self.mins, self.maxs, self.stps = np.loadtxt(self.paramFile, delimiter='|', dtype=np.str, unpack=True, ndmin=2)
-        self.tels   = [tel.strip('\t ')   for tel   in self.tels] 
-        self.cams   = [cam.strip('\t ')   for cam   in self.cams] 
-        self.chs    = [ch.strip('\t ')    for ch    in self.chs] 
-        self.opts   = [opt.strip('\t ')   for opt   in self.opts] 
-        self.params = [param.strip('\t ') for param in self.params]
-        #Special joint consideration of pixel size, spill efficiency, and detector number
-        if 'Pixel Size**' in self.params:
-            if 'Waist Factor' not in self.params and 'Aperture' not in self.params and 'Lyot' not in self.params and 'Stop' not in self.params and 'Num Det per Wafer' not in self.params:
-                self.pixSizeSpecial = True
-            else:
-                raise Exception("FATAL BoloCalc Error: Cannot pass 'Pixel Size**' as a parameter to vary when 'Aperture', 'Lyot', 'Stop', or 'Num Det per Wafer' is also passed as a param to vary")
-        else:
-            self.pixSizeSpecial = False
-        #Check for consistency of number of parameters varied
-        if len(self.tels) == len(self.params) and len(self.params) == len(self.mins) and len(self.mins) == len(self.maxs) and len(self.maxs) == len(self.stps):
-            self.numParams = len(self.params)
-        else:
-            raise Exception('FATAL: Number of telescopes, parameters, mins, maxes, and steps must match for parameters to be varied. Problem with parameter vary file "BoloCalc/config/paramsToVary.txt"\n')
+        # Load parameters to vary
+        self._load_param_vary()
 
-        #Input parameters ID
-        if not self.fileHandle is None: 
-            self.paramString = '_'+self.fileHandle.rstrip('_').lstrip('_')
-        else:
-            self.paramString = ""
-            for i in range(len(self.params)):
-                if not self.tels[i] == '':
-                    self.paramString += ("_%s" % (self.tels[i]))
-                if not self.cams[i] == '':
-                    self.paramString += ("_%s" % (self.cams[i]))
-                if not self.chs[i] == '':
-                    self.paramString += ("_%s" % (self.chs[i]))
-                if not self.opts[i] == '':
-                    self.paramString += ("_%s" % (self.opts[i]))
-                if not self.params[i] == '':
-                    self.paramString += ("_%s" % (self.params[i]))
-            
-        #Construct arrays of parameters
-        paramArr = [np.arange(float(self.mins[i]), float(self.maxs[i])+float(self.stps[i]), float(self.stps[i])).tolist() for i in range(len(self.params))]
-        self.numParams = len(paramArr)
-        self.log.log("Processing %d parameters" % (self.numParams))
-        #Length of each parameter array
-        lenArr   = [len(paramArr[i]) for i in range(len(paramArr))]
+        # Generate the output file tag
+        self._store_file_tag()
 
-        #Store the telescope, camera, channels, and optic name information for each parameter
-        telsArr  = [[self.tels[i] for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
-        camsArr  = [[self.cams[i] for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
-        chsArr   = [[self.chs[i]  for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
-        optsArr  = [[self.opts[i] for j in range(len(paramArr[i]))] for i in range(len(paramArr))]
-        
-        if varyTogether:
-            #Vary the parameters together. All arrays need to be the same length
-            if not len(np.shape(np.array(paramArr))) == 2: raise Exception('FATAL: When all parameters are varied together, all parameter arrays must have the same length. Array length is set by np.arange(min, max+step, step)')
-            self.numEntries = lenArr[0]
-            self.log.log("Processing %d combinations of parameters" % (self.numEntries))
-            self.telArr = np.array(telsArr)
-            self.camArr = np.array(camsArr)
-            self.chArr  = np.array(chsArr)
-            self.optArr = np.array(optsArr)
-            self.setArr = np.array(paramArr)
-        else:
-            self.numEntries = np.prod(lenArr)
-            self.log.log("Processing %d combinations of parameters" % (self.numEntries))
-            #In order to loop over all possible combinations of the parameters, the arrays need to be rebuilt
-            telArr = []
-            camArr = []
-            chArr  = []
-            optArr = []
-            setArr = []
-            #Construct one array for each parameter
-            for i in range(self.numParams):
-                #For storing names
-                telArrArr = []
-                camArrArr = []
-                chArrArr  = []
-                optArrArr = []
-                #For storing values
-                setArrArr = []
-                #Number of values to be calculated for this parameter
-                if i < self.numParams-1:
-                    for j in range(lenArr[i]):
-                        telArrArr = telArrArr + [telsArr[i][j]]*np.prod(lenArr[i+1:])
-                        camArrArr = camArrArr + [camsArr[i][j]]*np.prod(lenArr[i+1:])
-                        chArrArr  = chArrArr +  [chsArr[i][j]]*np.prod(lenArr[i+1:])
-                        optArrArr = optArrArr + [optsArr[i][j]]*np.prod(lenArr[i+1:])
-                        setArrArr = setArrArr + [paramArr[i][j]]*np.prod(lenArr[i+1:])
-                else:
-                    telArrArr = telArrArr + telsArr[i]
-                    camArrArr = camArrArr + camsArr[i]
-                    chArrArr  = chArrArr  +  chsArr[i]
-                    optArrArr = optArrArr + optsArr[i]
-                    setArrArr = setArrArr + paramArr[i]
-                if i > 0:
-                    telArr.append(telArrArr*np.prod(lenArr[:i]))
-                    camArr.append(camArrArr*np.prod(lenArr[:i]))
-                    chArr.append( chArrArr*np.prod( lenArr[:i]))
-                    optArr.append(optArrArr*np.prod(lenArr[:i]))
-                    setArr.append(setArrArr*np.prod(lenArr[:i]))
-                else:
-                    telArr.append(telArrArr)
-                    camArr.append(camArrArr)
-                    chArr.append( chArrArr)
-                    optArr.append(optArrArr)
-                    setArr.append(setArrArr)
-                    
-            self.telArr = np.array(telArr)
-            self.camArr = np.array(camArr)
-            self.chArr  = np.array(chArr)
-            self.optArr = np.array(optArr)
-            self.setArr = np.array(setArr)
+        # Configure parameter arrays
+        self._config_params()
 
-    #**** Public Methods ****
+    # **** Public Methods ****
     def vary(self):
-        self.sim.verbosity = 0
-        self.sim.generateExps()
-        self.sim.verbosity = None
-        self.experiments = self.sim.experiments
-        
-        #At which level to regenerate each parameter
-        exR = False; tlR = False; cmR = False
-        for i in range(len(self.setArr)):
-            if np.any(self.tels != ''):
-                exR = True
-            if np.any(self.cams[i] != ''):
-                tlR = True
-            if np.any(self.chs[i] != ''):
-                cmR = True
-
-        #Loop over experiments and store optical power, photon NEP, and NET
-        expNames = []
-        telNames = []
-        camNames = []
-        chnNames = []
-        filledNames = False
-        
-        popt_final = []; poptstd_final = []
-        nepph_final = []; nepphstd_final = []
-        netarr_final = []; netarrstd_final = []
-
-        self.totIters = len(self.experiments)*len(self.setArr[0])
-        
-        for n in range(len(self.experiments)):
-            experiment = self.experiments[n]
-            popt  = []; poptstd  = []
-            nepph = []; nepphstd = []
-            net   = []; netstd   = []
-            for i in range(len(self.setArr[0])):
-                for j in range(len(self.setArr)):
-                    if self.tels[j] != '':
-                        if self.cams[j] != '':
-                            if self.chs[j] != '':
-                                if self.opts[j] != '':
-                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics[self.opts[j]].paramsDict[self.params[j]].change(self.setArr[j][i], bandID=int(self.chs[j]))
-                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].generate()
-                                else:
-                                    #Vary aperture spill efficiency and number of detectors along with pixel size
-                                    if 'Pixel Size' in self.params[j] and self.pixSizeSpecial:
-                                        #Check that the f-number is defined
-                                        if experiment.telescopes[self.tels[j]].cameras[self.cams[j]].paramsDict['F Number'].isEmpty():
-                                            raise Exception("FATAL BoloCalc Error: Cannot set 'Pixel Size**' as a parameter to vary without 'F Number' also defined for this camera")
-                                        else:
-                                            fnum = experiment.telescopes[self.tels[j]].cameras[self.cams[j]].paramsDict['F Number'].getAvg(bandID=int(self.chs[j]))
-                                        #Check that the band center is defined
-                                        if experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Band Center'].isEmpty():
-                                            raise Exception("FATAL BoloCalc Error: Cannot set 'Pixel Size**' as a parameter to vary without 'Band Center' also defined for this channel")
-                                        else:
-                                            freq = experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Band Center'].getAvg(bandID=int(self.chs[j]))
-                                        #Check that the waist factor is defined
-                                        if experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Waist Factor'].isEmpty():
-                                            raise Exception("FATAL BoloCalc Error: Cannot set 'Pixel Size**' as a parameter to vary without 'Waist Factor' also defined for this channel")
-                                        else:
-                                            w0 = experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Waist Factor'].getAvg(bandID=int(self.chs[j]))
-                                        #Check for what the aperture is called
-                                        if 'Aperture' in experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics.keys():
-                                            apName = 'Aperture'
-                                        elif 'Lyot' in experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics.keys():
-                                            apName = 'Lyot'
-                                        elif 'Stop' in experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics.keys():
-                                            apName = 'Stop'
-                                        else:
-                                            raise Exception("FATAL BoloCalc Error: Cannot pass 'Pixel Size**' as a parameter to vary when neither 'Aperture' nor 'Lyot' nor 'Stop' is defined in the camera's optical chain")
-                                        #Store current values for detector number, aperture efficiency, and pixel size
-                                        pixSize_current = experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Pixel Size'].getAvg(bandID=int(self.chs[j]))
-                                        Ndet_per_wafer_current = experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Num Det per Wafer'].getAvg(bandID=int(self.chs[j]))
-                                        apAbs_current = experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics[apName].paramsDict['Absorption'].getAvg(bandID=int(self.chs[j]))
-                                        if apAbs_current == 'NA':
-                                            apAbs_current = None
-                                        #Calculate new values for detector number, aperture efficiency, and pixel size
-                                        pixSize_new = self.setArr[j][i]
-                                        Ndet_per_wafer_new = Ndet_per_wafer_current*np.power((pixSize_current/(pixSize_new*un.mmToM)),2.)
-                                        if apAbs_current is not None:
-                                            apAbs_new = 1. - (1. - apAbs_current)*self.__ph.spillEff(freq, pixSize_new*un.mmToM, fnum, w0)/self.__ph.spillEff(freq, pixSize_current, fnum, w0)
-                                        else:
-                                            apAbs_new = 1. - self.__ph.spillEff(freq, pixSize_new*un.mmToM, fnum, w0)
-                                        #Define new values
-                                        experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Pixel Size'].change(pixSize_new, bandID=int(self.chs[j]))
-                                        experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict['Num Det per Wafer'].change(Ndet_per_wafer_new, bandID=int(self.chs[j]))
-                                        experiment.telescopes[self.tels[j]].cameras[self.cams[j]].optChain.optics[apName].paramsDict['Absorption'].change(apAbs_new, bandID=int(self.chs[j]))
-                                    else:
-                                        experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].paramsDict[self.params[j]].change(self.setArr[j][i], bandID=int(self.chs[j]))
-                                    experiment.telescopes[self.tels[j]].cameras[self.cams[j]].channels[self.chs[j]].generate()
-                            else:
-                                experiment.telescopes[self.tels[j]].cameras[self.cams[j]].paramsDict[self.params[j]].change(self.setArr[j][i])
-                                experiment.telescopes[self.tels[j]].cameras[self.cams[j]].generate()
-                        else:
-                            experiment.telescopes[self.tels[j]].paramsDict[self.params[j]].change(self.setArr[j][i])
-                            experiment.telescopes[self.tels[j]].generate()
+        self._out = []
+        self._vary_ids = []
+        # Loop over parameters values
+        for i in range(len(self.set_arr[0])):
+            # Loop over parameters
+            for j in range(len(self.set_arr)):
+                # Change experiment parameter
+                if self._vary_depth(j) is 'exp':
+                    self._exp.change_param(self.setArr[j][i])
+                    self._exp.evaluate()
+                # Change telescope parameter
+                elif self._vary_depth(j) is 'tel':
+                    tel = self._exp.tels[self._tels[j]]
+                    tel.change_param(self.setArr[j][i])
+                    tel.evaluate()
+                # Change camera parameter
+                elif self._vary_depth(j) is 'cam':
+                    cam = self._exp.tels[self._tels[j]].cams[self._cams[j]]
+                    cam.change_param(self.setArr[j][i])
+                    cam.evalutate()
+                # Change channel parameter
+                elif self._vary_depth(j) is 'ch':
+                    ch = (self._exp.tels[self._tels[j]].cams[self._cams[j]]
+                          .chs[self.chs[j]])
+                    ch.change_param(self.setArr[j][i])
+                    ch.evaluate()
+                # Change optic parameter
+                elif self._vary_depth(j) is 'opt':
+                    ch = (self._exp.tels[self._tels[j]].cams[self._cams[j]]
+                          .chs[self.chs[j]])
+                    opt = (self._exp.tels[self._tels[j]]
+                           .cams[self._cams[j]].opt_cnh.opts[self._opts[j]])
+                    band_id = int(self.chs[j])
+                    opt.change_param(self.setArr[j][i], band_id=band_id)
+                    opt.evaluate(ch)
+                # Change the pixel size, varying detector number also
+                elif self._vary_depth(j) is 'pix':
+                    cam = self._exp.tels[self._tels[j]].cams[self._cams[j]]
+                    ch = cam.chs[self.chs[j]]
+                    # Check that the f-number is defined
+                    f_num = cam.get_param('F Number')
+                    if f_num == 'NA':
+                        self._log.err("Cannot set 'Pixel Size**' as a "
+                                      "parameter to vary without 'F Number' "
+                                      "also defined for this camera")
+                    # Check that the band center is defined
+                    bc = ch.get_param('Band Center')
+                    if bc == 'NA':
+                        self._log.err("Cannot set 'Pixel Size**' as a "
+                                      "parameter to vary without "
+                                      "'Band Center' also defined for this "
+                                      "channel")
+                    # Check that the waist factor is defined
+                    w0 = ch.get_param('Waist Factor')
+                    if w0 == 'NA':
+                        self._log.err("Cannot set 'Pixel Size**' as a "
+                                      "parameter to vary without "
+                                      "'Waist Factor' also defined for this "
+                                      "channel")
+                    # Check that the aperture defined
+                    opt_keys = cam.opt_chn.opts.keys()
+                    if 'Aperture' in opt_keys:
+                        ap_name = 'Aperture'
+                    elif 'Lyot' in opt_keys:
+                        ap_name = 'Lyot'
+                    elif 'Stop' in opt_keys:
+                        ap_name = 'Stop'
                     else:
-                        experiment.paramsDict[self.params[j]].change(self.setArr[j][i])
-                        experiment.generate()
-                #After new parameters are stored, re-run mapping speed calculation
-                dsp = self.sim.calculate()
-                #Store new sensitivity values
-                valDict = dsp.dict
-                #Write the names and values
-                poptArr  = []
-                nepPhArr = []
-                netArr    = []
-                for t in sorted(experiment.telescopes.keys()):
-                    telescope = experiment.telescopes[t]
-                    for c in sorted(telescope.cameras.keys()):
-                        camera = telescope.cameras[c]
-                        for h in sorted(camera.channels.keys()):
-                            channel = camera.channels[h]
-                            #Only need to store names of telescopes, cameras, and channels one time
-                            if not filledNames:
-                                expNames.append(experiment.name)
-                                telNames.append(telescope.name)
-                                camNames.append(camera.name)
-                                chnNames.append(channel.name)
-                            poptArr.append(valDict[telescope.name][camera.name][channel.name]['Optical Power'])
-                            nepPhArr.append(valDict[telescope.name][camera.name][channel.name]['Photon NEP'])
-                            netArr.append(valDict[telescope.name][camera.name][channel.name]['Array NET'])
-                filledNames = True
-                popt.append(np.array(poptArr).T[0])
-                poptstd.append(np.array(poptArr).T[1])
-                nepph.append(np.array(nepPhArr).T[0])
-                nepphstd.append(np.array(nepPhArr).T[1])
-                net.append(np.array(netArr).T[0])
-                netstd.append(np.array(netArr).T[1])
-                iter = n*len(self.setArr[0])*len(self.setArr) + i + 1
-                self.__status(iter)
-            popt_final.append(popt)
-            poptstd_final.append(poptstd)
-            nepph_final.append(nepph)
-            nepphstd_final.append(nepphstd)
-            netarr_final.append(net)
-            netarrstd_final.append(netstd)
+                        self._log.err("Cannot pass 'Pixel Size**' as a "
+                                      "parameter to vary when neither "
+                                      "'Aperture' nor 'Lyot' nor 'Stop' "
+                                      "is defined in the camera's optical "
+                                      "chain")
+                    ap = cam.opt_chn.opts[ap_name]
+                    # Store current values for detector number, aperture
+                    # efficiency, and pixel size
+                    curr_pix_sz = ch.get_param('Pixel Size')
+                    curr_ndet = ch.get_param('Num Det per Wafer',
+                                             band_id=band_id)
+                    curr_ap = ap.get_param('Absorption', band_id=band_id)
+                    if curr_ap == 'NA':
+                        curr_ap = None
+                    # Calculate new values for detector number,
+                    # aperture efficiency, and pixel size
+                    new_pix_sz_mm = self.setArr[j][i]
+                    new_pix_sz = un.Unit('mm')._to_SI(new_pix_sz_mm)
+                    new_ndet = curr_ndet * np.power(
+                        (curr_pix_sz / new_pix_sz), 2.)
+                    if curr_ap is not None:
+                        curr_eff = self._ph.spillEff(
+                            freq, curr_pix_sz, fnum, w0)
+                        new_eff = self._ph.spillEff(
+                            freq, new_pix_sz, fnum, w0)
+                        apAbs_new = 1. - (1. - curr_ap) * new_eff / curr_eff
+                    else:
+                        apAbs_new = 1. - self.__ph.spillEff(
+                            freq, new_pix_sz, fnum, w0)
+                    # Define new values
+                    ch.change_param('Pixel Size', new_pix_sz_mm)
+                    ch.change_param('Num Det per Wafer', new_ndet,
+                                    band_id=band_id)
+                    ap.change_param('Absorption', new_ap, band_id=band_id)
+                    # Re-evaluate channel
+                    ch.evaluate()
 
-        #Store the names of the telescopes, cameras, and channels
-        self.expNames = expNames
-        self.telNames = telNames
-        self.camNames = camNames
-        self.chnNames = chnNames
-        
-        #Calculate average and standard deviation across experiments
-        self.popt_final  = np.mean(popt_final, axis=0);  self.poptstd_final  = np.sqrt(np.mean(np.array(poptstd_final)**2, axis=0)  + np.var(np.array(popt_final),  axis=0))
-        self.nepph_final = np.mean(nepph_final, axis=0); self.nepphstd_final = np.sqrt(np.mean(np.array(nepphstd_final)**2, axis=0) + np.var(np.array(nepph_final), axis=0))
-        self.netarr_final   = np.mean(netarr_final, axis=0);   self.netarrstd_final   = np.sqrt(np.mean(np.array(netarrstd_final)**2, axis=0)   + np.var(np.array(netarr_final),   axis=0))
-        sy.stdout.write('\n')
+                # After new parameters are stored,
+                # re-run sensitivity calculation
+                self._sim.evaluate()
+                # Store new sensitivity values
+                self._out.append(self._sim.sns.sensitivity())
 
+    def save_data(self):
+        # Store raw data
+        for out in self._out:
+
+    
     def save(self):        
         #Write parameter vary files
         for i in self.PARAM_FLAGS:
@@ -334,7 +189,7 @@ class Vary:
         else:
             return False
         #File name to save to
-        fname  = os.path.join(self.experiments[0].dir, self.savedir, ('%s_%s%s.txt' % (param_id, self.vary_id, self.paramString)))
+        fname  = os.path.join(self._exp.dir, self.savedir, ('%s_%s%s.txt' % (param_id, self.vary_id, self.paramString)))
         
         #Write to file
         f = open(fname, 'w')
@@ -393,3 +248,170 @@ class Vary:
                 f.write(self.__paramDelim())
         f.write('\n')
         f.write(self.__horizLine())
+
+    def _load_param_vary(self):
+        self.log.log(
+            "Loading parameters to vary from %s" % (
+                os.path.join(os.path.dirname(sy.argv[0]),
+                             'config', 'paramsToVary.txt')))
+        convs = {i: str.strip() for i in range(8)}
+        data = np.loadtxt(self._param_file, delimiter='|', dtype=str,
+                          unpack=True, ndmin=2, converters=convs)
+        self._tels, self._cams, self._chs, self._opts = data[:3]
+        self._params, self._mins, self._maxs, self._stps = data[4:]
+
+        # Special joint consideration of pixel size, spill efficiency,
+        # and detector number
+        if 'Pixel Size**' in self._params:
+            if not np.any(np.isin(
+                self._params, ['Waist Factor', 'Aperture', 'Lyot',
+                              'Stop', 'Num Det per Wafer'])):
+                self.pix_size_special = True
+            else:
+                self._log.err("Cannot pass 'Pixel Size**' as a parameter to "
+                              "vary when 'Aperture', 'Lyot', 'Stop', or "
+                              "'Num Det per Wafer' is also passed in %s"
+                              % (self._param_file))
+        else:
+            self.pix_size_special = False
+        
+        #Check for consistency of number of parameters varied
+        if len(set([len(self._tels), len(self._params),
+                    len(self._mins), len(self._maxs), len(self._stps)])) == 1:
+            self._num_params = len(self._params)
+        else:
+            self._log.err("Number of telescopes, parameters, mins, maxes, and "
+                          "steps must match for parameters to be varied "
+                          " in %s" % (self._param_file))
+        return
+
+    def _store_file_tag(self):
+        # Input parameters ID
+        if self._file_tag is not None:
+            self._file_id = '_' + self._file_id.strip('_')
+        else:
+            self._file_id = ""
+            for i in range(len(self._params)):
+                if not self._tels[i] == '':
+                    self._file_tag += ("_%s" % (self._tels[i]))
+                if not self._cams[i] == '':
+                    self._file_tag += ("_%s" % (self._cams[i]))
+                if not self._chs[i] == '':
+                    self._file_tag += ("_%s" % (self._chs[i]))
+                if not self._opts[i] == '':
+                    self._file_tag += ("_%s" % (self._opts[i]))
+                if not self._params[i] == '':
+                    self._file_tag += ("_%s" % (self._params[i]))
+        return
+
+    def _config_params(self):
+        # Construct arrays of parameters
+        param_arr = [np.arange(
+            float(self._mins[i]), float(self._maxs[i])+float(self._stps[i]),
+            float(self._stps[i])).tolist()
+            for i in range(len(self._params))]
+        self._num_params = len(param_arr)
+        self._log.log("Processing %d parameters" % (self._num_params),
+                      self._log.level["CRIT"])
+        
+        #Length of each parameter array
+        len_arr = [len(param_arr[i]) for i in range(self._num_params)]
+
+        #Store the telescope, camera, channels, and optic name information for each parameter
+        tels_arr = [[self._tels[i]
+                     for j in range(len_arr[i])]
+                     for i in range(self._num_params)]
+        cams_arr = [[self._cams[i]
+                    for j in range(len_arr[i])]
+                    for i in range(self._num_params)]
+        chs_arr = [[self._chs[i]
+                    for j in range(len_arr[i])]
+                    for i in range(self._num_params)]
+        opts_arr = [[self._opts[i]
+                     for j in range(len_arr[i])]
+                     for i in range(self._num_params)]
+        
+        if self._vary_tog:
+            # Vary the parameters together. All arrays need to be the same length
+            if not set(len_arr) == 1:
+                self._log.err("To vary all parameters together, all parameter "
+                              "arrays in '%s' must have the same length."
+                              % (self._param_file))
+            num_entries = len_arr[0]
+            self.log.log("Processing %d combinations of parameters"
+                         % (num_entries))
+            self._tel_arr = np.array(tels_arr)
+            self._cam_arr = np.array(cams_arr)
+            self._ch_arr  = np.array(chs_arr)
+            self._opt_arr = np.array(opts_arr)
+            self._set_arr = np.array(param_arr)
+        else:
+            num_entries = np.prod(len_arr)
+            self.log.log("Processing %d combinations of parameters"
+                         % (num_entries))
+            #In order to loop over all possible combinations
+            # of the parameters, the arrays need to be rebuilt
+            tel_arr = []
+            cam_arr = []
+            ch_arr  = []
+            opt_arr = []
+            set_arr = []
+            #Construct one array for each parameter
+            for i in range(self._num_params):
+                #For storing names
+                tel_arr_arr = []
+                cam_arr_arr = []
+                ch_arr_arr  = []
+                opt_arr_arr = []
+                #For storing values
+                set_arr_arr = []
+                #Number of values to be calculated for this parameter
+                if i < self._num_params-1:
+                    for j in range(len_arr[i]):
+                        telArrArr += [tels_arr[i][j]]*np.prod(len_arr[i+1:])
+                        camArrArr += [cams_arr[i][j]]*np.prod(len_arr[i+1:])
+                        chArrArr  += [chs_arr[i][j]]*np.prod(len_arr[i+1:])
+                        optArrArr += [opts_arr[i][j]]*np.prod(len_arr[i+1:])
+                        setArrArr += [param_arr[i][j]]*np.prod(len_arr[i+1:])
+                else:
+                    tel_arr_arr += tels_arr[i]
+                    cam_arr_arr += cams_arr[i]
+                    ch_arr_arr  += chs_arr[i]
+                    opt_arr_arr += opts_arr[i]
+                    set_arr_arr += param_arr[i]
+                if i > 0:
+                    tel_arr.append(tel_arr_arr*np.prod(len_arr[:i]))
+                    cam_arr.append(cam_arr_arr*np.prod(len_arr[:i]))
+                    ch_arr.append(ch_arr_arr*np.prod(len_arr[:i]))
+                    opt_arr.append(opt_arr_arr*np.prod(len_arr[:i]))
+                    set_arr.append(set_arr_arr*np.prod(len_arr[:i]))
+                else:
+                    tel_arr.append(tel_arr_arr)
+                    cam_arr.append(cam_arr_arr)
+                    ch_arr.append(ch_arr_arr)
+                    opt_arr.append(opt_arr_arr)
+                    set_arr.append(set_arr_arr)
+                    
+            self._tel_arr = np.array(tel_arr)
+            self._cam_arr = np.array(cam_arr)
+            self._ch_arr = np.array(ch_arr)
+            self._opt_arr = np.array(opt_arr)
+            self._set_arr = np.array(set_arr)
+
+    def _vary_depth(self, ind):
+        if self.tels[ind] != '':
+            if self.cams[ind] != '':
+                if self.chs[ind] != '':
+                    if self.opts[ind] != '':
+                        return 'opt'
+                    elif ('Pixel Size' in self._params[j] and
+                          self._pix_size_special):
+                        return 'pix'
+                    else:
+                        return 'ch'
+                else:
+                    return 'cam'
+            else:
+                return 'tel'
+        else:
+            return 'exp'

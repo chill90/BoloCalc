@@ -33,15 +33,14 @@ class Sky:
         self.tel = tel
         self._log = self.tel.exp.sim.log
         self._load = self.tel.exp.sim.load
+
         # Initialize foregrounds
         self._fg = fg.Foregrounds(self)
-
         # Store some internal parameters
         self._store_private_params()
 
     # ***** Public Methods ******
-    # Generate the sky
-    def generate(self, pwv, elev, freqs):
+    def evaluate(self, pwv, elev, freqs):
         """
         Generate the sky elements, absorbtivities, transmissions,
         and temperatures
@@ -107,6 +106,13 @@ class Sky:
             return samp
 
     # ***** Helper Methods *****
+    def _hdf5_select(self, pwv, elev):
+        site = self.tel.param("site").lower().capitalize()
+        key = "%d,%d" % (pwv, elev)
+        with hp.File("%s/atm.hdf5" % (self._atm_dir), "r") as hf:
+            freq, depth, temp, tran = hf[site][key]
+        return (freq, tran, temp)
+
     def _atm_spectrum(self, pwv, elev, freqs):
         GHz_to_Hz = 1.e+09
         if self.tel.param("atm_file") is not None:
@@ -118,13 +124,6 @@ class Sky:
         temp = np.interp(freqs, freq, temp).flatten().tolist()
         tran = np.interp(freqs, freq, tran).flatten().tolist()
         return freq, temp, tran
-
-    def _hdf5_select(self, pwv, elev):
-        site = self.tel.param("site").lower().capitalize()
-        key = "%d,%d" % (pwv, elev)
-        with hp.File("%s/atm.hdf5" % (self._atm_dir), "r") as hf:
-            freq, depth, temp, tran = hf[site][key]
-        return (freq, tran, temp)
 
     def _syn_spectrum(self, freqs):
         return self._fg.sync_spec_rad(freqs)

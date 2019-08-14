@@ -213,7 +213,7 @@ class Loader:
         return data
 
     def _dist_dir(self, fname):
-        dist_dir = os.path.join(*fname.split(os.sep)[:-1], self._dir)
+        dist_dir = os.path.join(os.path.split(fname)[0], self._dir)
         if not os.path.exists(dist_dir):
             return None
         else:

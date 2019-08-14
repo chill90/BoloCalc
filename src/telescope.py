@@ -32,9 +32,9 @@ class Telescope:
     def __init__(self, exp, inp_dir):
         # Passed parameters
         self.exp = exp
+        self.dir = inp_dir
         self._log = self.exp.sim.log
         self._load = self.exp.sim.load
-        self.dir = inp_dir
 
         # Check whether telescope and config dir exists
         self._check_dirs()
@@ -42,25 +42,24 @@ class Telescope:
         # Store the telescope parameters
         self._store_param_dict()
 
-        # Generate the telescope
-        self.generate()
-
-    # ***** Public Methods *****
-    def generate(self):
-        """ Generate camera """
-        # Generate parameter values
-        self._store_param_vals()
-
-        # Handle custom atmospheres
-        self._handle_custom_atm()
-        self._handle_special_atm()
-
         # Store sky object
         self.sky = sk.Sky(self)
         # Store scan strategy object
         self.scn = sc.ScanStrategy(self)
         # Store cameras
         self._gen_cams()
+
+    # ***** Public Methods *****
+    def evaluate(self):
+        # Generate parameter values
+        self._store_param_vals()
+        # Handle custom atmospheres
+        self._handle_custom_atm()
+        self._handle_special_atm()
+        # Evaluate cameras
+        for cam in self.cams.values():
+            cam.evaluate()
+        return
 
     def param(self, param):
         """
@@ -70,6 +69,10 @@ class Telescope:
         param (str): name of parameter, param dict key
         """
         return self._param_vals[param]
+    
+    def change_param(self, param, new_val):
+        self._param_dict[param].change(new_val)
+        return
 
     def pwv_sample(self):
         """ Sample PWV for this telescope """

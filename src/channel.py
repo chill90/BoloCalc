@@ -51,21 +51,24 @@ class Channel:
         # Elevation distribution for pixels in the camera
         self._store_elev_dict()
 
-        # Generate the channel
-        self.generate()
-
-    # ***** Public Methods *****
-    def generate(self):
-        # Generate parameter values
-        self._store_param_vals()
         # Store frequencies to integrate over and detector band
         self._store_band()
+
         # Store the detector array object
         self.det_arr = da.DetectorArray(self)
         # Store the observation set object
         self._obs_set = ob.ObservationSet(self)
 
-        # Build the element, emissivity, efficiency, and temperature arrays
+    # ***** Public Methods *****
+    def evaluate(self):
+        # Generate parameter values
+        self._store_param_vals()
+        # Evaluate focal plane
+        self.det_arr.evaluate()
+        # Evaluate observations
+        self._obs_set.evaluate()
+
+        # Build the elem, emis, tran, and temp arrays
         self._calculate()
 
     def param(self, param):
@@ -80,7 +83,7 @@ class Channel:
         else:
             return self._cam_param(param)
 
-    def set_param(self, param, val):
+    def set_param(self, param, new_val):
         """
         Set parameter value for this channel
 
@@ -88,8 +91,15 @@ class Channel:
         param (str): parameter name
         val (str, int, float): new value for parameter
         """
-        self._param_vals[param] = val
+        self._param_vals[param] = new_val
         return
+
+    def change_param(self, param, new_val):
+        self._param_dict[param].change(new_val)
+        return
+
+    def get_param(self, param):
+        return self._param_dict[param].get_avg()
 
     # ***** Helper Methods *****
     def _cam_param(self, param):
@@ -290,7 +300,7 @@ class Channel:
         return
 
     def _calculate(self):
-        elem, emis, tran, temp = self.cam.opt_chn.generate(self)
+        elem, emis, tran, temp = self.cam.opt_chn.evaluate(self)
         self.elem = np.array(
             [[obs.elem[i] + elem + self.det_arr.dets[i].elem
              for i in range(self._ndet)]

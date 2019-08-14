@@ -17,30 +17,41 @@ class Detector:
     tran (list): detector transmission vs frequency
     temp (list): detector temperatrue
     """
-    def __init__(self, det_arr, band=None):
+    def __init__(self, det_arr):
         # Store passed parameters
         self.det_arr = det_arr
-        self._band = band
         self._log = self.det_arr.ch.cam.tel.exp.sim.log
         self._phys = self.det_arr.ch.cam.tel.exp.sim.phys
-        self._band_id = self.det_arr.ch.param("band_id")
         self._ndet = self.det_arr.ch.cam.tel.exp.sim.param("ndet")
-        self._tb = self.det_arr.ch.cam.param("tb")
 
-        # Store detector parameters
+        # Generate detector parameters
         self._store_param_dict()
-        self._store_param_vals()
 
-        # Store detector efficiency
-        self._store_tran()
-
-        # Store detector optical parameters
+        # Store static arrays
         self.elem = ["Detector"]
         self.emis = [[0.000 for f in self.det_arr.ch.freqs]]
-        self.tran = [self._tran]
-        self.temp = [[self._tb for f in self.det_arr.ch.freqs]]
+        return
 
     # ***** Public Methods *****
+    def evaluate(self, band=None):
+        self._band_id = self.det_arr.ch.param("band_id")
+        self._tb = self.det_arr.ch.cam.param("tb")
+        # Evaluate detector parameters
+        self._store_param_vals()
+        # Evaluate transmission
+        if band is not None:
+            self._tran = band
+            self._tran = np.where(self._tran < 1, self._tran, 1.)
+            self._tran = np.where(self._tran > 0, self._tran, 0.)
+        else:
+            # Default to top hat band
+            self._tran = [self.param("det_eff")
+                          if f > self.param("flo") and f < self.param("fhi")
+                          else 0. for f in self.det_arr.ch.freqs]
+        self.tran = [self._tran]
+        self.temp = [[self._tb for f in self.det_arr.ch.freqs]]
+        return
+
     def param(self, param):
         return self._param_vals[param]
 
@@ -75,18 +86,4 @@ class Detector:
         self._param_vals["flo"], self._param_vals["fhi"] = (
             self._phys.band_edges(
                 self.param("bc"), self.param("fbw")))
-        return
-
-    def _store_tran(self):
-        # Load band
-        if self._band is not None:
-            self._tran = self._band
-            if self._tran is not None:
-                self._tran = np.where(self._tran < 1, self._tran, 1.)
-                self._tran = np.where(self._tran > 0, self._tran, 0.)
-        else:
-            # Default to top hat band
-            self._tran = [self.param("det_eff")
-                          if f > self.param("flo") and f < self.param("fhi")
-                          else 0. for f in self.det_arr.ch.freqs]
         return

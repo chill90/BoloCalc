@@ -35,11 +35,14 @@ class ObservationSet:
 
         # Store observation objects
         self.obs_arr = [ob.Observation(self) for n in range(self._nobs)]
-        # Store sky temperatures and efficiencies
-        # self.temp = np.array([obs.temp for obs in self.obs_arr])
-        # self.tran = np.array([obs.tran for obs in self.obs_arr])
 
     # ***** Pubic Methods *****
+    def evaluate(self):
+        # Evaluate observations
+        for obs in self.obs_arr:
+            obs.evaluate()
+        return
+
     def sample_pix_elev(self):
         """ Sample pixel elevation """
         if self._elev_vals is not None and self._elev_frac is not None:

@@ -9,19 +9,31 @@ import src.distrib as ds
 
 
 class Sensitivity:
-    def __init__(self, clc):
+    def __init__(self, sim):
         # Store passed parameters
-        self.clc = clc
-        self._log = self.clc.exp.sim.log
-        self._phys = self.clc.exp.sim.phys
-        self._noise = self.clc.exp.sim.noise
-        self._corr = self.clc.exp.sim.param("corr")
-        self._nobs = self.clc.exp.sim.param("nobs")
-        self._ndet = self.clc.exp.sim.param("ndet")
+        self.exp = sim.exp
+        self._log = sim.log
+        self._phys = sim.phys
+        self._noise = sim.noise
+        self._corr = sim.param("corr")
+        self._nobs = sim.param("nobs")
+        self._ndet = sim.param("ndet")
 
     # ***** Public Methods *****
-    # Mapping speed given some channel and telescope
-    def sensitivity(self, ch):
+    def sensitivity(self):
+        return [[[self._sensitivity(ch)
+                  for ch in cm.chs.values()]
+                 for cm in tp.cams.values()]
+                for tp in self.exp.tels.values()]
+
+    def opt_pow(self):
+        return [[[self._opt_pow(ch)
+                  for ch in cm.chs.values()]
+                 for cm in tp.cams.values()]
+                for tp in self.exp.tels.values()]
+
+    # ***** Helper Methods *****
+    def _sensitivity(self, ch):
         # Calculate optical power
         self._calc_popt(ch)
         self._calc_rj_temp(ch)
@@ -48,8 +60,7 @@ class Sensitivity:
                 self._NET_RJ.flatten().tolist(),
                 self._NET_corr_RJ.flatten().tolist()]
 
-    # Optical power element by element given some channel and telescope
-    def opt_pow(self, ch):
+    def _opt_pow(self, ch):
         # Store passed parameters
         tp = ch.cam.tel
         self._pow_sky_side = []
@@ -104,18 +115,6 @@ class Sensitivity:
                         ch.band_mask, ch.freqs)
                         for m in range(k+1)])
                     pow_sky_side_2.append(pow_in)
-                    """
-                    pow_out = np.trapz(
-                        pows[k] * eff_det_side_2[k], ch.freqs)
-                    eff_det_side_2[k] = np.trapz(
-                        eff_det_side_2[k], ch.freqs) / (
-                            float(ch.freqs[-1] - ch.freqs[0]))
-                    pow_det_side_2.append(pow_out)
-                    pow_in = sum([np.trapz(
-                        pows[m]*eff_sky_side_2[k][m], ch.freqs)
-                        for m in range(k+1)])
-                    pow_sky_side_2.append(pow_in)
-                    """
                 pow_sky_side_1.append(pow_sky_side_2)
                 pow_det_side_1.append(pow_det_side_2)
                 eff_det_side_1.append(eff_det_side_2)
@@ -125,7 +124,6 @@ class Sensitivity:
         # Build table of optical powers and efficiencies for each element
         return self._opt_table()
 
-    # ***** Helper Methods *****
     def _calc_popt(self, ch):
         self._popt_arr = np.array([[self._popt(
             ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
@@ -190,7 +188,7 @@ class Sensitivity:
             for j in range(self._ndet)]
             for i in range(self._nobs)])
 
-        if 'NA' in NEP_read_arr:
+        if np.any(np.isin(NEP_read_arr, ['NA'])):
             self._NEP_read_arr = np.array([[np.sqrt(
                 (1. + ch.det_arr.dets[j].param("read_frac"))**2 - 1.) *
                 np.sqrt(self._NEP_ph_arr[i][j]**2 +
@@ -288,7 +286,7 @@ class Sensitivity:
                     det.param("psat_fact") * opt_pow, det.param("n"),
                     det.param("tb"), det.param("tc"))
             else:
-                g = self.nse.G(
+                g = self._noise.G(
                     det.param("psat"), det.param("n"),
                     det.param("tb"), det.param("tc"))
         else:
@@ -316,7 +314,7 @@ class Sensitivity:
                 return 0.
             else:
                 p_bias = det.param("psat") - opt_pow
-                return self.nse.read_NEP(
+                return self._noise.read_NEP(
                     p_bias, det.param("bolo_r"), det.param("nei"))
 
     def _Trj_over_Tcmb(self, freqs):

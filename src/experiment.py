@@ -36,16 +36,17 @@ class Experiment:
         # Store foreground parameter dictionary
         self._store_param_dict()
 
-        # Generate experiment
-        self.generate()
+        # Store telescopes
+        self._gen_tels()
 
     # ***** Public Methods *****
-    def generate(self):
+    def evaluate(self):
         """ Generate param dict and telescope dict"""
         # Generate parameter values
         self._store_param_vals()
-        # Store telescope objects in dictionary
-        self._gen_tels()
+        # Evaluate telescopes
+        for tel in self.tels.values():
+            tel.evaluate()
         return
 
     # Fetch parameters from Simulation object
@@ -57,6 +58,10 @@ class Experiment:
         param (str): parameter name, param_vals key
         """
         return self._param_vals[param]
+
+    def change_param(self, param, new_val):
+        self._param_dict[param].change(new_val)
+        return
 
     # ***** Helper Methods *****
     def _param_samp(self, param):

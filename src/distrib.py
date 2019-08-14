@@ -14,10 +14,9 @@ class Distribution:
     prob (array): probabilities
     val (array): values
     """
-    def __init__(self, inp, load=None):
+    def __init__(self, inp):
         # Store passed parameters
         self._inp = np.array(inp)
-        self._load = load
 
         # Load PDF from file if 'finput' is a string
         if len(self._inp.shape) == 1:

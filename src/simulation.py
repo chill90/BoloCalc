@@ -18,6 +18,7 @@ import src.unit as un
 import src.physics as ph
 import src.noise as ns
 import src.profile as pf
+import src.sensitivity as sn
 
 
 class Simulation:
@@ -52,50 +53,37 @@ class Simulation:
         # Store parameter values
         self._store_param_dict()
 
-        # Set the logging level
-        self.log.set_level(self.param("vrbs"))
-
-        # Set up multiprocessing
-        if self.param("mpps"):
-            self._pool = mp.Pool(self.param("core"))
-
         # Length of status bar
         self._bar_len = 100
 
+        # Generate simulation objects
+        self.exp = ex.Experiment(self)
+        self.sns = sn.Sensitivity(self)
+        self.dsp = dp.Display(self)
+
+        # Output arrays
+        self.senses = []
+        self.opt_pows = []
+
     # **** Public Methods ****
-    def generate(self):
-        """ Generate experiments """
-        if not self.param("mpps"):
-            self.exps = [
-                self._mp1(n)
-                for n in range(self.param("nexp"))]
-            self._done()
-        else:
-            iters = [n for n in range(self.param("nexp"))]
-            self.exps = self._pool.map(self._mp1, iters)
+    # @pf.profiler
+    def evaluate(self):
+        """ Evaluate experiment """
+        tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")
+        self.log.log((
+                "Simulting %d experiment realizations each with "
+                "%d detector realizations and %d sky realizations.\n"
+                "Total sims = %d"
+                % (self.param("nexp"), self.param("ndet"),
+                   self.param("nobs"), tot_sims)))
+        for n in range(self.param("nexp")):
+            self._evaluate_exp(n)
+        self._done()
+        return
 
-    def calculate(self):
-        """ Calculate experiments """
-        if not self.param("mpps"):
-            self.calcs = [
-                self._mp2(self.exps[n], n)
-                for n in range(self.param("nexp"))]
-            self._done()
-            self.senses, self.opt_pows = np.split(np.array([
-                self._mp3(self.calcs[n], n)
-                for n in range(self.param("nexp"))]), 2, axis=1)
-            self.senses = np.squeeze(self.senses, axis=1).tolist()
-            self.opt_pows = np.squeeze(self.opt_pows, axis=1).tolist()
-            self._done()
-        else:
-            self.calcs = self._pool.map(self._mp2, self.exps)
-            self.calcs = self._pool.map(self._mp3, self.calcs)
-        return self._mp4()
-
-    def simulate(self):
-        """ Generate and calculate experiments """
-        self.generate()
-        self.calculate()
+    def display(self):
+        self.dsp.display()
+        return
 
     def param(self, param):
         """ Return parameter from param_dict
@@ -106,51 +94,12 @@ class Simulation:
         return self._param_dict[param].get_val()
 
     # **** Helper Methods ****
-    def _mp1(self, n=None):
-        """ Multiprocessing #1 -- generate experiments """
-        if n is not None and n == 0:
-            self.log.log(
-                "Generating %d experiment realizations."
-                % (self.param("nexp")))
+    def _evaluate_exp(self, n):
         self._status(n)
-        return ex.Experiment(self)
-
-    def _mp2(self, exp, n=None):
-        """ Multiprocessing #2 -- calculate experiments """
-        if n is not None and n == 0:
-            self.log.log(
-                "Calculating sensitivity for %d experiment realizations"
-                % (self.param("nexp")))
-        self._status(n)
-        return cl.Calculate(exp)
-
-    def _mp3(self, clc, n=None):
-        """ Multiprocessing #3 -- generate channel sensitivities """
-        if n is not None and n == 0:
-            self.log.log(
-                "Calculating statistics for %d experiment realizations"
-                % (self.param("nexp")))
-        self._status(n)
-        chs = clc.chs
-        senses = [[[
-            clc.calc_sens(chs[i][j][k])
-            for k in range(len(chs[i][j]))]
-            for j in range(len(chs[i]))]
-            for i in range(len(chs))]
-        opt_pows = [[[
-            clc.calc_opt_pow(chs[i][j][k])
-            for k in range(len(chs[i][j]))]
-            for j in range(len(chs[i]))]
-            for i in range(len(chs))]
-        return [senses, opt_pows]
-
-    def _mp4(self):
-        """ Multiprocessing #4 -- generate output tables """
-
-        dsp = dp.Display(self)
-        dsp.sensitivity()
-        dsp.opt_pow_tables()
-        return dsp
+        self.exp.evaluate()
+        self.senses.append(self.sns.sensitivity())
+        self.opt_pows.append(self.sns.opt_pow())
+        return
 
     def _status(self, rel):
         """ Print status bar for realization 'rel' """

@@ -31,9 +31,10 @@ class OpticalChain:
         # Store optic objects
         self._gen_band_dict()
         self._store_optics()
+        return
 
     # ***** Public Methods *****
-    def generate(self, ch):
+    def evaluate(self, ch):
         """
         Generate names, absorbtivities, transmissions, and temperatures
         for all optical elements in a given channel
@@ -41,11 +42,12 @@ class OpticalChain:
         Args:
         ch (src.Channel): Channel objects
         """
-        arr = [optic.generate(ch) for optic in list(self._optics.values())]
-        return [[a[0] for a in arr],
-                [a[1] for a in arr],
-                [a[2] for a in arr],
-                [a[3] for a in arr]]
+        optics = [optic.evaluate(ch)
+                  for optic in list(self._optics.values())]
+        return [[optic[0] for optic in optics],
+                [optic[1] for optic in optics],
+                [optic[2] for optic in optics],
+                [optic[3] for optic in optics]]
 
     # ***** Private Methods *****
     def _gen_band_dict(self):

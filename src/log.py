@@ -25,9 +25,9 @@ class Log:
         else:
             self._log_level = log_level
         # Log level enums
-        self.level = {"CRUCIAL": 0,
-                      "MODERATE": 1,
-                      "NOTIFY": 2}
+        self.level = {"CRIT": 0,
+                      "WARN": 1,
+                      "INFO": 2}
         # Open log file
         self._log_file = log_file
         self._f = open(self._log_file, 'w')

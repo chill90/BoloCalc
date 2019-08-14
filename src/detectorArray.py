@@ -16,18 +16,23 @@ class DetectorArray:
     def __init__(self, ch):
         # Store some passed parameters
         self.ch = ch
-        log = self.ch.cam.tel.exp.sim.log
-        nexp = self.ch.cam.tel.exp.sim.param("nexp")
-        ndet = self.ch.cam.tel.exp.sim.param("ndet")
+        self._log = self.ch.cam.tel.exp.sim.log
+        self._nexp = self.ch.cam.tel.exp.sim.param("nexp")
+        self._ndet = self.ch.cam.tel.exp.sim.param("ndet")
 
-        # Store detectors
+        # Store detector objects
+        self.dets = [dt.Detector(self) for n in range(self._ndet)]
+
+    def evaluate(self):
+        # Evaluate detectors
         if self.ch.det_band is not None:
-            if ndet == 1:
+            if self._ndet == 1:
                 bands = self.ch.det_band.get_avg()
             else:
-                bands = self.ch.det_band.sample(nsample=ndet)
-            self.dets = [dt.Detector(self, band)
-                         for band in bands]
+                bands = self.ch.det_band.sample(nsample=self._ndet)
+            for det, band in zip(self.dets, bands):
+                det.evaluate(band)
         else:
-            self.dets = [dt.Detector(self)
-                         for i in range(ndet)]
+            for det in self.dets:
+                det.evaluate()
+        return

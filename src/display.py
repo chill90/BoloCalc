@@ -12,19 +12,24 @@ class Display:
     def __init__(self, sim):
         # Store passed parameters
         self._sim = sim
-        self._calcs = self._sim.calcs
+        self._exp = self._sim.exp
         self._phys = self._sim.phys
         self._noise = self._sim.noise
         # Percentiles to be displayed
         self._pct_lo = 15.9
         self._pct_hi = 84.1
 
+    # ***** Public Methods *****
+    def display(self):
         # Merge experiment realizations
         self._merge_exps()
         # Generate table format
         self._table_format()
+        # Write data
+        self.sensitivity()
+        self.opt_pow_tables()
+        return
 
-    # ***** Public Methods
     def sensitivity(self):
         self._init_exp_table()
 
@@ -54,11 +59,9 @@ class Display:
 
             # Write telescope sensitivity
             self._write_tel_table()
-            # self._write_tel_output()
 
         # Write experiment sensitivity
         self._write_exp_table()
-        # self._write_exp_output()
 
         return
 
@@ -75,11 +78,45 @@ class Display:
                 self._opt_f.close()
         return
 
+    def vary_output(self, vary):
+        """
+        varies should be [(ch, opt, param, [vals]), 
+        (ch, opt, param, [vals]), ... ]
+        """
+        tel_names = vary.tels
+        # Loop over telescopes
+        for i in range(len(self._exp.tels)):
+            tel = list(self._exp.tels.values())[i]
+            # Loop over cameras
+            for j in range(len(tel.cams)):
+                cam = list(tel.cams.values())[j]
+                cam_name = list(tel.cams.keys())[j]
+                fout_name = os.path.join(cam.dir, "vary_output.txt")
+                fout = open(fout_name, "a+")
+                fsns_name = os.path.joing(cam.dir, "vary_sensitivity.txt")
+                fsns = open(fsns_name, "a+") 
+                # Write the parameter set definition
+                fname.write("# " + iter_name + "\n")
+                # Loop over channels
+                for k in range(len(cam.chs)):
+                    ch = list(cam.chs.values())[k]
+                    ch_name = ch.param("ch_name")
+                    sns = self._sns[i][j][k]
+                    data = self._output_units(np.concatenate(
+                        (sns[:9], sns[10:11])))
+                    # Write channel data
+                    row = np.transpose(data)
+                    wrstr = ""
+                    for m in range(10):
+                        wrstr += ("%-9.4f " % (row[k]))
+                    wrstr += " | "
+                    fout.write(wrstr)
+                fout.write("\n")
+
     # ***** Helper Methods *****
     def _merge_exps(self):
         self._sns = np.concatenate(self._sim.senses, axis=-1)
         self._opts = np.concatenate(self._sim.opt_pows, axis=-1)
-        self._exp = self._sim.exps[0]
         return
 
     def _table_format(self):
@@ -135,8 +172,6 @@ class Display:
     def _init_exp_table(self):
         self._exp_f = open(
             os.path.join(self._sim.exp_dir, 'sensitivity.txt'), 'w')
-        # self._exp_d = open(
-        #    os.path.join(self._sim.exp_dir, 'output.txt'), 'w')
         self._exp_f.write(self._title_exp)
         self._exp_f.write(self._break_exp)
         self._exp_f.write(self._unit_exp)
@@ -146,8 +181,6 @@ class Display:
     def _init_tel_table(self, tel):
         self._tel_f = open(
             os.path.join(tel.dir, 'sensitivity.txt'), 'w')
-        # self._tel_d = open(
-        #    os.path.join(tel.dir, 'output.txt'), 'w')
         self._tel_f.write(self._title_tel)
         self._tel_f.write(self._break_tel)
         self._tel_f.write(self._unit_tel)
@@ -157,19 +190,60 @@ class Display:
     def _init_cam_table(self, cam):
         self._cam_f = open(os.path.join(
             cam.dir, 'sensitivity.txt'), 'w')
-        self._cam_d = open(os.path.join(
-            cam.dir, 'output.txt'), 'w')
         self._cam_f.write(self._title_cam)
         self._cam_f.write(self._break_cam)
         self._cam_f.write(self._unit_cam)
         self._cam_f.write(self._break_cam)
+        self._init_cam_output(cam)
         return
 
-    def _write_cam_table_row(self, ch, tup):
-        # Write channel values to camera file
+    def _init_cam_output(self, cam):
+        self._cam_d = open(os.path.join(
+            cam.dir, 'output.txt'), 'w+')
+        return
+
+    def _cam_row(self, sns, fobj):
         # tup (i,j,k) = (tel,cam,ch) tuple
         sns = self._sns[tup[0]][tup[1]][tup[2]]
         # Save the camera data
+        # Skip correlation-impacted NETs
+        self._cam_data.append(
+            self._output_units(np.concatenate((sns[:9], sns[10:11]))))
+        # Values to be stored for combining later
+        ch_name = ch.param("ch_name")
+        ndet = ch.param("ndet")
+        net_arr = self._inv_var_spread(
+            sns[9], ch, un.Unit("uK"))
+        net_arr_rj = self._inv_var_spread(
+            sns[11], ch, un.Unit("uK"))
+        map_depth = self._map_depth(
+            net_arr, ch.cam.tel)
+        wstr = ("%-10s | %-7d | %-5.3f +/- (%-5.3f,%5.3f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | %-6.1f +/- (%-6.1f,%6.1f) | "
+                "%-6.1f +/- (%-6.2f,%6.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f)\n"
+                % (ch_name, ndet, *self._spread(sns[0]),
+                   *self._spread(sns[1], un.Unit("pW")),
+                   *self._spread(sns[2], un.Unit("K")),
+                   *self._spread(sns[3], un.Unit("K")),
+                   *self._spread(sns[4], un.Unit("aW/rtHz")),
+                   *self._spread(sns[5], un.Unit("aW/rtHz")),
+                   *self._spread(sns[6], un.Unit("aW/rtHz")),
+                   *self._spread(sns[7], un.Unit("aW/rtHz")),
+                   *self._spread(sns[8], un.Unit("uK")),
+                   *self._spread(sns[10], un.Unit("uK")),
+                   *net_arr, *net_arr_rj, *map_depth))
+        self._cam_f.write(wstr)
+        self._cam_f.write(self._break_cam)
+    
+    def _write_cam_table_row(self, ch, tup):
+        # tup (i,j,k) = (tel,cam,ch) tuple
+        sns = self._sns[tup[0]][tup[1]][tup[2]]
+        # Save the camera data
+        # Skip correlation-impacted NETs
         self._cam_data.append(
             self._output_units(np.concatenate((sns[:9], sns[10:11]))))
         # Values to be stored for combining later
@@ -291,27 +365,16 @@ class Display:
             self._cam_d, self._title_cam_d, self._cam_data)
         return
 
-    # def _write_tel_output(self):
-    #    self._tel_data = self._tel_vals.values()
-    #    self._write_output(
-    #        self._tel_d, self._title_tel_d, self._tel_data)
-    #    return
-
-    # def _write_exp_output(self):
-    #    self._exp_data = self._exp_vals.values()
-    #    self._write_output(
-    #        self._exp_d, self._title_exp_d, self._exp_data)
-
     def _write_tel_exp(self, val_dict, f):
         # Store totals for the telescope / experiment
         tot_det = 0
         tot_net_arr = []
         tot_net_arr_rj = []
         tot_map_depth = []
-        for name, val in val_dict.items():
+        for chan, vals in val_dict.items():
             # Unpack cumulative channel parameters
             grouped_vals = np.concatenate(
-                np.transpose(self._cam_vals), axis=0)
+                np.transpose(vals), axis=0)
             ndet_ch = sum(
                 grouped_vals[0::4][0])
             net_arr_ch = [self._phys.inv_var(val)
@@ -325,7 +388,7 @@ class Display:
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f)\n"
-                    % (name, ndet_ch, *net_arr_ch,
+                    % (chan, ndet_ch, *net_arr_ch,
                        *net_arr_rj_ch, *map_depth_ch))
             f.write(wstr)
             f.write(self._break_tel)

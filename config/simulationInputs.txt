@@ -3,12 +3,6 @@
 #---------------------------------------------------------------------------------------------------------------------------
 Parameter    | Value   | Description
 #---------------------------------------------------------------------------------------------------------------------------
-Multiprocess | False   | Whether or not to use multiprocessing
-#---------------------------------------------------------------------------------------------------------------------------
-Cores        | 1       | Number of cores to use for parallel processing. Positive integer
-#---------------------------------------------------------------------------------------------------------------------------
-Verbosity    | 0       | Verbosity for printing logging messages. 0 for low (recommended), 1 for moderate, 2 for high
-#---------------------------------------------------------------------------------------------------------------------------
 Experiments  | 10      | Number of Experiment MC realizations. Positive integer
 #---------------------------------------------------------------------------------------------------------------------------
 Observations | 10      | Number of Observation MC realizations per experiment realization. Positive integer.

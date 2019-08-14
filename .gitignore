@@ -44,3 +44,11 @@
 # Ignore VS code files
 .vscode/settings.json
 .vscode/launch.json
+
+# All output image files
+*.jpg
+
+# Certain types of files in auxil for now
+auxil/*.txt
+auxil/*.ipynb
+auxil/.ipynb_checkpoints/*
