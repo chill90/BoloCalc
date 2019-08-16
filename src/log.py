@@ -14,7 +14,7 @@ class Log:
     Attributes:
     level (dict): possible logging levels -- 'CRUCIAL', 'MODERATE', 'NOTIFY'
     """
-    def __init__(self, log_file, log_level=1):
+    def __init__(self, log_file):
         # Log leveling
         if log_level is None:
             self._log_level = 0
@@ -44,19 +44,26 @@ class Log:
         return
 
     # ***** Public methods *****
-    def log(self, msg, log_level=None):
+    def log(self, msg):
         """
         Log a message
 
         Args:
         msg (str): message to log
-        log_level (int): level at which to log, 0-2
         """
-        if not log_level:
-            log_level = self._log_level
         self._write(msg)
-        if log_level <= self._log_level:
-            print(msg),
+        return
+
+    def out(self, msg):
+        """
+        Log a message
+
+        Args:
+        msg (str): message to log
+        """
+        self._write(msg)
+        print(msg),
+        return
 
     def err(self, msg):
         """
@@ -68,16 +75,6 @@ class Log:
         err_msg = self._err_preamble + msg
         self._write(err_msg)
         raise Exception(err_msg)
-
-    def set_level(self, level):
-        """
-        Set the logging level
-
-        Args:
-        level (int): new logging level
-        """
-        self._log_level = level
-        return
 
     # ***** Private methods *****
     def _write(self, msg):

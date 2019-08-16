@@ -282,7 +282,7 @@ class Noise:
         """
         return net/(np.sqrt(n_det * det_yield))
 
-    def sensitivity(self, net_arr, fsky, tobs):
+    def map_depth(self, net_arr, fsky, tobs, obs_eff):
         """
         Sensitivity [K-arcmin] given array NET
 
@@ -293,7 +293,7 @@ class Noise:
         """
         return np.sqrt(
             (4. * self._phys.PI * fsky * 2. * np.power(net_arr, 2.)) /
-            tobs) * (10800. / self._phys.PI)
+            (tobs * obs_eff)) * (10800. / self._phys.PI)
 
     def mapping_speed(self, net, n_det, det_yield=1.0):
         """

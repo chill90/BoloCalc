@@ -69,7 +69,7 @@ class Telescope:
         param (str): name of parameter, param dict key
         """
         return self._param_vals[param]
-    
+
     def change_param(self, param, new_val):
         self._param_dict[param].change(new_val)
         return
@@ -113,7 +113,7 @@ class Telescope:
                     min=0.0, max=8.0),
                 "tobs": pr.Parameter(
                     self._log, 'Observation Time', params['Observation Time'],
-                    un.Unit("yr"), min=0.0, max=np.inf),
+                    min=0.0, max=np.inf),
                 "fsky": pr.Parameter(
                     self._log, 'Sky Fraction', params['Sky Fraction'],
                     min=0.0, max=1.0),

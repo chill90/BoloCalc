@@ -19,6 +19,7 @@ import src.physics as ph
 import src.noise as ns
 import src.profile as pf
 import src.sensitivity as sn
+import src.vary as vr
 
 
 class Simulation:
@@ -67,10 +68,20 @@ class Simulation:
 
     # **** Public Methods ****
     # @pf.profiler
+    def simulate(self):
+        self.evaluate()
+        self.display()
+        return
+
+    def vary_simulate(self, param_file, vary_name, vary_tog):
+        vary = vr.Vary(self, param_file, vary_name, vary_tog)
+        vr.vary()
+        return
+    
     def evaluate(self):
         """ Evaluate experiment """
         tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")
-        self.log.log((
+        self.log.out((
                 "Simulting %d experiment realizations each with "
                 "%d detector realizations and %d sky realizations.\n"
                 "Total sims = %d"
@@ -127,15 +138,6 @@ class Simulation:
                 "Simulation file '%s' does not exist" % (self._sim_file))
         params = self.load.sim(self._sim_file)
         self._param_dict = {
-            "mpps": pr.Parameter(
-               self.log, "Multiprocess", params["Multiprocess"],
-               inp_type=bool),
-            "core": pr.Parameter(
-                self.log, "Cores", params["Cores"],
-                inp_type=int),
-            "vrbs": pr.Parameter(
-                self.log, "Verbosity", params["Verbosity"],
-                inp_type=int),
             "nexp": pr.Parameter(
                 self.log, "Experiments", params["Experiments"],
                 inp_type=int),
@@ -147,11 +149,14 @@ class Simulation:
                 inp_type=int),
             "fres": pr.Parameter(
                 self.log, "Resolution", params["Resolution"],
-                unit=un.Unit("GHz"), inp_type=float),
+                inp_type=float),
             "infg": pr.Parameter(
                 self.log, "Foregrounds", params["Foregrounds"],
                 inp_type=bool),
             "corr": pr.Parameter(
                 self.log, "Correlations", params["Correlations"],
-                inp_type=bool)}
+                inp_type=bool),
+            "pct": pr.Parameter(
+                self.log, "Percentile", params["Percentile"],
+                inp_type=list)}
         return

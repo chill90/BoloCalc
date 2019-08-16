@@ -15,9 +15,6 @@ class Display:
         self._exp = self._sim.exp
         self._phys = self._sim.phys
         self._noise = self._sim.noise
-        # Percentiles to be displayed
-        self._pct_lo = 15.9
-        self._pct_hi = 84.1
 
     # ***** Public Methods *****
     def display(self):
@@ -85,12 +82,13 @@ class Display:
         """
         tel_names = vary.tels
         # Loop over telescopes
-        for i in range(len(self._exp.tels)):
-            tel = list(self._exp.tels.values())[i]
+        for i in range(len(vary.tels)):
+            tel = self._exp.tels[vary.tels[i]]
+            cam = tel.cams[vary.cams[i]]
+            ch = cam.chs[vary_chs[i]]
             # Loop over cameras
-            for j in range(len(tel.cams)):
-                cam = list(tel.cams.values())[j]
-                cam_name = list(tel.cams.keys())[j]
+            for j, cam_name in enumerate(vary.cams):
+                cam = tel.cams[cam_name]
                 fout_name = os.path.join(cam.dir, "vary_output.txt")
                 fout = open(fout_name, "a+")
                 fsns_name = os.path.joing(cam.dir, "vary_sensitivity.txt")
@@ -98,7 +96,7 @@ class Display:
                 # Write the parameter set definition
                 fname.write("# " + iter_name + "\n")
                 # Loop over channels
-                for k in range(len(cam.chs)):
+                for k, ch_name in enumerate(vary.chs):
                     ch = list(cam.chs.values())[k]
                     ch_name = ch.param("ch_name")
                     sns = self._sns[i][j][k]
@@ -121,39 +119,55 @@ class Display:
 
     def _table_format(self):
         # Camera sensitivity file
-        self._title_cam = ("%-10s | %-7s | %-23s | %-23s | %-23s | %-23s | "
-                           "%-23s | %-23s | %-23s | %-23s | %-26s | %-26s | "
-                           "%-23s | %-23s | %-23s\n"
+        self._title_cam = ("%-10s | %-7s | "
+                           "%-23s | %-23s | "
+                           "%-23s | %-23s | "
+                           "%-23s | %-23s | "
+                           "%-23s | %-23s | "
+                           "%-26s | %-26s | "
+                           "%-23s | %-23s | "
+                           "%-23s | "
+                           "%-23s | %-23s\n"
                            % ("Chan", "Num Det",
-                              "Telescope Eff", "Optical Power",
+                              "Optical Throughput", "Optical Power",
                               "Telescope Temp", "Sky Temp",
-                              "Photon NEP", "Bolometer NEP", "Readout NEP",
-                              "Detector NEP", "Detector NET",
-                              "Detector NET_RJ",  "Array NET",
-                              "Array NET_RJ", "Map Depth"))
-        self._unit_cam = ("%-10s | %-7s | %-23s | %-23s | %-23s | %-23s | "
-                          "%-23s | %-23s | %-23s | %-23s | %-26s | %-26s | "
-                          "%-23s | %-23s | %-23s\n"
-                          % ("", "", "", "[pW]", "[K_RJ]", "[K_RJ]",
+                              "Photon NEP", "Bolometer NEP",
+                              "Readout NEP", "Detector NEP",
+                              "Detector NET", "Detector NET_RJ",
+                              "Array NET_CMB", "Array NET_RJ",
+                              "Correlation Factor",
+                              "CMB Map Depth", "RJ Map Depth"))
+        self._unit_cam = ("%-10s | %-7s | %-23s | "
+                          "%-23s | %-23s | %-23s | "
+                          "%-23s | %-23s | %-23s | "
+                          "%-23s | %-26s | %-26s | "
+                          "%-23s | %-23s | %-23s | "
+                          "%-23s | %-23s\n"
+                          % ("", "", "",
+                             "[pW]", "[K_RJ]", "[K_RJ]",
                              "[aW/rtHz]", "[aW/rtHz]", "[aW/rtHz]",
                              "[aW/rtHz]", "[uK_CMB-rts]", "[uK_RJ-rts]",
-                             "[uK_CMB-rts]", "[uK_RJ-rts]", "[uK_CMB-amin]"))
+                             "[uK_CMB-rts]", "[uK_RJ-rts]", "",
+                             "[uK_CMB-amin]", "[uK_RJ-amin]"))
+        self._break_cam = "-"*414+"\n"
         # Camera output file
-        self._title_cam_d = (("%-9s "*10
+        self._title_cam_d = (("%-9s "*15
                               % ("Eff", "OptPow",
                                  "TelTemp", "SkyTemp",
-                                 "PhNEP", "BoloNEP", "ReadNEP",
-                                 "DetNEP", "DetNET",
-                                 "DetNETRJ"))+" | ")
-        self._break_cam = "-"*364+"\n"
+                                 "PhNEP", "BoloNEP",
+                                 "ReadNEP", "DetNEP",
+                                 "DetNET", "DetNETRJ",
+                                 "ArrNET", "ArrNETRJ",
+                                 "CorrFact",
+                                 "MapDepth", "MapDepthRJ"))+" | ")
         # Telescope and experiment sensitivity files
-        self._title_tel = ("%-10s | %-7s | %-23s | %-23s | %-23s\n"
-                           % ("Chan", "Num Det", "Array NET",
-                              "Array NET_RJ", "Map Depth"))
-        self._unit_tel = ("%-10s | %-7s | %-23s | %-23s | %-23s\n"
+        self._title_tel = ("%-10s | %-7s | %-23s | %-23s | %-23s | %-23s\n"
+                           % ("Chan", "Num Det", "Array NET_CMB",
+                              "Array NET_RJ", "CMB Map Depth", "RJ Map Depth"))
+        self._unit_tel = ("%-10s | %-7s | %-23s | %-23s | %-23s | %-23s\n"
                           % ("", "", "[uK_CMB-rts]",
-                             "[uK_RJ-rts]", "[uK_CMB-amin]"))
-        self._break_tel = "-"*98+"\n"
+                             "[uK_RJ-rts]", "[uK_CMB-amin]", "[uK_RJ-amin]"))
+        self._break_tel = "-"*123+"\n"
         self._title_exp = self._title_tel
         self._unit_exp = self._unit_tel
         self._break_exp = self._break_tel
@@ -202,7 +216,7 @@ class Display:
             cam.dir, 'output.txt'), 'w+')
         return
 
-    def _cam_row(self, sns, fobj):
+    def _cam_row(self, sns):
         # tup (i,j,k) = (tel,cam,ch) tuple
         sns = self._sns[tup[0]][tup[1]][tup[2]]
         # Save the camera data
@@ -238,7 +252,7 @@ class Display:
                    *net_arr, *net_arr_rj, *map_depth))
         self._cam_f.write(wstr)
         self._cam_f.write(self._break_cam)
-    
+
     def _write_cam_table_row(self, ch, tup):
         # tup (i,j,k) = (tel,cam,ch) tuple
         sns = self._sns[tup[0]][tup[1]][tup[2]]
@@ -246,56 +260,67 @@ class Display:
         # Skip correlation-impacted NETs
         self._cam_data.append(
             self._output_units(np.concatenate((sns[:9], sns[10:11]))))
-        # Values to be stored for combining later
+        # Values to be stored for combining at higher levels
         ch_name = ch.param("ch_name")
         ndet = ch.param("ndet")
-        net_arr = self._inv_var_spread(
-            sns[9], ch, un.Unit("uK"))
-        net_arr_rj = self._inv_var_spread(
-            sns[11], ch, un.Unit("uK"))
-        map_depth = self._map_depth(
-            net_arr, ch.cam.tel)
-        wstr = ("%-10s | %-7d | %-5.3f +/- (%-5.3f,%5.3f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-6.1f +/- (%-6.1f,%6.1f) | "
-                "%-6.1f +/- (%-6.2f,%6.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f)\n"
-                % (ch_name, ndet, *self._spread(sns[0]),
-                   *self._spread(sns[1], un.Unit("pW")),
-                   *self._spread(sns[2], un.Unit("K")),
-                   *self._spread(sns[3], un.Unit("K")),
-                   *self._spread(sns[4], un.Unit("aW/rtHz")),
-                   *self._spread(sns[5], un.Unit("aW/rtHz")),
-                   *self._spread(sns[6], un.Unit("aW/rtHz")),
-                   *self._spread(sns[7], un.Unit("aW/rtHz")),
-                   *self._spread(sns[8], un.Unit("uK")),
-                   *self._spread(sns[10], un.Unit("uK")),
-                   *net_arr, *net_arr_rj, *map_depth))
+        net_arr = self._spread(sns[10], un.std_units["NET"])
+        net_arr_rj = self._spread(sns[11], un.std_units["NET"])
+        map_depth = self._spread(sns[13], un.std_units["Map Depth"])
+        map_depth_rj = self._spread(sns[14], un.std_units["Map Depth"])
+        stored_vals = [[ndet]*3, net_arr, net_arr_rj, map_depth, map_depth_rj]
+
+        # Write camera row
+        wstr = ("%-10s | %-7d | "
+                "%-5.3f +/- (%-5.3f,%5.3f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-6.1f +/- (%-6.1f,%6.1f) | "
+                "%-6.1f +/- (%-6.2f,%6.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.3f,%5.3f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f)\n"
+                % (ch_name, ndet,
+                   *self._spread(sns[0]),
+                   *self._spread(sns[1], un.std_units["Popt"]),
+                   *self._spread(sns[2], un.std_units["Temperature"]),
+                   *self._spread(sns[3], un.std_units["Temperature"]),
+                   *self._spread(sns[4], un.std_units["NEP"]),
+                   *self._spread(sns[5], un.std_units["NEP"]),
+                   *self._spread(sns[6], un.std_units["NEP"]),
+                   *self._spread(sns[7], un.std_units["NEP"]),
+                   *self._spread(sns[8], un.std_units["NET"]),
+                   *self._spread(sns[9], un.std_units["NET"]),
+                   *self._spread(sns[10], un.std_units["NET"]),
+                   *self._spread(sns[11], un.std_units["NET"]),
+                   *self._spread(sns[12], un.std_units["Corr Fact"]),
+                   *self._spread(sns[13], un.std_units["Map Depth"]),
+                   *self._spread(sns[14], un.std_units["Map Depth"])))
         self._cam_f.write(wstr)
         self._cam_f.write(self._break_cam)
+
         # Update the camera channel values
-        self._cam_vals.append([
-            [ndet]*3, net_arr, net_arr_rj, map_depth])
+        self._cam_vals.append(stored_vals)
         # Update telescope channel values
         if ch_name in self._tel_vals.keys():
-            self._tel_vals[ch_name] += [
-                [ndet]*3, net_arr, net_arr_rj, map_depth]
+            self._tel_vals[ch_name] += stored_vals
         else:
-            self._tel_vals[ch_name] = [[
-                [ndet]*3, net_arr, net_arr_rj, map_depth]]
+            self._tel_vals[ch_name] = [stored_vals]
         # Update experiment channel values
         if ch_name in self._exp_vals.keys():
-            self._exp_vals[ch_name] += [
-                [ndet]*3, net_arr, net_arr_rj, map_depth]
+            self._exp_vals[ch_name] += stored_vals
         else:
-            self._exp_vals[ch_name] = [[
-                [ndet]*3, net_arr, net_arr_rj, map_depth]]
+            self._exp_vals[ch_name] = [stored_vals]
         return
 
     def _map_depth(self, vals, tel):
-        return self._noise.sensitivity(
+        return self._noise.map_depth(
             vals, tel.param("fsky"), tel.param("tobs"))
 
     def _write_opt_table(self, ch, tup):
@@ -421,20 +446,12 @@ class Display:
         return self._write_tel_exp(self._exp_vals, self._exp_f)
 
     def _spread(self, inp, unit=None):
+        pct_lo, pct_hi = self._sim.param("pct")
         if unit is None:
             unit = un.Unit("NA")
         lo, med, hi = unit.from_SI(np.percentile(
-            inp, (self._pct_lo, 0.50, self._pct_hi)))
+            inp, (float(pct_lo), 0.50, float(pct_hi))))
         return [med, abs(hi-med), abs(med-lo)]
-
-    def _sum_spread(self, inp, unit=None):
-        if unit is None:
-            unit = un.Unit("NA")
-        lo, med, hi = unit.from_SI(np.percentile(
-            inp, (self._pct_lo, 0.50, self._pct_hi), axis=-1))
-        return (np.sum(med),
-                np.sqrt(np.sum((hi-med)**2)),
-                np.sqrt(np.sum((med-lo)**2)))
 
     def _inv_var_spread(self, inp, ch, unit=None):
         if unit is None:

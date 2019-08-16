@@ -94,13 +94,11 @@ class Sky:
         samp = self.tel.pwv_sample()
         if samp < self._min_pwv:
             self._log.log('Cannot have PWV %.1f < %.1f. Using %.1f instead'
-                          % (samp, self._min_pwv, self._min_pwv),
-                          self._log.level["NOTIFY"])
+                          % (samp, self._min_pwv, self._min_pwv))
             return self._min_pwv
         elif samp > self._max_pwv:
             self._log.log('Cannot have PWV %.1f > %.1f. Using %.1f instead'
-                          % (samp, self._max_pwv, self._max_pwv),
-                          self._log.level["NOTIFY"])
+                          % (samp, self._max_pwv, self._max_pwv))
             return self._max_pwv
         else:
             return samp
@@ -115,11 +113,12 @@ class Sky:
 
     def _atm_spectrum(self, pwv, elev, freqs):
         GHz_to_Hz = 1.e+09
+        m_to_um = 1.e+06
         if self.tel.param("atm_file") is not None:
             freq, tran, temp = self._load.atm(self.tel.param("atm_file"))
         else:
             freq, tran, temp = self._hdf5_select(
-                int(round(pwv, 1)*1000), int(round(elev, 0)))
+                int(round(pwv, 1) * m_to_um), int(round(elev, 0)))
         freq = (freq * GHz_to_Hz).flatten().tolist()
         temp = np.interp(freqs, freq, temp).flatten().tolist()
         tran = np.interp(freqs, freq, tran).flatten().tolist()

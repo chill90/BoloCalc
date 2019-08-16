@@ -20,17 +20,47 @@ class Sensitivity:
         self._ndet = sim.param("ndet")
 
     # ***** Public Methods *****
-    def sensitivity(self):
-        return [[[self._sensitivity(ch)
-                  for ch in cm.chs.values()]
-                 for cm in tp.cams.values()]
-                for tp in self.exp.tels.values()]
+    def sensitivity(self, exp=None):
+        '''
+        if tel is not None and cam is not None and ch is not None:
+            channel = self._exp.tels[tel].cams[cam].chs[ch]
+            self.sens[tel][cam][ch] = self._sensitivity(chan)
+        elif tel is not None and cam is not None and ch is None:
+            for ch, channel in self._exp.tels[tel].cams[cam].chs.items():
+                self.sens[tel][cam][ch] = self._sensitivity(channel)
+        elif tel is not None and cam is None and ch is None:
+            for cam, camera in self._exp.tels[tel].cams:
+                for ch, channel in camera.chs:
+                    self.sens[tel][cam][ch] = self._sensitivity(channel)
+        else:  # (Re)generate entire dictionary
+            self.sens = {tp_name: {cm_name: {ch_name: self._sensitivity(ch)
+                                             for (ch_name, ch)
+                                             in cm.chs.items()}
+                                   for (cm_name, cm)
+                                   in tp.cams.items()}
+                         for (tp_name, tp)
+                         in self.exp.tels.items()}
+        return self.sens
+        '''
+        if exp is None:
+            exp = self.exp
+        return [[[self._sensitivity(ch) for ch in cam.chs]
+                for cam in tp.cams]
+                for tp in exp.tels]
 
-    def opt_pow(self):
-        return [[[self._opt_pow(ch)
-                  for ch in cm.chs.values()]
-                 for cm in tp.cams.values()]
-                for tp in self.exp.tels.values()]
+    def opt_pow(self, spec=None):
+        '''
+        self.opt_pow = {tp_name: {cm_name: {ch_name: self._opt_pow(ch)
+                                            for (ch_name, ch)
+                                            in cm.chs.items()}
+                                  for (cm_name, cm)
+                                  in tp.cams.items()}
+                        for (tp_name, tp)
+                        in self.exp.tels.items()}
+        '''
+        return [[[self._opt_pow(ch) for ch in cm.chs]
+                for cm in tp.cams]
+                for tp in self._exp.tels]
 
     # ***** Helper Methods *****
     def _sensitivity(self, ch):
@@ -45,8 +75,16 @@ class Sensitivity:
         # Calculte NET
         self._calc_NET(ch)
         self._calc_NET_RJ(ch)
+        # Calculate array NET
+        self._calc_NET_arr(ch)
+        self._calc_NET_arr_RJ(ch)
+        # Calculate correlation degradation
+        self._calc_corr_deg(ch)
+        # Calculate map depth
+        self._calc_map_depth(ch)
+        self._calc_map_depth_RJ(ch)
 
-        # Return a dictionary of distribution objects
+        # Return a list of parameter distributions
         return [self._tel_eff_arr.flatten().tolist(),
                 self._popt_arr.flatten().tolist(),
                 self._tel_rj_temp.flatten().tolist(),
@@ -56,9 +94,12 @@ class Sensitivity:
                 self._NEP_read_arr.flatten().tolist(),
                 self._NEP.flatten().tolist(),
                 self._NET.flatten().tolist(),
-                self._NET_corr.flatten().tolist(),
                 self._NET_RJ.flatten().tolist(),
-                self._NET_corr_RJ.flatten().tolist()]
+                self._NET_arr.flatten().tolist(),
+                self._NET_arr_RJ.flatten().tolist(),
+                self._corr_deg.flatten().tolist(),
+                self._map_depth.flatten().lolist(),
+                self._map_depth_RJ.flatten().tolist()]
 
     def _opt_pow(self, ch):
         # Store passed parameters
@@ -235,6 +276,42 @@ class Sensitivity:
             ch.freqs)*self._NET_corr[i][j]
             for j in range(self._ndet)]
             for i in range(self._nobs)])
+        return
+
+    def _calc_NET_arr(self, ch):
+        self._NET_arr = np.array([[self._noise.NET_arr(
+            self._NET_corr[i][j], ch.param("ndet"), ch.param("yield"))
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        return
+
+    def _calc_NET_arr_RJ(self, ch):
+        self._NET_arr = np.array([[self._noise.NET_arr(
+            self._NET_corr_RJ[i][j], ch.param("ndet"), ch.param("yield"))
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
+        return
+
+    def _calc_corr_deg(self, ch):
+        self._corr_deg = np.array([[self._NET_corr[i][j] / self._NET[i][i]
+                                  for i in range(self._ndet)]
+                                  for i in range(self._nobs)])
+        return
+
+    def _calc_map_depth(self, ch):
+        self._map_depth = np.array([[self._noise.map_depth(
+            self._NET_arr, tel.param("fsky"),
+            tel.param("tobs"), tel.param("obs_eff"))
+            for i in range(self._ndet)]
+            for j in range(self._nobs)])
+        return
+
+    def _calc_map_depth_RJ(self, ch):
+        self._map_depth_RJ = np.array([[self._noise.map_depth(
+            self._NET_arr_RJ, tel.param("fsky"),
+            tel.param("tobs"), tel.param("obs_eff"))
+            for i in range(self._ndet)]
+            for j in range(self._nobs)])
         return
 
     def _eff(self, tran, freqs):

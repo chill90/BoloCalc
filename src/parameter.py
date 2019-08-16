@@ -35,6 +35,8 @@ class Parameter:
         self.name = name
         if unit is not None:
             self.unit = unit
+        elif self.name in un.std_units.keys():
+            self.unit = un.std_units[self.name]
         else:
             self.unit = un.Unit("NA")
         self._min = self._float(min)
@@ -237,8 +239,12 @@ class Parameter:
             self._val = str(inp)
             self._avg = None
             self._std = None
+        elif self._type is list:
+            self._val = eval(str(inp))
+            self._avg = None
+            self._std = None
         else:
             self.log.err(
                 "Passed paramter '%s' not one of allowed data types: \
-                bool, np.float, np.int, np.str" % (self.name))
+                bool, float, int, str, list" % (self.name))
         return True

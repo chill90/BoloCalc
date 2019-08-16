@@ -7,6 +7,7 @@ import os
 # BoloCalc modules
 import src.telescope as tp
 import src.parameter as pr
+import src.unit as un
 
 
 class Experiment:
@@ -101,7 +102,7 @@ class Experiment:
                     min=0.0, max=np.inf)}
         else:
             self._param_dict = None
-            self._log.log("Ignoring foregrounds", self._log.level["MODERATE"])
+            self._log.log("Ignoring foregrounds")
         return
 
     def _store_param_vals(self):

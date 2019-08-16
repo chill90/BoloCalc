@@ -186,19 +186,19 @@ class Optic:
                 min=0.0, max=1.0),
             "thick": pr.Parameter(
                 self._log, "Thickness", self._inp_dict["Thickness"],
-                un.Unit("mm"), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "Index": pr.Parameter(
                 self._log, "Index", self._inp_dict["Index"],
                 min=0.0, max=np.inf),
             "ltan": pr.Parameter(
                 self._log, "Loss Tangent", self._inp_dict["Loss Tangent"],
-                un.Unit(1.e-04), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "cond": pr.Parameter(
                 self._log, "Conductivity", self._inp_dict["Conductivity"],
-                un.Unit(1.e+06), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "surfr": pr.Parameter(
                 self._log, "Surface Rough", self._inp_dict["Surface Rough"],
-                un.Unit("um"), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "spill": pr.Parameter(
                 self._log, "Spillover", self._inp_dict["Spillover"],
                 min=0.0, max=1.0),

@@ -133,7 +133,7 @@ class Channel:
             "pix_sz": pr.Parameter(
                 self._log, "Pixel Size",
                 self._inp_dict["Pixel Size"],
-                un.Unit("mm"), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "wf": pr.Parameter(
                 self._log, "Waist Factor",
                 self._inp_dict["Waist Factor"],
@@ -143,7 +143,7 @@ class Channel:
             "bc": pr.Parameter(
                 self._log, "Band Center",
                 self._inp_dict["Band Center"],
-                un.Unit("GHz"), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "fbw": pr.Parameter(
                 self._log, "Fractional BW",
                 self._inp_dict["Fractional BW"],
@@ -155,7 +155,7 @@ class Channel:
             "psat": pr.Parameter(
                 self._log, "Psat",
                 self._inp_dict["Psat"],
-                un.Unit("pW"), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "psat_fact": pr.Parameter(
                 self._log, "Psat Factor",
                 self._inp_dict["Psat Factor"],
@@ -174,7 +174,7 @@ class Channel:
             "nei": pr.Parameter(
                 self._log, "SQUID NEI",
                 self._inp_dict["SQUID NEI"],
-                un.Unit("pA/rtHz"), min=0.0, max=np.inf),
+                min=0.0, max=np.inf),
             "bolo_r": pr.Parameter(
                 self._log, "Bolo Resistance",
                 self._inp_dict["Bolo Resistance"],
@@ -198,11 +198,11 @@ class Channel:
         if "G" in self._param_dict.keys():
             self.det_dict["g"] = pr.Parameter(
                 self._log, "G", self._param_dict["G"],
-                un.Unit("pW"), min=0.0, max=np.inf)
+                min=0.0, max=np.inf)
         else:
             self.det_dict["g"] = pr.Parameter(
                 self._log, "G", "NA",
-                un.Unit("pW"), min=0.0, max=np.inf)
+                min=0.0, max=np.inf)
 
         # Parameters that are the same for all detectors
         self.ch_keys = ["det_per_waf", "waf_per_ot",
@@ -251,8 +251,7 @@ class Channel:
             elev_file = elv_files[0]
             self.elev_dict = self._load().elevation(elev_files[0])
             self._log.log("Using pixel elevation distribution '%s'"
-                          % (self.cam.param("cam_name"), elev_file),
-                          self._log.level["MODERATE"])
+                          % (self.cam.param("cam_name"), elev_file))
         return
 
     def _store_band(self):
