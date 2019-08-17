@@ -1,6 +1,5 @@
 # Built-in methods
 import numpy as np
-import collections as cl
 import os
 import glob as gb
 
@@ -43,7 +42,7 @@ class OpticalChain:
         ch (src.Channel): Channel objects
         """
         optics = [optic.evaluate(ch)
-                  for optic in list(self._optics.values())]
+                  for optic in list(self.optics.values())]
         return [[optic[0] for optic in optics],
                 [optic[1] for optic in optics],
                 [optic[2] for optic in optics],
@@ -58,10 +57,10 @@ class OpticalChain:
     def _store_optics(self):
         param_dicts = self._load.optics(
             os.path.join(self.cam.config_dir, 'optics.txt'))
-        self._optics = cl.OrderedDict({})
+        self.optics = {}
         for param_dict in param_dicts:
             # Check for duplicate optic names
-            if param_dict["Element"] in self._optics.keys():
+            if param_dict["Element"] in self.optics.keys():
                 self._log.err(
                     "Multiple optical elements named '%s' in camera '%s'"
                     % (param_dict["Element"], self.cam.dir))
@@ -75,6 +74,6 @@ class OpticalChain:
             else:
                 band_file = None
             # Store optic
-            self._optics.update({param_dict['Element']: op.Optic(
+            self.optics.update({param_dict['Element']: op.Optic(
                 self, param_dict, band_file=band_file)})
         return

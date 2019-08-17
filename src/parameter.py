@@ -4,7 +4,7 @@ import sys as sy
 
 # BoloCalc modules
 import src.unit as un
-import src.distrib as ds
+import src.distribution as ds
 
 
 class Parameter:
@@ -102,16 +102,36 @@ class Parameter:
         Change self._avg to new_avg and self._std to new_std
 
         Args:
-        new_avg (int or list): new
+        new_avg (int or list): new value to be set
+
+        Return 'True' if avg or std value was altered, 'False' if not
         """
+        ret_bool = False
         if type(self._avg) is np.ndarray:
-            self._avg[band_id-1] = self.unit.to_SI(new_avg)
+            avg_new = self.unit.to_SI(new_avg)
+            if (self._sig_figs(avg_new, 5) !=
+               self._sig_figs(self._avg[band_id-1], 5)):
+                self._avg[band_id-1] = avg_new
+                ret_val = True
             if new_std is not None:
-                self._std[band_id-1] = self.unit.to_SI(new_std)
+                std_new = self.unit.to_SI(new_std)
+                if (self._sig_figs(std_new, 5) !=
+                   self._sig_figs(self._std[band_id-1], 5)):
+                    self._std[band_id-1] = std_new
+                    ret_bool = True
         else:
-            self._avg = self.unit.to_SI(new_avg)
+            avg_new = self.unit.to_SI(new_avg)
+            if (self._sig_figs(avg_new, 5) !=
+               self._sig_figs(self._avg, 5)):
+                self._avg = avg_new
+                ret_bool = True
             if new_std is not None:
-                self._std = self.unit.to_SI(new_std)
+                std_new = self.unit.to_SI(new_std)
+                if (self._sig_figs(std_new, 5) !=
+                   self._sig_figs(self._std, 5)):
+                    self._std = std_new
+                    ret_bool = True
+        return ret_bool
 
     def get_val(self):
         """ Return the input value """
@@ -203,10 +223,10 @@ class Parameter:
                     allowed value %f" % (
                         str(self._avg), self.name, self._min), 0)
             elif self._max is not None and np.any(avg > self._max):
-                self.log.err(
+                self._log.err(
                     "Passed value %s for parameter %s greater than the maximum \
                     allowed value %f" % (
-                        str(self._avg), self.name, self._max), 0)
+                        str(self._avg), self.name, self._max))
             else:
                 return True
 
@@ -248,3 +268,9 @@ class Parameter:
                 "Passed paramter '%s' not one of allowed data types: \
                 bool, float, int, str, list" % (self.name))
         return True
+
+    def _sig_figs(self, inp, sig):
+        if inp == 0:
+            return inp
+        else:
+            return round(inp, sig-int(np.floor(np.log10(abs(inp))))-1)

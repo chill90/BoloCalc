@@ -1,57 +1,3 @@
-# Dictionary of units used in BoloCalc,
-# identified by parameter name
-std_units = {"Dust Temperature": Unit("K"),
-             "Dust Spec Index": Unit("NA"),
-             "Dust Amplitude": Unit("NA"),
-             "Dust Scale Frequency": Unit("GHz"),
-             "Synchrotron Spec Index": Unit("NA"),
-             "Synchrotron Amplitude": Unit("W/Hz"),
-             "Elevation": Unit("deg"),
-             "PWV": Unit("mm"),
-             "Observation Time": Unit("yr"):
-             "Sky Fraction": Unit("NA"),
-             "Observation Efficiency": Unit("NA"),
-             "NET Margin": Unit("NA"),
-             "Boresight Elevation": Unit("deg"),
-             "Optical Coupling": Unit("NA"),
-             "F Number": Unit("NA"),
-             "Bath Temp": Unit("K"),
-             "Band Center": Unit("GHz"),
-             "Fractional BW": Unit("NA"),
-             "Pixel Size": Unit("mm"),
-             "Num Det per Wafer": Unit("NA"),
-             "Num Waf per OT": Unit("NA"),
-             "Num OT": Unit("NA"),
-             "Waist Factor": Unit("NA"),
-             "Det Eff": Unit("NA"),
-             "Psat": Unit("pW"),
-             "Psat Factor": Unit("NA"),
-             "Carrier Index": Unit("NA"),
-             "Tc": Unit("K"),
-             "Tc Fraction": Unit("NA"),
-             "Flink": Unit("NA"),
-             "G": Unit("pW"),
-             "Yield": Unit("NA"),
-             "SQUID NEI": Unit("pA/rtHz"),
-             "Bolo Resistance": Unit("Ohms"),
-             "Read Noise Frac": Unit("NA"),
-             "Temperature": Unit("K"),
-             "Absorption": Unit("NA"),
-             "Reflection": Unit("NA"),
-             "Thickness": Unit("mm"),
-             "Index": Unit("NA"),
-             "Loss Tangent": Unit("e-4"),
-             "Conductivity": Unit("e+6"),
-             "Surface Rough": Unit("um RMS"),
-             "Spillover": Unit("NA"),
-             "Spillover Temp": Unit("K"),
-             "Scatter Frac": Unit("NA"),
-             "Scatter Temp": Unit("K"),
-             "Popt": Unit("pW"),
-             "NEP": Unit("aW/rtHz"),
-             "NET": Unit("uK-rts"),
-             "Corr Fact": Unit("NA"),
-             "Map Depth": Unit("uK-amin")}
 
 
 class Unit:
@@ -81,6 +27,7 @@ class Unit:
             "e-4": 1.e-04,
             "e+6": 1.e+06,
             "um RMS": 1.e-06,
+            "Ohm": 1.,
             "W/Hz": 1.,
             "Hz": 1.,
             "m": 1.,
@@ -98,10 +45,10 @@ class Unit:
                 raise Exception("Passed unit '%s' not understood by \
                     Unit object" % (unit))
             else:
-                self._name = unit
-                self._SI = self._to_SI_dict[self._name]
+                self.name = unit
+                self._SI = self._to_SI_dict[self.name]
         elif isinstance(unit, float):
-            self._name = "NA"
+            self.name = "NA"
             self._SI = unit
 
     def to_SI(self, val):
@@ -110,3 +57,60 @@ class Unit:
 
     def from_SI(self, val):
         return val / self._SI
+
+        # Dictionary of units used in BoloCalc,
+# identified by parameter name
+std_units = {
+    "Resolution": Unit("GHz"),
+    "Dust Temperature": Unit("K"),
+    "Dust Spec Index": Unit("NA"),
+    "Dust Amplitude": Unit("NA"),
+    "Dust Scale Frequency": Unit("GHz"),
+    "Synchrotron Spec Index": Unit("NA"),
+    "Synchrotron Amplitude": Unit("W/Hz"),
+    "Elevation": Unit("deg"),
+    "PWV": Unit("mm"),
+    "Observation Time": Unit("yr"),
+    "Sky Fraction": Unit("NA"),
+    "Observation Efficiency": Unit("NA"),
+    "NET Margin": Unit("NA"),
+    "Boresight Elevation": Unit("deg"),
+    "Optical Coupling": Unit("NA"),
+    "F Number": Unit("NA"),
+    "Bath Temp": Unit("K"),
+    "Band Center": Unit("GHz"),
+    "Fractional BW": Unit("NA"),
+    "Pixel Size": Unit("mm"),
+    "Num Det per Wafer": Unit("NA"),
+    "Num Waf per OT": Unit("NA"),
+    "Num OT": Unit("NA"),
+    "Waist Factor": Unit("NA"),
+    "Det Eff": Unit("NA"),
+    "Psat": Unit("pW"),
+    "Psat Factor": Unit("NA"),
+    "Carrier Index": Unit("NA"),
+    "Tc": Unit("K"),
+    "Tc Fraction": Unit("NA"),
+    "Flink": Unit("NA"),
+    "G": Unit("pW"),
+    "Yield": Unit("NA"),
+    "SQUID NEI": Unit("pA/rtHz"),
+    "Bolo Resistance": Unit("Ohm"),
+    "Read Noise Frac": Unit("NA"),
+    "Temperature": Unit("K"),
+    "Absorption": Unit("NA"),
+    "Reflection": Unit("NA"),
+    "Thickness": Unit("mm"),
+    "Index": Unit("NA"),
+    "Loss Tangent": Unit("e-4"),
+    "Conductivity": Unit("e+6"),
+    "Surface Rough": Unit("um RMS"),
+    "Spillover": Unit("NA"),
+    "Spillover Temp": Unit("K"),
+    "Scatter Frac": Unit("NA"),
+    "Scatter Temp": Unit("K"),
+    "Popt": Unit("pW"),
+    "NEP": Unit("aW/rtHz"),
+    "NET": Unit("uK-rts"),
+    "Corr Fact": Unit("NA"),
+    "Map Depth": Unit("uK-amin")}

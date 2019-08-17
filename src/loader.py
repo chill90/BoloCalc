@@ -4,7 +4,7 @@ import glob as gb
 import os
 
 # BoloCalc modules
-import src.distrib as ds
+import src.distribution as ds
 
 
 class Loader:

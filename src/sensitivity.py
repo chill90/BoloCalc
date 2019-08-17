@@ -5,7 +5,7 @@ import functools as ft
 
 # BoloCalc modules
 import src.unit as un
-import src.distrib as ds
+import src.distribution as ds
 
 
 class Sensitivity:
@@ -21,49 +21,18 @@ class Sensitivity:
 
     # ***** Public Methods *****
     def sensitivity(self, exp=None):
-        '''
-        if tel is not None and cam is not None and ch is not None:
-            channel = self._exp.tels[tel].cams[cam].chs[ch]
-            self.sens[tel][cam][ch] = self._sensitivity(chan)
-        elif tel is not None and cam is not None and ch is None:
-            for ch, channel in self._exp.tels[tel].cams[cam].chs.items():
-                self.sens[tel][cam][ch] = self._sensitivity(channel)
-        elif tel is not None and cam is None and ch is None:
-            for cam, camera in self._exp.tels[tel].cams:
-                for ch, channel in camera.chs:
-                    self.sens[tel][cam][ch] = self._sensitivity(channel)
-        else:  # (Re)generate entire dictionary
-            self.sens = {tp_name: {cm_name: {ch_name: self._sensitivity(ch)
-                                             for (ch_name, ch)
-                                             in cm.chs.items()}
-                                   for (cm_name, cm)
-                                   in tp.cams.items()}
-                         for (tp_name, tp)
-                         in self.exp.tels.items()}
-        return self.sens
-        '''
         if exp is None:
             exp = self.exp
-        return [[[self._sensitivity(ch) for ch in cam.chs]
-                for cam in tp.cams]
-                for tp in exp.tels]
+        return [[[self.ch_sensitivity(ch) for ch in cam.chs.values()]
+                for cam in tp.cams.values()]
+                for tp in exp.tels.values()]
 
     def opt_pow(self, spec=None):
-        '''
-        self.opt_pow = {tp_name: {cm_name: {ch_name: self._opt_pow(ch)
-                                            for (ch_name, ch)
-                                            in cm.chs.items()}
-                                  for (cm_name, cm)
-                                  in tp.cams.items()}
-                        for (tp_name, tp)
-                        in self.exp.tels.items()}
-        '''
-        return [[[self._opt_pow(ch) for ch in cm.chs]
-                for cm in tp.cams]
-                for tp in self._exp.tels]
+        return [[[self._opt_pow(ch) for ch in cm.chs.values()]
+                for cm in tp.cams.values()]
+                for tp in self.exp.tels.values()]
 
-    # ***** Helper Methods *****
-    def _sensitivity(self, ch):
+    def ch_sensitivity(self, ch):
         # Calculate optical power
         self._calc_popt(ch)
         self._calc_rj_temp(ch)
@@ -98,7 +67,7 @@ class Sensitivity:
                 self._NET_arr.flatten().tolist(),
                 self._NET_arr_RJ.flatten().tolist(),
                 self._corr_deg.flatten().tolist(),
-                self._map_depth.flatten().lolist(),
+                self._map_depth.flatten().tolist(),
                 self._map_depth_RJ.flatten().tolist()]
 
     def _opt_pow(self, ch):
@@ -286,7 +255,7 @@ class Sensitivity:
         return
 
     def _calc_NET_arr_RJ(self, ch):
-        self._NET_arr = np.array([[self._noise.NET_arr(
+        self._NET_arr_RJ = np.array([[self._noise.NET_arr(
             self._NET_corr_RJ[i][j], ch.param("ndet"), ch.param("yield"))
             for j in range(self._ndet)]
             for i in range(self._nobs)])
@@ -294,24 +263,26 @@ class Sensitivity:
 
     def _calc_corr_deg(self, ch):
         self._corr_deg = np.array([[self._NET_corr[i][j] / self._NET[i][i]
-                                  for i in range(self._ndet)]
+                                  for j in range(self._ndet)]
                                   for i in range(self._nobs)])
         return
 
     def _calc_map_depth(self, ch):
+        tel = ch.cam.tel
         self._map_depth = np.array([[self._noise.map_depth(
-            self._NET_arr, tel.param("fsky"),
+            self._NET_arr[i][j], tel.param("fsky"),
             tel.param("tobs"), tel.param("obs_eff"))
-            for i in range(self._ndet)]
-            for j in range(self._nobs)])
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
         return
 
     def _calc_map_depth_RJ(self, ch):
+        tel = ch.cam.tel
         self._map_depth_RJ = np.array([[self._noise.map_depth(
-            self._NET_arr_RJ, tel.param("fsky"),
+            self._NET_arr_RJ[i][j], tel.param("fsky"),
             tel.param("tobs"), tel.param("obs_eff"))
-            for i in range(self._ndet)]
-            for j in range(self._nobs)])
+            for j in range(self._ndet)]
+            for i in range(self._nobs)])
         return
 
     def _eff(self, tran, freqs):

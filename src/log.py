@@ -15,26 +15,11 @@ class Log:
     level (dict): possible logging levels -- 'CRUCIAL', 'MODERATE', 'NOTIFY'
     """
     def __init__(self, log_file):
-        # Log leveling
-        if log_level is None:
-            self._log_level = 0
-        elif log_level > 2:
-            self._log_level = 2
-        elif log_level < 0:
-            self._log_level = 0
-        else:
-            self._log_level = log_level
-        # Log level enums
-        self.level = {"CRIT": 0,
-                      "WARN": 1,
-                      "INFO": 2}
         # Open log file
         self._log_file = log_file
         self._f = open(self._log_file, 'w')
-        self.log(
-            "Logging to file '%s,'"
-            % (self._log_file),
-            self.level["MODERATE"])
+        self.log("Logging to file '%s,'"
+                 % (self._log_file))
         # Error preamble
         self._err_preamble = "BoloCalc Error: "
         return

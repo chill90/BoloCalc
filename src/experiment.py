@@ -1,7 +1,6 @@
 # Built-in modules
 import numpy as np
 import glob as gb
-import collections as cl
 import os
 
 # BoloCalc modules
@@ -38,7 +37,7 @@ class Experiment:
         self._store_param_dict()
 
         # Store telescopes
-        self._gen_tels()
+        self._store_tels()
 
     # ***** Public Methods *****
     def evaluate(self):
@@ -50,7 +49,6 @@ class Experiment:
             tel.evaluate()
         return
 
-    # Fetch parameters from Simulation object
     def param(self, param):
         """
         Return parameter from param_vals
@@ -61,8 +59,14 @@ class Experiment:
         return self._param_vals[param]
 
     def change_param(self, param, new_val):
-        self._param_dict[param].change(new_val)
-        return
+        if self._param_dict is None:
+            self._log.err(
+                "Cannot change foreground parameter in %s when foregrounds "
+                "are disabled" % (self.dir))
+        if param not in self._param_dict.keys():
+            return self._param_dict[self._param_names[param]].change(new_val)
+        else:
+            return self._param_dict[param].change(new_val)
 
     # ***** Helper Methods *****
     def _param_samp(self, param):
@@ -100,6 +104,9 @@ class Experiment:
                     self._log, 'Synchrotron Amplitude',
                     params['Synchrotron Amplitude'],
                     min=0.0, max=np.inf)}
+            self._param_names = {
+                param.name: pid
+                for pid, param in self._param_dict.items()}
         else:
             self._param_dict = None
             self._log.log("Ignoring foregrounds")
@@ -114,8 +121,8 @@ class Experiment:
         self._param_vals["exp_name"] = os.path.split(self.dir.rstrip('/'))[-1]
         return
 
-    def _gen_tels(self):
-        tel_dirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))
+    def _store_tels(self):
+        tel_dirs = sorted(gb.glob(os.path.join(self.dir, '*' + os.sep)))
         tel_dirs = [x for x in tel_dirs
                     if 'config' not in x and 'paramVary' not in x]
         if len(tel_dirs) == 0:
@@ -124,7 +131,7 @@ class Experiment:
         tel_names = [tel_dir.split(os.sep)[-2] for tel_dir in tel_dirs]
         if len(tel_names) != len(set(tel_names)):
             self._log.err("Duplicate telescope name in '%s'" % (self.dir))
-        self.tels = cl.OrderedDict({})
+        self.tels = {}
         for i in range(len(tel_names)):
             self.tels.update({tel_names[i].strip():
                               tp.Telescope(self, tel_dirs[i])})

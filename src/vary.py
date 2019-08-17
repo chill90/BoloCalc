@@ -6,8 +6,7 @@ import os
 # BoloCalc modules
 import src.experiment as ex
 import src.physics as ph
-import src.units as un
-import src.compatible as cm
+import src.unit as un
 
 
 class Vary:
@@ -17,7 +16,7 @@ class Vary:
         self._sns = self._sim.sns
         self._exp = self._sim.exp
         self._log = self._sim.log
-        self._ph = self._sim.ph
+        self._ph = self._sim.phys
         self._param_file = param_file
         self._vary_name = vary_name
         self._vary_tog = vary_tog
@@ -29,6 +28,9 @@ class Vary:
         # Status bar length
         self._bar_len = 100
 
+        # Scope (exp, tel, cam, or ch) of the parameter set
+        self._scope = ''
+
         # Generate the output file tag
         # self._store_file_tag()
 
@@ -37,13 +39,10 @@ class Vary:
 
     # **** Public Methods ****
     def vary(self):
-        # Adjusted sensitivities
-        adj_sns = []
-
         # Start by generating "fiducial" experiments
         tot_sims = (self._sim.param("nexp") * self._sim.param("ndet") *
                     self._sim.param("nobs"))
-        self.log.out((
+        self._log.out((
                 "Simulting %d experiment realizations each with "
                 "%d detector realizations and %d sky realizations.\n"
                 "Total sims = %d"
@@ -54,19 +53,25 @@ class Vary:
         for n in range(self._nexp):
             self._status(n, self._nexp)
             exp = ex.Experiment(self._sim)
+            exp.evaluate()
             sns = self._sim.sns.sensitivity(exp)
             self._exps.append(exp)
             self._sens.append(sns)
         self._done()
 
-        # Loop over parameter set and update sensitivity
+        # Loop over parameter set and adjustsensitivities
+        adj_sns = []
         tot_adjs = self._nexp * len(self._set_arr)
+        self._log.out((
+                "Looping over %d parameter sets for %d realizations\n"
+                "Total sims = %d"
+                % (tot_sims, len(self._set_arr), tot_adjs)))
         for n, (exp, sens) in enumerate(zip(self._exps, self._sens)):
-            self.sns.append(self._vary(exp, sns, tot_adjs))
+            adj_sns.append(self._vary_exp(exp, sens, n, tot_adjs))
         self._done()
 
         # Combine experiment realizations
-        self.adj_sns = np.concatenate(sns, axis=-1)
+        self.adj_sns = np.concatenate(adj_sns, axis=-1)
         return
 
     # ***** Helper Methods *****
@@ -80,29 +85,33 @@ class Vary:
     def _adjust_sens(self, exp, sns, tel=None, cam=None, ch=None):
         # Recalculate specific channel
         if tel is not None and cam is not None and ch is not None:
-            tel_ind = exp.tels.keys().index(tel)
-            cam_ind = exp.tels[tel].cams.keys().index(cam)
-            ch_ind = exp.tels[tel].cams[cam].chs.keys().index(ch)
+            tel_ind = list(exp.tels.keys()).index(tel)
+            cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
+            ch_ind = list(exp.tels[tel].cams[cam].chs.keys()).index(ch)
             channel = exp.tels[tel].cams[cam].chs[ch]
-            sns[tel_ind][cam_ind][ch_ind] = self._sns.sensitivity(
+            sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                 channel)
         # Re calculate specific camera
         elif tel is not None and cam is not None and ch is None:
-            tel_ind = exp.tels.keys().index(tel)
-            cam_ind = exp.tels[tel].cams.keys().index(cam)
+            tel_ind = list(exp.tels.keys()).index(tel)
+            cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
             for ch_ind, channel in exp.tels[tel].cams[cam].chs.items():
-                sns[tel_ind][cam_ind][ch_ind] = self._sns.sensitivity(
+                sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                     channel)
         # Recalculate specific telescope
         elif tel is not None and cam is None and ch is None:
-            tel_ind = exp.tels.keys().index(tel)
+            tel_ind = list(exp.tels.keys()).index(tel)
             for cam_ind, camera in exp.tels[tel].cams.items():
                 for ch_ind, channel in camera.chs.items():
-                    sns[tel_ind][cam_ind][ch_ind] = self._sns.sensitivity(
+                    sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                         channel)
         # Recalculate entire experiment
         else:
-            sns = self._sns.sensitivity(exp)
+            for tel_ind, telescope in exp.tels.items():
+                for cam_ind, camera in telescope.cams.items():
+                    for ch_ind, channel in camera.chs.items():
+                        sns[tel_ind][cam_ind][ch_ind] = (
+                            self._sns.ch_sensitivity(channel))
         return sns
 
     def _vary_exp(self, exp, sns, n, ntot):
@@ -118,14 +127,15 @@ class Vary:
                     exp.change_param(
                         self._params[j], self._set_arr[i][j])
                     exp.evaluate()
-                    sns = self._adjust_sens()
+                    sns = self._adjust_sens(exp, sns)
                 # Change telescope parameter
                 elif vary_depth is 'tel':
                     tel = exp.tels[self._tels[j]]
                     tel.change_param(
                         self._params[j], self._set_arr[i][j])
                     tel.evaluate()
-                    sns = self._adjust_sens(tel=tel)
+                    sns = self._adjust_sens(
+                        exp, sns, tel=self._tels[j])
                 # Change camera parameter
                 elif vary_depth is 'cam':
                     tel = exp.tels[self._tels[j]]
@@ -133,7 +143,8 @@ class Vary:
                     cam.change_param(
                         self._params[j], self._set_arr[i][j])
                     cam.evalutate()
-                    sns = self._adjust_sens(tel=tel, cam=cam)
+                    sns = self._adjust_sens(
+                        exp, sns, tel=self._tels[j], cam=self._cams[j])
                 # Change channel parameter
                 elif vary_depth is 'ch':
                     tel = exp.tels[self._tels[j]]
@@ -142,18 +153,22 @@ class Vary:
                     ch.change_param(
                         self._params[j], self._set_arr[i][j])
                     ch.evaluate()
-                    sns = self._adjust_sens(tel=tel, cam=cam, ch=ch)
+                    sns = self._adjust_sens(
+                        exp, sns, tel=self._tels[j],
+                        cam=self._cams[j], ch=self._chs[j])
                 # Change optic parameter
                 elif vary_depth is 'opt':
                     tel = exp.tels[self._tels[j]]
                     cam = tel.cams[self._cams[j]]
                     ch = cam.chs[self._chs[j]]
-                    opt = cam.opt_chn.opts[self._opts[j]]
+                    opt = cam.opt_chn.optics[self._opts[j]]
                     band_id = ch.param("band_id")
                     opt.change_param(
                         self._params[j], self._set_arr[i][j], band_id=band_id)
                     opt.evaluate(ch)
-                    sns = self._adjust_sens(tel=tel, cam=cam, ch=ch)
+                    sns = self._adjust_sens(
+                        exp, sns, tel=self._tels[j],
+                        cam=self._cams[j], ch=self._chs[j])
                 # Change the pixel size,
                 # varying detector number also
                 elif vary_depth is 'pix':
@@ -225,7 +240,9 @@ class Vary:
                     ap.change_param('Absorption', new_ap, band_id=band_id)
                     # Re-evaluate channel
                     ch.evaluate()
-                    sns = self._adjust_sens(tel=tel, cam=cam, ch=ch)
+                    sns = self._adjust_sens(
+                        exp, sns, tel=self._tels[j],
+                        cam=self._cams[j], ch=self._chs[j])
 
             # Store new sensitivity values
             sns_arr.append(sns)
@@ -234,7 +251,7 @@ class Vary:
     def _save_param_iter(self, it):
         sns = self.sns[it]
         # Write output files for every channel
-        if self._footprint is not 'exp':
+        if self._scope is not 'exp':
             tel_names = set(self._tels)  # unique tel names
             tels = [self._exp.tels[tel_name]
                     for tel_name in tel_names]
@@ -245,8 +262,8 @@ class Vary:
             tels = self._exp.tels.values()
             tel_inds = range(len(tels))
         for i, tel in zip(tel_inds, tels):
-            if (self._footprint is 'cam' or self._footprint is 'ch' or
-               self._footprint is 'pix'):
+            if (self._scope is 'cam' or self._scope is 'ch' or
+               self._scope is 'pix'):
                 valid_inds = np.where(self._tels == tel_name[i])
                 cam_names = set(self._cams[valid_inds])  # unique cam names
                 cams = [tel.cams[cam_name]
@@ -266,7 +283,7 @@ class Vary:
                         "Overwriting param vary data at '%s'" % (vary_dir))
                     os.rmdir(vary_dir)
                 os.mkdir(vary_dir)
-                if (self._footprint is 'ch' or self._footprint is 'pix'):
+                if (self._scope is 'ch' or self._scope is 'pix'):
                     valid_inds = np.where(
                         self._tels == tel_name[i] and
                         self._cams == cam_name[j])
@@ -303,14 +320,15 @@ class Vary:
         # Formatting strings to be used when writing
         self._fmt_str = replace(fmt_str, "s", ".3f")
         self._fmt_ind = " %03d  | "  # for writing index values
-        with f as open(fvary, 'w'):
-            f.write(ind_str + (fmt_str + "\n" % (*self._tels)))
-            f.write(ind_str + (fmt_str + "\n" % (*self._cams)))
-            f.write(ind_str + (fmt_str + "\n" % (*self._chs)))
-            f.write(ind_str + (fmt_str + "\n" % (*self._opts)))
-            f.write(ind_str + (fmt_str + "\n" % (*self._params)))
+        print(fmt_str)
+        with open(fvary, 'w') as f:
+            f.write(ind_str + (fmt_str % (*self._tels,) + "\n"))
+            f.write(ind_str + (fmt_str % (*self._cams,) + "\n"))
+            f.write(ind_str + (fmt_str % (*self._chs,) + "\n"))
+            f.write(ind_str + (fmt_str % (*self._opts,) + "\n"))
+            f.write(ind_str + (fmt_str % (*self._params,) + "\n"))
             self._write_vary_header_params(f)
-            f.write(("Index | " + (fmt_unit + "\n" % (*self._units))))
+            f.write(("Index | " + (fmt_unit % (*self._units,) + "\n")))
             self._write_vary_header_units
             self._horiz_line(f)
 
@@ -345,7 +363,7 @@ class Vary:
         return
 
     def _write_output(self, data, fout):
-        with fwrite as open(fout, 'w'):
+        with open(fout, 'w') as fwrite:
             tdata = np.transpose(data)
             for i in range(len(data)):  # params
                 row = tdata[i]
@@ -357,9 +375,9 @@ class Vary:
         return
 
     def _write_vary_row(self, it, data, fcam):
-        with f as open(fcam, 'a'):
+        with open(fcam, 'a') as f:
             f.write(self._fmt_ind % (int(it)))
-            f.write(self._fmt_str % (*self._set_arr[i]))
+            f.write(self._fmt_str % (*self._set_arr[i],))
             wstr = ("%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
@@ -420,19 +438,19 @@ class Vary:
             (self.numParams - 1) * 3 + (len(self.telNames) - 1) * 3 + 5))+'\n')
 
     def _load_params(self):
-        self.log.log(
-            "Loading parameters to vary from %s" % (param_file))
-        convs = {i: str.strip() for i in range(8)}
+        self._log.log(
+            "Loading parameters to vary from %s" % (self._param_file))
+        convs = {i: lambda s: s.strip() for i in range(8)}
         data = np.loadtxt(self._param_file, delimiter='|', dtype=str,
                           unpack=True, ndmin=2, converters=convs)
-        self._tels, self._cams, self._chs, self._opts = data[:3]
+        self._tels, self._cams, self._chs, self._opts = data[:4]
         self._params, mins, maxs, stps = data[4:]
         self._units = [un.std_units[param].name
                        for param in self._params]
         # Array to manage table spacing - don't waste space!
-        self._param_widths = [len(max(np.concatenate(
-            self._tels[i], self._cams[i], self._chs[i],
-            self._opts[i], self._params[i]), key=len))
+        self._param_widths = [len(max(
+            [self._tels[i], self._cams[i], self._chs[i],
+             self._opts[i], self._params[i]], key=len))
             for i in range(len(self._params))]
 
         # Check for consistency of number of parameters varied
@@ -551,17 +569,17 @@ class Vary:
 
     def _vary_depth(self, ind):
         if self._tels[ind] != '':
-            if (self._footprint is '' or
-               self._footprint is 'ch' or
-               self._footprint is 'cam'):
-                self._footprint = 'tel'
+            if (self._scope is '' or
+               self._scope is 'ch' or
+               self._scope is 'cam'):
+                self._scope = 'tel'
             if self._cams[ind] != '':
-                if (self._footprint is '' or
-                   self._footprint is 'ch'):
-                    self._footprint = 'cam'
+                if (self._scope is '' or
+                   self._scope is 'ch'):
+                    self._scope = 'cam'
                 if self._chs[ind] != '':
-                    if self._footprint is '':
-                        self._footprint = 'ch'
+                    if self._scope is '':
+                        self._scope = 'ch'
                     if self._opts[ind] != '':
                         return 'opt'
                     elif ('Pixel Size' in self._params[j] and
@@ -574,7 +592,7 @@ class Vary:
             else:
                 return 'tel'
         else:
-            self._footprint = 'exp'
+            self._scope = 'exp'
             return 'exp'
 
     def _wide_to_long(self, inp_arr):
@@ -582,7 +600,7 @@ class Vary:
         ret_arr = []
         for i in range(len(inp_arr)):
             inner_arr = []
-            if i < num_params - 1:
+            if i < len(inp_arr) - 1:
                 for j in range(len_arr[i]):
                     inner_arr += (
                         [inp_arr[i][j]] * np.prod(len_arr[i+1:]))

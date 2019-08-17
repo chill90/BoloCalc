@@ -156,7 +156,11 @@ class Optic:
         return (elem, emiss, effic, temp)
 
     def change_param(self, param, new_val, band_id=None):
-        self._param_dict[param].change(new_val, band_id)
+        if param not in self._param_dict.keys():
+            return (self._param_dict[self._param_names[param]].change(
+                    new_val, band_id))
+        else:
+            return self._param_dict[param].change(new_val, band_id)
         return
 
     # ***** Helper Methods *****
@@ -212,6 +216,8 @@ class Optic:
             "scat_temp":   pr.Parameter(
                 self._log, "Scatter Temp", self._inp_dict["Scatter Temp"],
                 min=0.0, max=np.inf)}
+        self._param_names = {param.name: pid
+                             for pid, param in self._param_dict.items()}
         return
 
     def _store_param_vals(self, ch):

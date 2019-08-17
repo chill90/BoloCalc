@@ -1,7 +1,6 @@
 # Built-in modules
 import numpy as np
 import glob as gb
-import collections as cl
 import os
 import io
 import h5py as hp
@@ -9,13 +8,6 @@ import sys as sy
 
 # BoloCalc modules
 import src.foregrounds as fg
-import src.compatible as cm
-# Choose fastest pickling module
-comp = cm.Compatible()
-if comp.PY2:
-    import cPickle as pk
-else:
-    import pickle as pk
 
 
 class Sky:

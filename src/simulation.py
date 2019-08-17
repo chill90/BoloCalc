@@ -9,7 +9,6 @@ import os
 
 # BoloCalc modules
 import src.experiment as ex
-import src.calculate as cl
 import src.display as dp
 import src.log as lg
 import src.loader as ld
@@ -75,9 +74,9 @@ class Simulation:
 
     def vary_simulate(self, param_file, vary_name, vary_tog):
         vary = vr.Vary(self, param_file, vary_name, vary_tog)
-        vr.vary()
+        vary.vary()
         return
-    
+
     def evaluate(self):
         """ Evaluate experiment """
         tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")

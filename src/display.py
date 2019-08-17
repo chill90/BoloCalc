@@ -5,7 +5,7 @@ import os
 
 # BoloCalc modules
 import src.unit as un
-import src.distrib as ds
+import src.distribution as ds
 
 
 class Display:
@@ -77,7 +77,7 @@ class Display:
 
     def vary_output(self, vary):
         """
-        varies should be [(ch, opt, param, [vals]), 
+        varies should be [(ch, opt, param, [vals]),
         (ch, opt, param, [vals]), ... ]
         """
         tel_names = vary.tels
@@ -92,7 +92,7 @@ class Display:
                 fout_name = os.path.join(cam.dir, "vary_output.txt")
                 fout = open(fout_name, "a+")
                 fsns_name = os.path.joing(cam.dir, "vary_sensitivity.txt")
-                fsns = open(fsns_name, "a+") 
+                fsns = open(fsns_name, "a+")
                 # Write the parameter set definition
                 fname.write("# " + iter_name + "\n")
                 # Loop over channels
@@ -149,7 +149,7 @@ class Display:
                              "[aW/rtHz]", "[uK_CMB-rts]", "[uK_RJ-rts]",
                              "[uK_CMB-rts]", "[uK_RJ-rts]", "",
                              "[uK_CMB-amin]", "[uK_RJ-amin]"))
-        self._break_cam = "-"*414+"\n"
+        self._break_cam = "-"*416+"\n"
         # Camera output file
         self._title_cam_d = (("%-9s "*15
                               % ("Eff", "OptPow",
@@ -167,7 +167,7 @@ class Display:
         self._unit_tel = ("%-10s | %-7s | %-23s | %-23s | %-23s | %-23s\n"
                           % ("", "", "[uK_CMB-rts]",
                              "[uK_RJ-rts]", "[uK_CMB-amin]", "[uK_RJ-amin]"))
-        self._break_tel = "-"*123+"\n"
+        self._break_tel = "-"*124+"\n"
         self._title_exp = self._title_tel
         self._unit_exp = self._unit_tel
         self._break_exp = self._break_tel
@@ -353,19 +353,27 @@ class Display:
         # Write cumulative sensitivity for all channels for camera
         # tup (i,j) = (tel,cam) tuple
         grouped_vals = np.concatenate(np.transpose(self._cam_vals), axis=0)
-        tot_ndet = sum(grouped_vals[0::4][0])
+        tot_ndet = sum(grouped_vals[0::5][0])
         tot_net_arr = [self._phys.inv_var(val)
-                       for val in grouped_vals[1::4]]
+                       for val in grouped_vals[1::5]]
         tot_net_arr_rj = [self._phys.inv_var(val)
-                          for val in grouped_vals[2::4]]
+                          for val in grouped_vals[2::5]]
         tot_map_depth = [self._phys.inv_var(val)
-                         for val in grouped_vals[3::4]]
-        wstr = ("%-10s | %-7d | %-263s | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f)\n"
+                         for val in grouped_vals[3::5]]
+        tot_map_depth_rj = [self._phys.inv_var(val)
+                            for val in grouped_vals[4::5]]
+        wstr = ("%-10s | %-7d | %-263s | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                " %-22s | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f)\n"
                 % ("Total", tot_ndet, "",
                    *tot_net_arr,
                    *tot_net_arr_rj,
-                   *tot_map_depth))
+                   "",
+                   *tot_map_depth,
+                   *tot_map_depth_rj))
         self._cam_f.write(wstr)
         self._cam_f.close()
 
@@ -396,25 +404,32 @@ class Display:
         tot_net_arr = []
         tot_net_arr_rj = []
         tot_map_depth = []
+        tot_map_depth_rj = []
         for chan, vals in val_dict.items():
             # Unpack cumulative channel parameters
             grouped_vals = np.concatenate(
                 np.transpose(vals), axis=0)
             ndet_ch = sum(
-                grouped_vals[0::4][0])
+                grouped_vals[0::5][0])
             net_arr_ch = [self._phys.inv_var(val)
-                          for val in grouped_vals[1::4]]
+                          for val in grouped_vals[1::5]]
             net_arr_rj_ch = [self._phys.inv_var(val)
-                             for val in grouped_vals[2::4]]
+                             for val in grouped_vals[2::5]]
             map_depth_ch = [self._phys.inv_var(val)
-                            for val in grouped_vals[3::4]]
+                            for val in grouped_vals[3::5]]
+            map_depth_rj_ch = [self._phys.inv_var(val)
+                               for val in grouped_vals[4::5]]
             # Write channel parameters
             wstr = ("%-10s | %-7d | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
+                    "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f)\n"
-                    % (chan, ndet_ch, *net_arr_ch,
-                       *net_arr_rj_ch, *map_depth_ch))
+                    % (chan, ndet_ch,
+                       *net_arr_ch,
+                       *net_arr_rj_ch,
+                       *map_depth_ch,
+                       *map_depth_rj_ch))
             f.write(wstr)
             f.write(self._break_tel)
             # Store totals
@@ -422,6 +437,7 @@ class Display:
             tot_net_arr.append(net_arr_ch)
             tot_net_arr_rj.append(net_arr_rj_ch)
             tot_map_depth.append(map_depth_ch)
+            tot_map_depth_rj.append(map_depth_rj_ch)
         # Write the cumulative sensitivity to finish the table
         net_arr_tot = [self._sim.phys.inv_var(net)
                        for net in np.transpose(tot_net_arr)]
@@ -429,12 +445,18 @@ class Display:
                           for net in np.transpose(tot_net_arr_rj)]
         map_depth_tot = [self._sim.phys.inv_var(depth)
                          for depth in np.transpose(tot_map_depth)]
+        map_depth_rj_tot = [self._sim.phys.inv_var(depth)
+                            for depth in np.transpose(tot_map_depth_rj)]
         wstr = ("%-10s | %-7d | "
                 "%-5.2f +/- (%-5.2f,%5.2f) | "
                 "%-5.2f +/- (%-5.2f,%5.2f) | "
+                "%-5.2f +/- (%-5.2f,%5.2f) | "
                 "%-5.2f +/- (%-5.2f,%5.2f)\n"
-                % ("Total", tot_det, *net_arr_tot,
-                   *net_arr_rj_tot, *map_depth_tot))
+                % ("Total", tot_det,
+                   *net_arr_tot,
+                   *net_arr_rj_tot,
+                   *map_depth_tot,
+                   *map_depth_rj_tot))
         f.write(wstr)
         f.close()
         return

@@ -1,7 +1,6 @@
 # Built-in modules
 import numpy as np
 import glob as gb
-import collections as cl
 import os
 
 # BoloCalc modules
@@ -65,8 +64,10 @@ class Camera:
         return self._param_vals[param]
 
     def change_param(self, param, new_val):
-        self._param_dict[param].change(new_val)
-        return
+        if param not in self._param_dict.keys():
+            return self._param_dict[self._param_names[param]].change(new_val)
+        else:
+            return self._param_dict[param].change(new_val)
 
     def get_param(self, param):
         return self._param_dict[param].get_avg()
@@ -114,6 +115,9 @@ class Camera:
                 "tb": pr.Parameter(
                     self._log, "Bath Temp",
                     params["Bath Temp"], min=0.0, max=np.inf)}
+            self._param_names = {
+                param.name: pid
+                for pid, param in self._param_dict.items()}
         return
 
     def _store_param_vals(self):
@@ -143,7 +147,7 @@ class Camera:
         chn_file = os.path.join(
             self.config_dir, "channels.txt")
         chan_dicts = self._load.channel(chn_file)
-        self.chs = cl.OrderedDict({})
+        self.chs = {}
         for chan_dict in chan_dicts:
             if chan_dict["Band ID"] in self.chs.keys():
                 self._log.err(

@@ -1,7 +1,6 @@
 # Built-in modules
 import numpy as np
 import glob as gb
-import collections as cl
 import os
 
 # BoloCalc modules
@@ -47,7 +46,7 @@ class Telescope:
         # Store scan strategy object
         self.scn = sc.ScanStrategy(self)
         # Store cameras
-        self._gen_cams()
+        self._store_cams()
 
     # ***** Public Methods *****
     def evaluate(self):
@@ -71,8 +70,10 @@ class Telescope:
         return self._param_vals[param]
 
     def change_param(self, param, new_val):
-        self._param_dict[param].change(new_val)
-        return
+        if param not in self._param_dict.keys():
+            return self._param_dict[self._param_names[param]].change(new_val)
+        else:
+            return self._param_dict[param].change(new_val)
 
     def pwv_sample(self):
         """ Sample PWV for this telescope """
@@ -124,6 +125,9 @@ class Telescope:
                 "net_mgn": pr.Parameter(
                     self._log, 'NET Margin', params['NET Margin'],
                     min=0.0, max=np.inf)}
+            self._param_names = {
+                param.name: pid
+                for pid, param in self._param_dict.items()}
         return
 
     def _store_param_vals(self):
@@ -168,15 +172,16 @@ class Telescope:
                 self._param_vals['pwv'] = None
                 self._param_vals['elev'] = None
 
-    def _gen_cams(self):
+    def _store_cams(self):
         cam_dirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))
-        cam_dirs = [x for x in cam_dirs if 'config' not in x]
+        cam_dirs = [x for x in cam_dirs
+                    if 'config' not in x and 'paramVary' not in x]
         if len(cam_dirs) == 0:
             self._log.err("Zero cameras in '%s'" % (self.dir))
         cam_names = [cam_dir.split(os.sep)[-2] for cam_dir in cam_dirs]
         if len(cam_names) != len(set(cam_names)):
             self._log.err("Duplicate camera name in '%s'" % (self.dir))
-        self.cams = cl.OrderedDict({})
+        self.cams = {}
         for i in range(len(cam_names)):
             self.cams.update({cam_names[i].strip():
                               cm.Camera(self, cam_dirs[i])})

@@ -95,8 +95,10 @@ class Channel:
         return
 
     def change_param(self, param, new_val):
-        self._param_dict[param].change(new_val)
-        return
+        if param not in self._param_dict.keys():
+            return self._param_dict[self._param_names[param]].change(new_val)
+        else:
+            return self._param_dict[param].change(new_val)
 
     def get_param(self, param):
         return self._param_dict[param].get_avg()
