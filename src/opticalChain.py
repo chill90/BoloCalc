@@ -28,7 +28,7 @@ class OpticalChain:
         self._load = self.cam.tel.exp.sim.load
 
         # Store optic objects
-        self._gen_band_dict()
+        self._store_band_dict()
         self._store_optics()
         return
 
@@ -49,7 +49,7 @@ class OpticalChain:
                 [optic[3] for optic in optics]]
 
     # ***** Private Methods *****
-    def _gen_band_dict(self):
+    def _store_band_dict(self):
         band_dir = os.path.join(self.cam.config_dir, 'Optics')
         self._band_dict = self._load.band_dir(band_dir)
         return

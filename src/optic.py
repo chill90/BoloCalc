@@ -158,9 +158,9 @@ class Optic:
     def change_param(self, param, new_val, band_id=None):
         if param not in self._param_dict.keys():
             return (self._param_dict[self._param_names[param]].change(
-                    new_val, band_id))
+                    new_val, band_id=band_id))
         else:
-            return self._param_dict[param].change(new_val, band_id)
+            return self._param_dict[param].change(new_val, band_id=band_id)
         return
 
     # ***** Helper Methods *****

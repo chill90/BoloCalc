@@ -65,4 +65,4 @@ sim = sm.Simulation(log_file, sim_file, args.exp_dir)
 if not args.vary:
     sim.simulate()
 else:
-    sim.vary_simulate(vary_file, args.vary_name, args.vary_tog)
+    sim.vary_simulate(vary_file, args.vary_name[0], args.vary_tog)

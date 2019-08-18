@@ -2,6 +2,7 @@
 import numpy as np
 import sys as sy
 import os
+import copy as cp
 
 # BoloCalc modules
 import src.experiment as ex
@@ -30,6 +31,12 @@ class Vary:
 
         # Scope (exp, tel, cam, or ch) of the parameter set
         self._scope = ''
+        self._scope_enums = {
+            'exp': 3, 'tel': 2, 'cam': 1, 'ch': 0,
+            'opt': 0, 'pix': 0}
+
+        # Name of parameter vary directory
+        self._param_dir = "paramVary"
 
         # Generate the output file tag
         # self._store_file_tag()
@@ -59,32 +66,113 @@ class Vary:
             self._sens.append(sns)
         self._done()
 
-        # Loop over parameter set and adjustsensitivities
+        # Loop over parameter set and adjust sensitivities
         adj_sns = []
         tot_adjs = self._nexp * len(self._set_arr)
         self._log.out((
                 "Looping over %d parameter sets for %d realizations\n"
                 "Total sims = %d"
-                % (tot_sims, len(self._set_arr), tot_adjs)))
+                % (len(self._set_arr), tot_sims, tot_adjs)))
         for n, (exp, sens) in enumerate(zip(self._exps, self._sens)):
             adj_sns.append(self._vary_exp(exp, sens, n, tot_adjs))
         self._done()
 
-        # Combine experiment realizations
+        # Combine and save experiment realizations
         self.adj_sns = np.concatenate(adj_sns, axis=-1)
+        self._save()
         return
 
     # ***** Helper Methods *****
     def _save(self):
         # Write parameter by parameter
-        it = 0
-        for i in range(len(sns_arr)):
+        tot_writes = len(self.adj_sns)
+        self._log.out((
+                "Writing outputs for %d parameters" % (tot_writes)))
+        for i in range(tot_writes):
+            self._status(i, tot_writes)
             self._save_param_iter(i)
+        self._done()
         return
 
-    def _adjust_sens(self, exp, sns, tel=None, cam=None, ch=None):
+    def _adjust_sens(self, arg, vary_scope, exp, sns):
+        j = arg
+        ret_sns = cp.deepcopy(sns)
+        # Change experiment parameter
+        if vary_scope is 'exp':
+            for tel_ind, telescope in exp.tels.items():
+                for cam_ind, camera in telescope.cams.items():
+                    for ch_ind, channel in camera.chs.items():
+                        channel.evaluate()
+                        ret_sns[tel_ind][cam_ind][ch_ind] = (
+                            self._sns.ch_sensitivity(channel))
+        elif vary_scope is 'tel':
+            tel = self._tels[j]
+            tel_ind = list(exp.tels.keys()).index(tel)
+            for cam_ind, camera in exp.tels[tel].cams.items():
+                for ch_ind, channel in camera.chs.items():
+                    channel.evaluate()
+                    ret_sns[tel_ind][cam_ind][ch_ind] = (
+                        self._sns.ch_sensitivity(channel))
+        elif vary_scope is 'cam':
+            tel = self._tels[j]
+            cam = self._cams[j]
+            tel_ind = list(exp.tels.keys()).index(tel)
+            cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
+            for ch_ind, channel in exp.tels[tel].cams[cam].chs.items():
+                channel.evaluate()
+                ret_sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
+                    channel)
+        elif vary_scope is 'ch':
+            tel = self._tels[j]
+            cam = self._cams[j]
+            ch = self._chs[j]
+            tel_ind = list(exp.tels.keys()).index(tel)
+            cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
+            ch_ind = list(exp.tels[tel].cams[cam].chs.keys()).index(ch)
+            channel = exp.tels[tel].cams[cam].chs[ch]
+            channel.evaluate()
+            ret_sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
+                channel)
+        return ret_sns
+
+        '''
+        # Change telescope parameter
+        elif vary_scope is 'tel':
+            tel = exp.tels[self._tels[j]]
+            changed = tel.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change camera parameter
+        elif vary_scope is 'cam':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            changed = cam.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change channel parameter
+        elif vary_scope is 'ch':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            ch = cam.chs[self._chs[j]]
+            changed = ch.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change optic parameter
+        elif vary_scope is 'opt':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            ch = cam.chs[self._chs[j]]
+            opt = cam.opt_chn.optics[self._opts[j]]
+            band_id = ch.param("band_id")
+            changed = opt.change_param(
+                self._params[j], self._set_arr[i][j], band_id=band_id)
+        # Change the pixel size,
+        # varying detector number also
+        elif vary_scope is 'pix':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            ch = cam.chs[self._chs[j]]
+            changed = self._set_new_pix_sz(cam, ch, (i,j))
+        return changed
         # Recalculate specific channel
-        if tel is not None and cam is not None and ch is not None:
+        if vary_scope is 'ch':
             tel_ind = list(exp.tels.keys()).index(tel)
             cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
             ch_ind = list(exp.tels[tel].cams[cam].chs.keys()).index(ch)
@@ -92,27 +180,145 @@ class Vary:
             sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                 channel)
         # Re calculate specific camera
-        elif tel is not None and cam is not None and ch is None:
+        elif vary_scope is 'cam':
             tel_ind = list(exp.tels.keys()).index(tel)
             cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
             for ch_ind, channel in exp.tels[tel].cams[cam].chs.items():
                 sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                     channel)
         # Recalculate specific telescope
-        elif tel is not None and cam is None and ch is None:
+        elif vary_scope is 'tel':
             tel_ind = list(exp.tels.keys()).index(tel)
             for cam_ind, camera in exp.tels[tel].cams.items():
                 for ch_ind, channel in camera.chs.items():
                     sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                         channel)
         # Recalculate entire experiment
-        else:
+        elif vary_scope is 'exp':
             for tel_ind, telescope in exp.tels.items():
                 for cam_ind, camera in telescope.cams.items():
                     for ch_ind, channel in camera.chs.items():
                         sns[tel_ind][cam_ind][ch_ind] = (
                             self._sns.ch_sensitivity(channel))
+        else:
+            print("something bad...")
+
         return sns
+        '''
+
+    def _set_new_pix_sz(self, cam, ch, tup):
+        i = tup[0]
+        j = tup[1]
+        # Check that the f-number is defined
+        f_num = cam.get_param('F Number')
+        if f_num == 'NA':
+            self._log.err("Cannot set 'Pixel Size**' as a "
+                          "parameter to vary without 'F Number' "
+                          "also defined for this camera")
+        # Check that the band center is defined
+        bc = ch.get_param('Band Center')
+        if bc == 'NA':
+            self._log.err("Cannot set 'Pixel Size**' as a "
+                          "parameter to vary without "
+                          "'Band Center' also defined for this "
+                          "channel")
+        # Check that the waist factor is defined
+        w0 = ch.get_param('Waist Factor')
+        if w0 == 'NA':
+            self._log.err("Cannot set 'Pixel Size**' as a "
+                          "parameter to vary without "
+                          "'Waist Factor' also defined for this "
+                          "channel")
+        # Check that the aperture defined
+        opt_keys = list(cam.opt_chn.opts.keys())
+        if 'Aperture' in opt_keys:
+            ap_name = 'Aperture'
+        elif 'Lyot' in opt_keys:
+            ap_name = 'Lyot'
+        elif 'Stop' in opt_keys:
+            ap_name = 'Stop'
+        else:
+            self._log.err("Cannot pass 'Pixel Size**' as a "
+                          "parameter to vary when neither "
+                          "'Aperture' nor 'Lyot' nor 'Stop' "
+                          "is defined in the camera's optical "
+                          "chain")
+        ap = cam.opt_chn.opts[ap_name]
+        # Store current values for detector number, aperture
+        # efficiency, and pixel size
+        curr_pix_sz = ch.get_param('Pixel Size')
+        curr_ndet = ch.get_param('Num Det per Wafer',
+                                 band_id=band_id)
+        curr_ap = ap.get_param('Absorption', band_id=band_id)
+        if curr_ap == 'NA':
+            curr_ap = None
+        # Calculate new values for detector number,
+        # aperture efficiency, and pixel size
+        new_pix_sz_mm = self._set_arr[i][j]
+        new_pix_sz = un.Unit('mm')._to_SI(new_pix_sz_mm)
+        new_ndet = curr_ndet * np.power(
+            (curr_pix_sz / new_pix_sz), 2.)
+        if curr_ap is not None:
+            curr_eff = self._ph.spillEff(
+                freq, curr_pix_sz, fnum, w0)
+            new_eff = self._ph.spillEff(
+                freq, new_pix_sz, fnum, w0)
+            apAbs_new = 1. - (1. - curr_ap) * new_eff / curr_eff
+        else:
+            apAbs_new = 1. - self.__ph.spillEff(
+                freq, new_pix_sz, fnum, w0)
+        # Define new values
+        changed = []
+        changed.append(
+            ch.change_param('Pixel Size', new_pix_sz_mm))
+        changed.append(ch.change_param(
+            'Num Det per Wafer', new_ndet, band_id=band_id))
+        changed.append(ap.change_param(
+            'Absorption', new_ap, band_id=band_id))
+        return np.any(changed)
+
+    def _set_new_param(self, exp, tup, vary_scope):
+        i = tup[0]
+        j = tup[1]
+        # Change experiment parameter
+        if vary_scope is 'exp':
+            changed = exp.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change telescope parameter
+        elif vary_scope is 'tel':
+            tel = exp.tels[self._tels[j]]
+            changed = tel.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change camera parameter
+        elif vary_scope is 'cam':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            changed = cam.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change channel parameter
+        elif vary_scope is 'ch':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            ch = cam.chs[self._chs[j]]
+            changed = ch.change_param(
+                self._params[j], self._set_arr[i][j])
+        # Change optic parameter
+        elif vary_scope is 'opt':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            ch = cam.chs[self._chs[j]]
+            opt = cam.opt_chn.optics[self._opts[j]]
+            band_id = ch.param("band_id")
+            changed = opt.change_param(
+                self._params[j], self._set_arr[i][j], band_id=band_id)
+        # Change the pixel size,
+        # varying detector number also
+        elif vary_scope is 'pix':
+            tel = exp.tels[self._tels[j]]
+            cam = tel.cams[self._cams[j]]
+            ch = cam.chs[self._chs[j]]
+            changed = self._set_new_pix_sz(cam, ch, (i, j))
+        return changed
 
     def _vary_exp(self, exp, sns, n, ntot):
         # Sensitivity for every parameter combination
@@ -120,58 +326,110 @@ class Vary:
         # Loop over long-form data
         for i in range(len(self._set_arr)):
             self._status((n * len(self._set_arr) + i), ntot)
+            changes = []
+            scopes = []
+            # First adjust parameters
             for j in range(len(self._set_arr[i])):
-                vary_depth = self._vary_depth(j)
+                vary_scope = self._vary_scope(j)
+                scopes.append(self._scope_enums[vary_scope])
+                changed = self._set_new_param(exp, (i, j), vary_scope)
+                # if changed:
+                #    print(vary_scope)
+                #    print(self._set_arr[i][j])
+                changes.append(changed)
+            # Then recalculate only where needed
+            changed_args = np.argwhere(changes).flatten()
+            scope_arg = np.argmax(np.array(scopes)[changes])
+            arg = changed_args[scope_arg]
+            vary_scope = scopes[arg]
+            vary_scope = list(self._scope_enums.keys())[list(
+                    self._scope_enums.values()).index(vary_scope)]
+            out_sns = self._adjust_sens(arg, vary_scope, exp, sns)
+            print(sns[0][0][0][1])
+            print(out_sns[0][0][0][1])
+            print("same output?", out_sns == sns)
+            '''
+            for j in changed_params:
+                if changes[j]:
+            changed_scopes = np.array(scopes)[changes]
+            if len(changed_scopes) != 0:
+                scope = np.amax(changed_scope)
+                vary_scope = self._scope_enums.keys()[list(
+                    self.scope_enums.values()).index(scope)]
+
+
+
+
+            for j in range(len(self._set_arr[i])):
+                if changes[i]:
+                    vary_scope = self._vary_scope(j)
+
+                self._set_new_param(vary_scope)
                 # Change experiment parameter
-                if vary_depth is 'exp':
-                    exp.change_param(
+                if vary_scope is 'exp':
+                    changed = exp.change_param(
                         self._params[j], self._set_arr[i][j])
-                    exp.evaluate()
-                    sns = self._adjust_sens(exp, sns)
+                    if changed:
+                        exp.evaluate()
+                        out_sns = self._adjust_sens(exp, sns)
+                    else:
+                        out_sns = sns
                 # Change telescope parameter
-                elif vary_depth is 'tel':
+                elif vary_scope is 'tel':
                     tel = exp.tels[self._tels[j]]
-                    tel.change_param(
+                    changed = tel.change_param(
                         self._params[j], self._set_arr[i][j])
-                    tel.evaluate()
-                    sns = self._adjust_sens(
-                        exp, sns, tel=self._tels[j])
+                    if changed:
+                        tel.evaluate()
+                        sns = self._adjust_sens(
+                            exp, sns, tel=self._tels[j])
+                    else:
+                        out_sns = sns
                 # Change camera parameter
-                elif vary_depth is 'cam':
+                elif vary_scope is 'cam':
                     tel = exp.tels[self._tels[j]]
                     cam = tel.cams[self._cams[j]]
-                    cam.change_param(
+                    changed = cam.change_param(
                         self._params[j], self._set_arr[i][j])
-                    cam.evalutate()
-                    sns = self._adjust_sens(
-                        exp, sns, tel=self._tels[j], cam=self._cams[j])
+                    if changed:
+                        cam.evalutate()
+                        out_sns = self._adjust_sens(
+                            exp, sns, tel=self._tels[j], cam=self._cams[j])
+                    else:
+                        out_sns = sns
                 # Change channel parameter
-                elif vary_depth is 'ch':
+                elif vary_scope is 'ch':
                     tel = exp.tels[self._tels[j]]
                     cam = tel.cams[self._cams[j]]
                     ch = cam.chs[self._chs[j]]
-                    ch.change_param(
+                    changed = ch.change_param(
                         self._params[j], self._set_arr[i][j])
-                    ch.evaluate()
-                    sns = self._adjust_sens(
-                        exp, sns, tel=self._tels[j],
-                        cam=self._cams[j], ch=self._chs[j])
+                    if changed:
+                        ch.evaluate()
+                        out_sns = self._adjust_sens(
+                            exp, sns, tel=self._tels[j],
+                            cam=self._cams[j], ch=self._chs[j])
+                    else:
+                        out_sns = sns
                 # Change optic parameter
-                elif vary_depth is 'opt':
+                elif vary_scope is 'opt':
                     tel = exp.tels[self._tels[j]]
                     cam = tel.cams[self._cams[j]]
                     ch = cam.chs[self._chs[j]]
                     opt = cam.opt_chn.optics[self._opts[j]]
                     band_id = ch.param("band_id")
-                    opt.change_param(
+                    changed = opt.change_param(
                         self._params[j], self._set_arr[i][j], band_id=band_id)
-                    opt.evaluate(ch)
-                    sns = self._adjust_sens(
-                        exp, sns, tel=self._tels[j],
-                        cam=self._cams[j], ch=self._chs[j])
+                    if changed:
+                        opt.evaluate(ch)
+                        out_sns = self._adjust_sens(
+                            exp, sns, tel=self._tels[j],
+                            cam=self._cams[j], ch=self._chs[j])
+                    else:
+                        out_sns = sns
                 # Change the pixel size,
                 # varying detector number also
-                elif vary_depth is 'pix':
+                elif vary_scope is 'pix':
                     tel = exp.tels[self._tels[j]]
                     cam = tel.cams[self._cams[j]]
                     ch = cam.chs[self._chs[j]]
@@ -234,78 +492,84 @@ class Vary:
                         apAbs_new = 1. - self.__ph.spillEff(
                             freq, new_pix_sz, fnum, w0)
                     # Define new values
-                    ch.change_param('Pixel Size', new_pix_sz_mm)
-                    ch.change_param('Num Det per Wafer', new_ndet,
-                                    band_id=band_id)
-                    ap.change_param('Absorption', new_ap, band_id=band_id)
+                    changed = []
+                    changed.append(
+                        ch.change_param('Pixel Size', new_pix_sz_mm))
+                    changed.append(ch.change_param(
+                        'Num Det per Wafer', new_ndet, band_id=band_id))
+                    changed.append(ap.change_param(
+                        'Absorption', new_ap, band_id=band_id))
                     # Re-evaluate channel
-                    ch.evaluate()
-                    sns = self._adjust_sens(
-                        exp, sns, tel=self._tels[j],
-                        cam=self._cams[j], ch=self._chs[j])
-
+                    if np.any(changed):
+                        ch.evaluate()
+                        out_sns = self._adjust_sens(
+                            exp, sns, tel=self._tels[j],
+                            cam=self._cams[j], ch=self._chs[j])
+                    else:
+                        out_sns = sns
+            '''
             # Store new sensitivity values
-            sns_arr.append(sns)
+            sns_arr.append(out_sns)
         return sns_arr
 
     def _save_param_iter(self, it):
-        sns = self.sns[it]
+        exp = self._exps[0]  # Just for retrieving names
+        sns = self.adj_sns[it]
+        print(np.shape(sns))
         # Write output files for every channel
-        if self._scope is not 'exp':
-            tel_names = set(self._tels)  # unique tel names
-            tels = [self._exp.tels[tel_name]
+        if self._scope is not 'exp':  # Overall scope of vary
+            tel_names = list(set(self._tels))  # unique tels
+            tels = [exp.tels[tel_name]
                     for tel_name in tel_names]
-            tel_inds = [self._exp.tels.keys().index(tel_name)
+            tel_inds = [list(exp.tels.keys()).index(tel_name)
                         for tel_name in tel_names]
         else:  # Loop over all telescopes
-            tel_names = self._exp.tels.keys()
-            tels = self._exp.tels.values()
+            tel_names = list(exp.tels.keys())
+            tels = exp.tels.values()
             tel_inds = range(len(tels))
         for i, tel in zip(tel_inds, tels):
             if (self._scope is 'cam' or self._scope is 'ch' or
                self._scope is 'pix'):
-                valid_inds = np.where(self._tels == tel_name[i])
-                cam_names = set(self._cams[valid_inds])  # unique cam names
+                valid_inds = np.argwhere(self._tels == tel_names[i]).flatten()
+                cam_names = list(set(self._cams[valid_inds]))
                 cams = [tel.cams[cam_name]
                         for cam_name in cam_names]
-                cam_inds = [tel.cams.keys().index(cam_name)
+                cam_inds = [list(tel.cams.keys()).index(cam_name)
                             for cam_name in cam_names]
             else:  # Loop over all cameras
-                cam_names = tel.cams.keys()
-                cams = tel.cams.values()
+                cam_names = list(tel.cams.keys())
+                cams = list(tel.cams.values())
                 cam_inds = range(len(cams))
             for j, cam in zip(cam_inds, cams):
                 param_dir = self._check_dir(
-                    os.path.join(dir_val, self._param_dir))
-                vary_dir = os.path.join(param_dir, self._vary_id)
-                if it == 0 and os.path.isdir(vary_dir):
-                    self._log.log(
-                        "Overwriting param vary data at '%s'" % (vary_dir))
-                    os.rmdir(vary_dir)
-                os.mkdir(vary_dir)
+                    os.path.join(cam.dir, self._param_dir))
+                vary_dir = os.path.join(param_dir, self._vary_name)
+                if it == 0:
+                    if not os.path.isdir(vary_dir):
+                        os.mkdir(vary_dir)
                 if (self._scope is 'ch' or self._scope is 'pix'):
-                    valid_inds = np.where(
-                        self._tels == tel_name[i] and
-                        self._cams == cam_name[j])
-                    ch_names = set(self._cams[valid_inds])  # uniqee ch names
+                    valid_inds = np.argwhere(
+                        (self._tels == tel_names[i]) *
+                        (self._cams == cam_names[j])).flatten()
+                    ch_names = list(set(self._chs[valid_inds]))  # uniqee chs
                     chs = [cam.chs[ch_name]
                            for ch_name in ch_names]
-                    ch_inds = [cam.chs.keys().index(ch_name)
+                    ch_inds = [list(cam.chs.keys()).index(ch_name)
                                for ch_name in ch_names]
                 else:  # Loop over all channels
-                    ch_names = cam.chs.keys()
+                    ch_names = list(cam.chs.keys())
                     chs = cam.chs.values()
                     ch_inds = range(len(chs))
                 for k, ch in zip(ch_inds, chs):
                     fch = os.path.join(
-                        vary_dir, "param_vary_%s.txt" % (ch.param("ch_name")))
-                    if not os.path.exists(fch):
+                        vary_dir, "%s.txt" % (ch.param("ch_name")))
+                    if it == 0:
                         self._init_vary_file(fch)
                     ch_dir = self._check_dir(
                         os.path.join(vary_dir, ch.param("ch_name")))
                     fout = os.path.join(ch_dir, "output_%03d.txt" % (it))
                     self._write_output(sns[i][j][k], fout)
-                    self._write_vary_row(it, sns[i][j][k], fcam)
+                    self._write_vary_row(it, sns[i][j][k], fch)
         return
 
     def _init_vary_file(self, fvary):
@@ -314,22 +578,21 @@ class Vary:
         fmt_str = ""
         fmt_unit = ""
         for spc in self._param_widths:
-            fmt_str += "%" + str(int(spc)) + "s | "
-            fmt_unit += "[%" + str(int(spc) - 2) + "s] | "
+            fmt_str += "%-" + str(int(spc)) + "s | "
+            fmt_unit += "%-" + str(int(spc)) + "s | "
         ind_str = "%5s | " % ("")
         # Formatting strings to be used when writing
-        self._fmt_str = replace(fmt_str, "s", ".3f")
+        self._fmt_str = fmt_str.replace("s", ".3f")
         self._fmt_ind = " %03d  | "  # for writing index values
-        print(fmt_str)
         with open(fvary, 'w') as f:
             f.write(ind_str + (fmt_str % (*self._tels,) + "\n"))
             f.write(ind_str + (fmt_str % (*self._cams,) + "\n"))
             f.write(ind_str + (fmt_str % (*self._chs,) + "\n"))
             f.write(ind_str + (fmt_str % (*self._opts,) + "\n"))
-            f.write(ind_str + (fmt_str % (*self._params,) + "\n"))
+            f.write(ind_str + (fmt_str % (*self._params,)))
             self._write_vary_header_params(f)
-            f.write(("Index | " + (fmt_unit % (*self._units,) + "\n")))
-            self._write_vary_header_units
+            f.write(("Index | " + (fmt_unit % (*self._units,))))
+            self._write_vary_header_units(f)
             self._horiz_line(f)
 
     def _write_vary_header_params(self, f):
@@ -359,14 +622,13 @@ class Vary:
         return
 
     def _horiz_line(self, f):
-        f.write(("-"*int(150 + sum(self._param_widths))+"\n"))
+        f.write(("-"*int(407 + sum(self._param_widths))+"\n"))
         return
 
     def _write_output(self, data, fout):
         with open(fout, 'w') as fwrite:
-            tdata = np.transpose(data)
             for i in range(len(data)):  # params
-                row = tdata[i]
+                row = data[i]
                 wrstr = ""
                 for k in range(len(row)):
                     wrstr += ("%-9.4f " % (row[k]))
@@ -374,10 +636,10 @@ class Vary:
             fwrite.write("\n")
         return
 
-    def _write_vary_row(self, it, data, fcam):
-        with open(fcam, 'a') as f:
+    def _write_vary_row(self, it, data, fch):
+        with open(fch, 'a') as f:
             f.write(self._fmt_ind % (int(it)))
-            f.write(self._fmt_str % (*self._set_arr[i],))
+            f.write(self._fmt_str % (*self._set_arr[it],))
             wstr = ("%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
@@ -412,9 +674,9 @@ class Vary:
         return
 
     def _check_dir(self, dir_val):
-        if not os.path.isdir(param_dir):
-            os.mkdir(param_dir)
-        return param_dir
+        if not os.path.isdir(dir_val):
+            os.mkdir(dir_val)
+        return dir_val
 
     def _status(self, n, ntot):
         frac = float(n)/float(ntot)
@@ -432,11 +694,6 @@ class Vary:
         sy.stdout.flush()
         return
 
-    def _horiz_line(self):
-        return (('-' * (
-            self.numParams * 15 + len(self.telNames) * 17 +
-            (self.numParams - 1) * 3 + (len(self.telNames) - 1) * 3 + 5))+'\n')
-
     def _load_params(self):
         self._log.log(
             "Loading parameters to vary from %s" % (self._param_file))
@@ -445,7 +702,7 @@ class Vary:
                           unpack=True, ndmin=2, converters=convs)
         self._tels, self._cams, self._chs, self._opts = data[:4]
         self._params, mins, maxs, stps = data[4:]
-        self._units = [un.std_units[param].name
+        self._units = ["[" + un.std_units[param].name + "]"
                        for param in self._params]
         # Array to manage table spacing - don't waste space!
         self._param_widths = [len(max(
@@ -465,6 +722,7 @@ class Vary:
             float(mins[i]), float(maxs[i])+float(stps[i]),
             float(stps[i])).tolist()
             for i in range(self._num_params)])
+        print(self._set_arr)
         '''
         self._params = self._wide_to_long(
             [[params[i]
@@ -567,7 +825,7 @@ class Vary:
             self._set_arr = self._stacked_params(param_arr, len_arr)
     '''
 
-    def _vary_depth(self, ind):
+    def _vary_scope(self, ind):
         if self._tels[ind] != '':
             if (self._scope is '' or
                self._scope is 'ch' or
@@ -581,9 +839,11 @@ class Vary:
                     if self._scope is '':
                         self._scope = 'ch'
                     if self._opts[ind] != '':
+                        self._scope = 'ch'
                         return 'opt'
                     elif ('Pixel Size' in self._params[j] and
                           self._pix_size_special):
+                        self._scope = 'ch'
                         return 'pix'
                     else:
                         return 'ch'

@@ -112,7 +112,7 @@ class Parameter:
             if (self._sig_figs(avg_new, 5) !=
                self._sig_figs(self._avg[band_id-1], 5)):
                 self._avg[band_id-1] = avg_new
-                ret_val = True
+                ret_bool = True
             if new_std is not None:
                 std_new = self.unit.to_SI(new_std)
                 if (self._sig_figs(std_new, 5) !=
