@@ -61,6 +61,7 @@ class Unit:
         # Dictionary of units used in BoloCalc,
 # identified by parameter name
 std_units = {
+    "NA": Unit("NA"),
     "Resolution": Unit("GHz"),
     "Dust Temperature": Unit("K"),
     "Dust Spec Index": Unit("NA"),

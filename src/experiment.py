@@ -12,7 +12,8 @@ import src.unit as un
 class Experiment:
     """
     Experiment object gathers foreground parameters and contains
-    a dictionary of telescope objects
+    a dictionary of telescope objects. It inherits the a Simulation
+    object.
 
     Args:
     sim (src.Simulation): Simulation object
@@ -30,7 +31,7 @@ class Experiment:
         # Experiment directory
         self.dir = self.sim.exp_dir
 
-        # Check whether experiment and config dir exists
+        # Check whether experiment and config dirs exist
         self._check_dirs()
 
         # Store foreground parameter dictionary
@@ -64,9 +65,20 @@ class Experiment:
                 "Cannot change foreground parameter in %s when foregrounds "
                 "are disabled" % (self.dir))
         if param not in self._param_dict.keys():
-            return self._param_dict[self._param_names[param]].change(new_val)
-        else:
+            if param in self._param_names.keys():
+                return (self._param_dict[
+                        self._param_names[param]].change(new_val))
+            else:
+                self._log.err(
+                    "Parameter '%s' not understood by "
+                    "Experiment.change_param()"
+                    % (str(param)))
+        elif param in self._param_dict.keys():
             return self._param_dict[param].change(new_val)
+        else:
+            self._log.err(
+                "Parameter '%s' not understood by Experiment.change_param()"
+                % (str(param)))
 
     # ***** Helper Methods *****
     def _param_samp(self, param):

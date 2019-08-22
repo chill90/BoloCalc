@@ -71,9 +71,19 @@ class Telescope:
 
     def change_param(self, param, new_val):
         if param not in self._param_dict.keys():
-            return self._param_dict[self._param_names[param]].change(new_val)
-        else:
+            if param in self._param_names.keys():
+                return (self._param_dict[
+                        self._param_names[param]].change(new_val))
+            else:
+                self._log.err(
+                    "Parameter '%s' not understood by Telescope.change_param()"
+                    % (str(param)))
+        elif param in self._param_dict.keys():
             return self._param_dict[param].change(new_val)
+        else:
+            self._log.err(
+                    "Parameter '%s' not understood by Telescope.change_param()"
+                    % (str(param)))
 
     def pwv_sample(self):
         """ Sample PWV for this telescope """

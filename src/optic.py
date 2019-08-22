@@ -112,7 +112,7 @@ class Optic:
         else:
             if not self._param_vals["abs"] == "NA":
                 abso = np.ones(nfreq) * self._param_vals["abs"]
-            elif self.elem.strip().upper() in self._mirr_names:
+            elif elem.strip().upper() in self._mirr_names:
                 abso = 1. - self._phys.ohmic_eff(
                     ch.freqs, self._param_vals["cond"])
             else:
@@ -157,11 +157,19 @@ class Optic:
 
     def change_param(self, param, new_val, band_id=None):
         if param not in self._param_dict.keys():
-            return (self._param_dict[self._param_names[param]].change(
-                    new_val, band_id=band_id))
-        else:
+            if param in self._param_names.keys():
+                return (self._param_dict[self._param_names[param]].change(
+                        new_val, band_id=band_id))
+            else:
+                self._log.err(
+                    "Parameter '%s' not understood by Optic.change_param()"
+                    % (str(param)))
+        elif param in self._param_dict.keys():
             return self._param_dict[param].change(new_val, band_id=band_id)
-        return
+        else:
+            self._log.err(
+                "Parameter '%s' not understood by Optic.change_param()"
+                % (str(param)))
 
     # ***** Helper Methods *****
     # Ratio of blackbody power between two temperatures

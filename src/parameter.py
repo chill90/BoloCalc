@@ -87,12 +87,12 @@ class Parameter:
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
-        if self._val is not None:
+        if self._val is not None and self._avg is None:
             return (self._val, 0.)
-        elif self.is_empty():
+        if self.is_empty():
             return ('NA', 'NA')
         else:
-            if type(self._avg) is np.ndarray:
+            if self._mult_bands:
                 return (self._avg[band_id - 1], self._std[band_id - 1])
             else:
                 return (self._avg, self._std)
@@ -107,30 +107,55 @@ class Parameter:
         Return 'True' if avg or std value was altered, 'False' if not
         """
         ret_bool = False
-        if type(self._avg) is np.ndarray:
-            avg_new = self.unit.to_SI(new_avg)
-            if (self._sig_figs(avg_new, 5) !=
-               self._sig_figs(self._avg[band_id-1], 5)):
-                self._avg[band_id-1] = avg_new
-                ret_bool = True
-            if new_std is not None:
-                std_new = self.unit.to_SI(new_std)
-                if (self._sig_figs(std_new, 5) !=
-                   self._sig_figs(self._std[band_id-1], 5)):
-                    self._std[band_id-1] = std_new
+        if type(new_avg) is str:
+            avg_new = new_avg
+            if self._mult_bands:
+                if self._avg[band_id-1] is not avg_new:
+                    self._avg[band_id-1] = avg_new
                     ret_bool = True
+                else:
+                    ret_bool = False
+            else:
+                if self._avg is not avg_new:
+                    self._avg = avg_new
+                    ret_bool = True
+                else:
+                    ret_bool = False
+        elif type(new_avg) is float or type(new_avg) is np.float_:
+            avg_new = self.unit.to_SI(new_avg)
+            if self.is_empty():
+                if self._mult_bands:
+                    self._avg[band_id-1] = avg_new
+                else:
+                    self._avg = avg_new
+                ret_bool = True
+                return ret_bool
+            if self._mult_bands:
+                if (self._sig_figs(avg_new, 5) !=
+                   self._sig_figs(self._avg[band_id-1], 5)):
+                    self._avg[band_id-1] = avg_new
+                    ret_bool = True
+                if new_std is not None:
+                    std_new = self.unit.to_SI(new_std)
+                    if (self._sig_figs(std_new, 5) !=
+                       self._sig_figs(self._std[band_id-1], 5)):
+                        self._std[band_id-1] = std_new
+                        ret_bool = True
+            else:
+                if (self._sig_figs(avg_new, 5) !=
+                   self._sig_figs(self._avg, 5)):
+                    self._avg = avg_new
+                    ret_bool = True
+                if new_std is not None:
+                    std_new = self.unit.to_SI(new_std)
+                    if (self._sig_figs(std_new, 5) !=
+                       self._sig_figs(self._std, 5)):
+                        self._std = std_new
+                        ret_bool = True
         else:
-            avg_new = self.unit.to_SI(new_avg)
-            if (self._sig_figs(avg_new, 5) !=
-               self._sig_figs(self._avg, 5)):
-                self._avg = avg_new
-                ret_bool = True
-            if new_std is not None:
-                std_new = self.unit.to_SI(new_std)
-                if (self._sig_figs(std_new, 5) !=
-                   self._sig_figs(self._std, 5)):
-                    self._std = std_new
-                    ret_bool = True
+            self._log.err(
+                "Could not change parameter '%s' to value '%s' of type '%s'"
+                % (str(self.name), str(new_avg), str(type(new_avg))))
         return ret_bool
 
     def get_val(self):
@@ -195,14 +220,19 @@ class Parameter:
     def _float(self, val):
         """Convert val to an array of or single float(s)"""
         if val is None:
+            self._mult_bands = False
             return None
         try:
-            return self.unit.to_SI(float(val))
-        except:
+            float_val = float(val)
+            self._mult_bands = False
+            return self.unit.to_SI(float_val)
+        except ValueError:
             try:
-                return self.unit.to_SI(
-                    np.array(eval(val)).astype(float))
+                arr_val = np.array(eval(val)).astype(float)
+                self._mult_bands = True
+                return self.unit.to_SI(arr_val)
             except:
+                self._mult_bands = False
                 return str(val)
 
     def _zero(self, val):
@@ -232,6 +262,7 @@ class Parameter:
 
     def _store_param(self, inp):
         if self._type is bool:
+            self._mult_bands = False
             self._val = bool(eval(inp.lower().capitalize()))
             self._avg = None
             self._std = None
@@ -249,11 +280,11 @@ class Parameter:
                     self._std = self._zero(self._avg)
             elif isinstance(inp, ds.Distribution):
                 self._val = inp
-                self._avg = inp.mean()
-                self._std = inp.std()
+                self._avg = self._float(inp.mean())
+                self._std = self._float(inp.std())
         elif self._type is int:
             self._val = int(inp)
-            self._avg = None
+            self._avg = int(inp)
             self._std = None
         elif self._type is str:
             self._val = str(inp)

@@ -2,6 +2,7 @@
 import numpy as np
 import warnings as wn
 import functools as ft
+import copy as cp
 
 # BoloCalc modules
 import src.unit as un
@@ -115,14 +116,16 @@ class Sensitivity:
                 # Store power from sky and power on detector
                 for k in range(len(ch.elem[i][j])):
                     pow_out = np.trapz(
-                        pows[k] * eff_det_side_2[k] * ch.band_mask, ch.freqs)
+                        pows[k] * eff_det_side_2[k] *
+                        ch.det_arr.dets[j].band_mask, ch.freqs)
                     eff_det_side_2[k] = np.trapz(
-                        eff_det_side_2[k] * ch.band_mask, ch.freqs) / (
+                        eff_det_side_2[k] * ch.det_arr.dets[j].band_mask,
+                        ch.freqs) / (
                             float(ch.freqs[-1] - ch.freqs[0]))
                     pow_det_side_2.append(pow_out)
                     pow_in = sum([np.trapz(
                         pows[m] * eff_sky_side_2[k][m] *
-                        ch.band_mask, ch.freqs)
+                        ch.det_arr.dets[j].band_mask, ch.freqs)
                         for m in range(k+1)])
                     pow_sky_side_2.append(pow_in)
                 pow_sky_side_1.append(pow_sky_side_2)
@@ -143,27 +146,31 @@ class Sensitivity:
         return
 
     def _calc_rj_temp(self, ch):
-        # Calculate experiment RJ temperature
         n_sky_elem = self._num_sky_elem(ch)
+        # Telescope efficiency
         self._tel_eff_arr = np.array([[self._eff(
             ch.tran[i][j][n_sky_elem:],
             ch.freqs)
             for j in range(self._ndet)]
             for i in range(self._nobs)])
+        # Telescope temperature
         self._tel_rj_temp = np.array([[self._rj_temp(
             ch.elem[i][j][n_sky_elem:],
             ch.emis[i][j][n_sky_elem:],
             ch.tran[i][j][n_sky_elem:],
             ch.temp[i][j][n_sky_elem:],
-            ch.freqs, self._tel_eff_arr[i][j])
+            ch.freqs, self._tel_eff_arr[i][j],
+            ch.det_arr.dets[j].param("bw"))
             for j in range(self._ndet)]
             for i in range(self._nobs)])
+        # Sky temperature
         self._sky_rj_temp = np.array([[self._rj_temp(
             ch.elem[i][j][:n_sky_elem],
             ch.emis[i][j][:n_sky_elem],
             ch.tran[i][j],
             ch.temp[i][j][:n_sky_elem],
-            ch.freqs, self._tel_eff_arr[i][j])
+            ch.freqs, self._tel_eff_arr[i][j],
+            ch.det_arr.dets[j].param("bw"))
             for j in range(self._ndet)]
             for i in range(self._nobs)])
         return
@@ -198,7 +205,7 @@ class Sensitivity:
             for j in range(self._ndet)]
             for i in range(self._nobs)])
 
-        if np.any(np.isin(NEP_read_arr, ['NA'])):
+        if np.any(np.isin(NEP_read_arr.astype(str), ['NA'])):
             self._NEP_read_arr = np.array([[np.sqrt(
                 (1. + ch.det_arr.dets[j].param("read_frac"))**2 - 1.) *
                 np.sqrt(self._NEP_ph_arr[i][j]**2 +
@@ -286,23 +293,22 @@ class Sensitivity:
         return
 
     def _eff(self, tran, freqs):
-        tran = self._buffer_tran(tran, freqs)
+        buff_tran = self._buffer_tran(tran, freqs)
         bw = freqs[-1] - freqs[0]
-        tot_eff = np.trapz(np.prod(tran, axis=0), freqs)/bw
+        tot_eff = np.trapz(np.prod(buff_tran, axis=0), freqs) / bw
         return tot_eff
 
     def _popt(self, elem, emis, tran, temp, freqs):
-        tran = self._buffer_tran(tran, freqs)
+        buf_tran = self._buffer_tran(tran, freqs)
         tot_pow = np.sum([np.trapz(
             self._phys.bb_pow_spec(
                 freqs, temp[i], emis[i] *
-                np.prod(tran[i+1:], axis=0)), freqs)
+                np.prod(buf_tran[i+1:], axis=0)), freqs)
                 for i in range(len(elem))])
         return tot_pow
 
-    def _rj_temp(self, elem, emis, tran, temp, freqs, eff):
+    def _rj_temp(self, elem, emis, tran, temp, freqs, eff, bw):
         opt_pow = self._popt(elem, emis, tran, temp, freqs)
-        bw = freqs[-1] - freqs[0]
         rj_temp = self._phys.rj_temp(opt_pow, bw, eff)
         return rj_temp
 
@@ -372,8 +378,9 @@ class Sensitivity:
         return factor
 
     def _buffer_tran(self, tran, freqs):
-        tran = np.insert(tran, len(tran), [1. for f in freqs], axis=0)
-        return np.array(tran).astype(np.float)
+        out_tran = cp.copy(np.insert(
+            tran, len(tran), [1. for f in freqs], axis=0))
+        return np.array(out_tran).astype(np.float)
 
     def _opt_table(self):
         shape = np.shape(self._pow_sky_side)

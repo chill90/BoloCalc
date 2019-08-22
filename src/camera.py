@@ -65,9 +65,19 @@ class Camera:
 
     def change_param(self, param, new_val):
         if param not in self._param_dict.keys():
-            return self._param_dict[self._param_names[param]].change(new_val)
-        else:
+            if param in self._param_names.keys():
+                return (self._param_dict[
+                        self._param_names[param]].change(new_val))
+            else:
+                self._log.err(
+                    "Parameter '%s' not understood by Camera.change_param()"
+                    % (str(param)))
+        elif param in self._param_dict.keys():
             return self._param_dict[param].change(new_val)
+        else:
+            self._log.err(
+                    "Parameter '%s' not understood by Camera.change_param()"
+                    % (str(param)))
 
     def get_param(self, param):
         return self._param_dict[param].get_avg()
@@ -155,7 +165,8 @@ class Camera:
                     % (chan_dict["Band ID"], self.dir))
             cam_name = str(self.dir.rstrip(os.sep).split(os.sep)[-1])
             band_name = (cam_name + str(chan_dict["Band ID"]))
-            if band_name in self._band_dict.keys():
+            if (self._band_dict is not None and
+               band_name in self._band_dict.keys()):
                 band_file = self._band_dict[band_name]
             else:
                 band_file = None

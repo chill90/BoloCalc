@@ -13,6 +13,7 @@ import src.foregrounds as fg
 class Sky:
     """
     Sky object contains the foregrounds and atmosphere
+    added line
 
     Args:
     tel (src.Telescope): Telescope object
@@ -105,12 +106,14 @@ class Sky:
 
     def _atm_spectrum(self, pwv, elev, freqs):
         GHz_to_Hz = 1.e+09
-        m_to_um = 1.e+06
+        m_to_mm = 1.e+03
+        mm_to_um = 1.e+03
         if self.tel.param("atm_file") is not None:
             freq, tran, temp = self._load.atm(self.tel.param("atm_file"))
         else:
             freq, tran, temp = self._hdf5_select(
-                int(round(pwv, 1) * m_to_um), int(round(elev, 0)))
+                int(round(pwv * m_to_mm, 1) * mm_to_um),
+                int(round(elev, 0)))
         freq = (freq * GHz_to_Hz).flatten().tolist()
         temp = np.interp(freqs, freq, temp).flatten().tolist()
         tran = np.interp(freqs, freq, tran).flatten().tolist()

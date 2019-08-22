@@ -1,5 +1,6 @@
 # Telescope	| Camera	| Channel	| Optic			| Parameter		| Minimum	| Maximum	| Step Size 
 #--------------------------------------------------------------------------------------------------------
-Tel		    | Cam		| 1		    | Primary		| Spillover		| 0.010		| 0.040	    | 0.010
+Tel		    | Cam		| 1		    | Aperture		| Temperature	| 5		| 9	    | 1
 #--------------------------------------------------------------------------------------------------------
-Tel		    | Cam		| 1		    | Aperture		| Temperature	| 1.000		| 4.000	    | 1.000
+Tel		    | Cam		| 2		    | 		        | Det Eff     | 0.1		| 0.9	    | 0.2
+

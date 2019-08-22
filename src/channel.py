@@ -95,10 +95,26 @@ class Channel:
         return
 
     def change_param(self, param, new_val):
-        if param not in self._param_dict.keys():
-            return self._param_dict[self._param_names[param]].change(new_val)
-        else:
+        if (param not in self._param_dict.keys() and
+           param not in self.det_dict.keys()):
+            if param in self._param_names.keys():
+                return (self._param_dict[
+                        self._param_names[param]].change(new_val))
+            elif param in self._det_param_names.keys():
+                return (self.det_dict[
+                        self._det_param_names[param]].change(new_val))
+            else:
+                self._log.err(
+                    "Parameter '%s' not understood by Channel.change_param()"
+                    % (str(param)))
+        elif param in self._param_dict.keys():
             return self._param_dict[param].change(new_val)
+        elif param in self._det_param_dict.keys():
+            return self.det_dict[param].change(new_val)
+        else:
+            self._log.err(
+                "Parameter '%s' not understood by Channel.change_param()"
+                % (str(param)))
 
     def get_param(self, param):
         return self._param_dict[param].get_avg()
@@ -206,6 +222,13 @@ class Channel:
                 self._log, "G", "NA",
                 min=0.0, max=np.inf)
 
+        self._param_names = {
+            param.name: pid
+            for pid, param in self._param_dict.items()}
+        self._det_param_names = {
+            param.name: pid
+            for pid, param in self.det_dict.items()}
+
         # Parameters that are the same for all detectors
         self.ch_keys = ["det_per_waf", "waf_per_ot",
                         "ot", "yield", "pix_sz", "wf"]
@@ -224,8 +247,9 @@ class Channel:
                 self._param_dict[k])
         # Store average values for detector-specific parameters
         for k in self.det_dict:
-            self._param_vals[k] = self.det_dict[k].get_avg(
-                self.param("band_id"))
+            # self._param_vals[k] = self.det_dict[k].get_avg(
+            #    self.param("band_id"))
+            self._param_vals[k] = self.det_dict[k].get_avg()
         # Derived channel parameters
         self._param_vals["ndet"] = int(self.param("det_per_waf") *
                                        self.param("waf_per_ot") *
@@ -250,10 +274,10 @@ class Channel:
                 % (self.cam.name))
             self.elev_dict = None
         else:
-            elev_file = elv_files[0]
-            self.elev_dict = self._load().elevation(elev_files[0])
-            self._log.log("Using pixel elevation distribution '%s'"
-                          % (self.cam.param("cam_name"), elev_file))
+            elev_file = elev_files[0]
+            self.elev_dict = self._load.elevation(elev_files[0])
+            # self._log.log("Using pixel elevation distribution '%s'"
+            #              % (self.cam.param("cam_name"), elev_file))
         return
 
     def _store_band(self):
@@ -267,15 +291,6 @@ class Channel:
                 lo_freq, hi_freq + self._fres, self._fres)
             # Interpolate band using defined frequencies
             self.det_band.interp_freqs(self.freqs)
-            # Define band edges to be -3 dB point
-            tran = self.det_band.tran
-            max_tran = np.amax(tran)
-            lo_point = np.argmin(
-                abs(tran[:len(tran)//2] - 0.5 * max_tran))
-            hi_point = np.argmin(
-                abs(tran[len(tran)//2:] - 0.5 * max_tran)) + len(tran)//2
-            f_lo = self.det_band.freqs[lo_point]
-            f_hi = self.det_band.freqs[hi_point]
         else:
             self.det_band = None
             # Define edges of frequencies to integrate over
@@ -288,16 +303,8 @@ class Channel:
                 (1. + 0.65 * self.det_dict["fbw"].get_avg()))
             self.freqs = np.arange(
                 lo_freq, hi_freq + self._fres, self._fres)
-            # Define band edges
-            # Band mask edges defined using band center and fractional BW
-            f_lo = (
-                self.det_dict["bc"].get_avg() *
-                (1. - 0.50 * self.det_dict["fbw"].get_avg()))
-            f_hi = (
-                self.det_dict["bc"].get_avg() *
-                (1. + 0.50 * self.det_dict["fbw"].get_avg()))
         # Band mask
-        self.band_mask = (self.freqs > f_lo) * (self.freqs < f_hi)
+        # self.band_mask = (self.freqs > f_lo) * (self.freqs < f_hi)
         return
 
     def _calculate(self):

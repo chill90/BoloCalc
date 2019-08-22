@@ -31,25 +31,10 @@ class Observation:
 
         # Store sky values
         elem, emis, tran, temp = self._get_sky_vals()
-
-        # Store the element name
-        elem = elem.reshape(
-            len(elem), len(elem[0][0]), len(elem[0][0][0])).astype(np.str)
-        elem = np.array(elem,  order='F')
-        self.elem = np.resize(elem, (len(elem), len(elem[0])))
-        self.elem = self.elem.tolist()
-        # Emissivity
-        self.emis = emis.reshape(
-            len(emis), len(emis[0][0]), len(emis[0][0][0])).astype(np.float)
-        self.emis = self.emis.tolist()
-        # Efficiency
-        self.tran = tran.reshape(
-            len(tran), len(tran[0][0]), len(tran[0][0][0])).astype(np.float)
-        self.tran = self.tran.tolist()
-        # Temperature
-        self.temp = temp.reshape(
-            len(temp), len(temp[0][0]), len(temp[0][0][0])).astype(np.float)
-        self.temp = self.temp.tolist()
+        self.elem = np.squeeze(elem, axis=(0, 1)).T.tolist()
+        self.emis = np.squeeze(emis, axis=1).tolist()
+        self.tran = np.squeeze(tran, axis=1).tolist()
+        self.temp = np.squeeze(temp, axis=1).tolist()
 
     # ***** Helper Methods *****
     def _get_pwv_elev(self):

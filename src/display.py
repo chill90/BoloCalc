@@ -16,6 +16,9 @@ class Display:
         self._phys = self._sim.phys
         self._noise = self._sim.noise
 
+        # Store the output units
+        self._output_units()
+
     # ***** Public Methods *****
     def display(self):
         # Merge experiment realizations
@@ -256,18 +259,22 @@ class Display:
     def _write_cam_table_row(self, ch, tup):
         # tup (i,j,k) = (tel,cam,ch) tuple
         sns = self._sns[tup[0]][tup[1]][tup[2]]
+        # Convert from SI
+        sns = [list(self._units.values())[i].from_SI(np.array(sns[i]))
+               for i in range(len(sns))]
         # Save the camera data
-        # Skip correlation-impacted NETs
-        self._cam_data.append(
-            self._output_units(np.concatenate((sns[:9], sns[10:11]))))
+        self._cam_data.append(sns)
+        # Calculate the spreads
+        spreads = [self._spread(sn) for sn in sns]
         # Values to be stored for combining at higher levels
         ch_name = ch.param("ch_name")
         ndet = ch.param("ndet")
-        net_arr = self._spread(sns[10], un.std_units["NET"])
-        net_arr_rj = self._spread(sns[11], un.std_units["NET"])
-        map_depth = self._spread(sns[13], un.std_units["Map Depth"])
-        map_depth_rj = self._spread(sns[14], un.std_units["Map Depth"])
-        stored_vals = [[ndet]*3, net_arr, net_arr_rj, map_depth, map_depth_rj]
+        # net_arr = self._spread(sns[10], un.std_units["NET"])
+        # net_arr_rj = self._spread(sns[11], un.std_units["NET"])
+        # map_depth = self._spread(sns[13], un.std_units["Map Depth"])
+        # map_depth_rj = self._spread(sns[14], un.std_units["Map Depth"])
+        stored_vals = [
+            [ndet]*3, spreads[10], spreads[11], spreads[12], spreads[13]]
 
         # Write camera row
         wstr = ("%-10s | %-7d | "
@@ -286,7 +293,8 @@ class Display:
                 "%-5.2f +/- (%-5.3f,%5.3f) | "
                 "%-5.2f +/- (%-5.2f,%5.2f) | "
                 "%-5.2f +/- (%-5.2f,%5.2f)\n"
-                % (ch_name, ndet,
+                % (ch_name, ndet, *np.array(spreads).flatten()))
+        '''
                    *self._spread(sns[0]),
                    *self._spread(sns[1], un.std_units["Popt"]),
                    *self._spread(sns[2], un.std_units["Temperature"]),
@@ -302,6 +310,7 @@ class Display:
                    *self._spread(sns[12], un.std_units["Corr Fact"]),
                    *self._spread(sns[13], un.std_units["Map Depth"]),
                    *self._spread(sns[14], un.std_units["Map Depth"])))
+        '''
         self._cam_f.write(wstr)
         self._cam_f.write(self._break_cam)
 
@@ -309,12 +318,12 @@ class Display:
         self._cam_vals.append(stored_vals)
         # Update telescope channel values
         if ch_name in self._tel_vals.keys():
-            self._tel_vals[ch_name] += stored_vals
+            self._tel_vals[ch_name] += [stored_vals]
         else:
             self._tel_vals[ch_name] = [stored_vals]
         # Update experiment channel values
         if ch_name in self._exp_vals.keys():
-            self._exp_vals[ch_name] += stored_vals
+            self._exp_vals[ch_name] += [stored_vals]
         else:
             self._exp_vals[ch_name] = [stored_vals]
         return
@@ -337,8 +346,8 @@ class Display:
         self._opt_f.write(self._break_opt)
         for m in range(len(ch.elem[0][0])):  # nelem
             elem_name = ch.elem[0][0][m]
-            wstr = ("| %-15s | %-5.2f +/- (%-5.2f,%5.2f) | "
-                    "%-5.2f +/- (%-5.2f,%5.2f) | "
+            wstr = ("| %-15s | %-5.3f +/- (%-5.3f,%5.3f) | "
+                    "%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) |\n"
                     % (elem_name,
                        *self._spread(opt[0][m], un.Unit("pW")),
@@ -489,12 +498,20 @@ class Display:
                 lo, ch.param("ndet"), ch.param("yield")))
         return [med_ret, hi_ret, lo_ret]
 
-    def _output_units(self, data_arr):
-        data_arr[1] = un.Unit("pW").from_SI(data_arr[1])
-        data_arr[4] = un.Unit("aW/rtHz").from_SI(data_arr[4])
-        data_arr[5] = un.Unit("aW/rtHz").from_SI(data_arr[5])
-        data_arr[6] = un.Unit("aW/rtHz").from_SI(data_arr[6])
-        data_arr[7] = un.Unit("aW/rtHz").from_SI(data_arr[7])
-        data_arr[8] = un.Unit("uK").from_SI(data_arr[8])
-        data_arr[9] = un.Unit("uK").from_SI(data_arr[9])
-        return data_arr
+    def _output_units(self):
+        self._units = {
+            "ndet": un.std_units["NA"],
+            "popt": un.std_units["Popt"],
+            "Trcvr": un.std_units["Temperature"],
+            "Tsky": un.std_units["Temperature"],
+            "NEPph": un.std_units["NEP"],
+            "NEPg": un.std_units["NEP"],
+            "NEPrd": un.std_units["NEP"],
+            "NEPtot": un.std_units["NEP"],
+            "NETdet": un.std_units["NET"],
+            "NETrj": un.std_units["NET"],
+            "NETarr": un.std_units["NET"],
+            "NETarrRj": un.std_units["NET"],
+            "CorrFact": un.std_units["Corr Fact"],
+            "Depth": un.std_units["Map Depth"],
+            "DepthRj": un.std_units["Map Depth"]}
