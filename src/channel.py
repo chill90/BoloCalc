@@ -204,22 +204,32 @@ class Channel:
 
         # Newly added parameters to BoloCalc
         # checked separately for backwards compatibility
-        if "Flink" in self._param_dict.keys():
+        if "Flink" in self._inp_dict.keys():
             self.det_dict["flink"] = pr.Parameter(
-                self._log, "Flink", self._param_dict["Flink"],
+                self._log, "Flink", self._inp_dict["Flink"],
                 min=0.0, max=np.inf)
         else:
             self.det_dict["flink"] = pr.Parameter(
                 self._log, "Flink", "NA",
                 min=0.0, max=np.inf)
 
-        if "G" in self._param_dict.keys():
+        if "G" in self._inp_dict.keys():
             self.det_dict["g"] = pr.Parameter(
-                self._log, "G", self._param_dict["G"],
+                self._log, "G", self._inp_dict["G"],
                 min=0.0, max=np.inf)
         else:
             self.det_dict["g"] = pr.Parameter(
                 self._log, "G", "NA",
+                min=0.0, max=np.inf)
+
+        if "Responsivity Factor" in self._inp_dict.keys():
+            self.det_dict["sfact"] = pr.Parameter(
+                self._log, "Responsivity Factor",
+                self._inp_dict["Responsivity Factor"],
+                min=0.0, max=np.inf)
+        else:
+            self.det_dict["sfact"] = pr.Parameter(
+                self._log, "Responsivity Factor", "NA",
                 min=0.0, max=np.inf)
 
         self._param_names = {
@@ -229,9 +239,6 @@ class Channel:
             param.name: pid
             for pid, param in self.det_dict.items()}
 
-        # Parameters that are the same for all detectors
-        self.ch_keys = ["det_per_waf", "waf_per_ot",
-                        "ot", "yield", "pix_sz", "wf"]
         return
 
     def _store_param_vals(self):
@@ -303,8 +310,7 @@ class Channel:
                 (1. + 0.65 * self.det_dict["fbw"].get_avg()))
             self.freqs = np.arange(
                 lo_freq, hi_freq + self._fres, self._fres)
-        # Band mask
-        # self.band_mask = (self.freqs > f_lo) * (self.freqs < f_hi)
+
         return
 
     def _calculate(self):

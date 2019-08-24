@@ -21,7 +21,8 @@ class Log:
         self.log("Logging to file '%s,'"
                  % (self._log_file))
         # Error preamble
-        self._err_preamble = "BoloCalc Error: "
+        self._err_preamble = "BoloCalc ERROR: "
+        self._wrn_preamble = "BoloCalc WARNING: "
         return
 
     def __del__(self):
@@ -59,6 +60,18 @@ class Log:
         """
         err_msg = self._err_preamble + msg
         self._write(err_msg)
+        raise Exception(err_msg)
+
+    def wrn(self, msg):
+        """
+        Report a warning
+
+        Args:
+        msg (str): error message
+        """
+        wrn_msg = self._wrn_preamble + msg
+        self._write(wrn_msg)
+        print(wrnmsg),
         raise Exception(err_msg)
 
     # ***** Private methods *****

@@ -14,7 +14,8 @@ def date_time_str():
         "%02d%02d%02d_%02d_%02d_%02d"
         % (now.year, now.month, now.day,
            now.hour, now.minute, now.second))
-    return date_time_str
+    date_str = "%02d%02d%02d" % (now.year, now.month, now.day)
+    return date_str, date_time_str
 
 
 def usage():
@@ -24,14 +25,14 @@ def usage():
                  % (os.path.join("Experiments", "ExampleExperiment", "V0")))
     sy.exit(False)
 
-# Check the python version
+# Verify the python version
 if sy.version_info.major == 2:
     print("\n***** Python 2 is not longer supported for "
           "BoloCalc v0.10 (Aug 2019) and beyond *****")
     usage()
 
 # String defining when this code is being run
-date_str = date_time_str()
+dt_str, dt_tm_str = date_time_str()
 # This file's path
 this_path = os.path.dirname(os.path.normpath(__file__))
 
@@ -50,8 +51,12 @@ ps.add_argument(
     help="Vary parameter sets defined in config/paramsToVary.txt together")
 ps.add_argument(
     "--vary_name", dest="vary_name", nargs=1, type=str,
-    default=date_str,
+    default=dt_tm_str,
     help="Custom name for vary output")
+ps.add_argument(
+    "--log_name", dest="log_name", nargs=1, type=str,
+    default=dt_str,
+    help="Custom name for logging file")
 args = ps.parse_args()
 
 # Simulation file
@@ -59,7 +64,8 @@ sim_file = os.path.join(this_path, 'config', 'simulationInputs.txt')
 # Parameter vary file
 vary_file = os.path.join(this_path, 'config', 'paramsToVary.txt')
 # Logging file
-log_file = os.path.join(this_path, 'log', ('log_%s.txt' % (date_str)))
+log_file = os.path.join(this_path, 'log', ('log_%s.txt' % (args.log_name[0])))
+
 # Simulate experiment
 sim = sm.Simulation(log_file, sim_file, args.exp_dir)
 if not args.vary:

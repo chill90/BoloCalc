@@ -82,6 +82,10 @@ class Sensitivity:
             pow_det_side_1 = []
             eff_det_side_1 = []
             for j in range(len(ch.elem[i])):  # ndet
+                det_band = np.array(ch.det_arr.dets[j].band)
+                bw = ch.det_arr.dets[j].param("bw")
+                band_int = np.trapz(
+                    det_band, ch.freqs) / bw
                 pows = []
                 pow_sky_side_2 = []
                 pow_det_side_2 = []
@@ -113,21 +117,20 @@ class Sensitivity:
                     pow = self._phys.bb_pow_spec(
                         ch.freqs, ch.temp[i][j][k], ch.emis[i][j][k])
                     pows.append(pow)
-                # Store power from sky and power on detector
+                # Store band-averaged power from sky and power on detector
+                # and band-average the efficiencies
                 for k in range(len(ch.elem[i][j])):
-                    pow_out = np.trapz(
-                        pows[k] * eff_det_side_2[k] *
-                        ch.det_arr.dets[j].band_mask, ch.freqs)
-                    eff_det_side_2[k] = np.trapz(
-                        eff_det_side_2[k] * ch.det_arr.dets[j].band_mask,
-                        ch.freqs) / (
-                            float(ch.freqs[-1] - ch.freqs[0]))
+                    pow_out = np.trapz(pows[k] * eff_det_side_2[k], ch.freqs)
                     pow_det_side_2.append(pow_out)
+                    eff_det_side_2[k] = (
+                        np.trapz(eff_det_side_2[k], ch.freqs) / bw)
                     pow_in = sum([np.trapz(
                         pows[m] * eff_sky_side_2[k][m] *
-                        ch.det_arr.dets[j].band_mask, ch.freqs)
+                        det_band, ch.freqs)
                         for m in range(k+1)])
                     pow_sky_side_2.append(pow_in)
+                # Force the final efficiency to be 100%
+                eff_det_side_2[-1] = 1.
                 pow_sky_side_1.append(pow_sky_side_2)
                 pow_det_side_1.append(pow_det_side_2)
                 eff_det_side_1.append(eff_det_side_2)
@@ -149,8 +152,8 @@ class Sensitivity:
         n_sky_elem = self._num_sky_elem(ch)
         # Telescope efficiency
         self._tel_eff_arr = np.array([[self._eff(
-            ch.tran[i][j][n_sky_elem:],
-            ch.freqs)
+            ch.tran[i][j][n_sky_elem-1:],
+            ch.freqs, ch.det_arr.dets[j].param("bw"))
             for j in range(self._ndet)]
             for i in range(self._nobs)])
         # Telescope temperature
@@ -292,10 +295,8 @@ class Sensitivity:
             for i in range(self._nobs)])
         return
 
-    def _eff(self, tran, freqs):
-        buff_tran = self._buffer_tran(tran, freqs)
-        bw = freqs[-1] - freqs[0]
-        tot_eff = np.trapz(np.prod(buff_tran, axis=0), freqs) / bw
+    def _eff(self, tran, freqs, bw):
+        tot_eff = np.trapz(np.prod(tran, axis=0), freqs) / bw
         return tot_eff
 
     def _popt(self, elem, emis, tran, temp, freqs):
@@ -361,15 +362,19 @@ class Sensitivity:
             return 'NA'
         elif 'NA' in str(det.param("psat")):
             p_bias = (det.param("psat_fact") - 1.) * opt_pow
-            return self._noise.read_NEP(
-                p_bias, det.param("bolo_r"), det.param("nei"))
         else:
             if opt_pow >= det.param("psat"):
                 return 0.
             else:
                 p_bias = det.param("psat") - opt_pow
-                return self._noise.read_NEP(
-                    p_bias, det.param("bolo_r"), det.param("nei"))
+
+        if 'NA' in str(det.param("sfact")):
+            sfact = 1.
+        else:
+            sfact = det.param("sfact")
+        return self._noise.read_NEP(
+            p_bias, det.param("bolo_r"),
+            det.param("nei"), sfact)
 
     def _Trj_over_Tcmb(self, freqs):
         factor_spec = self._phys.Trj_over_Tb(freqs, self._phys.Tcmb)

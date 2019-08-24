@@ -193,9 +193,10 @@ class Physics:
         freq, sigma = self._check_inputs(freq, [sigma])
         return 1. - 4. * np.sqrt(np.pi * freq * self.mu0 / sigma) / self.Z0
 
-    def antenna_temp(self, freq, intensity):
+    def brighntess_temp(self, freq, intensity):
         """
-        Antenna temperature [K_RJ] given a frequency [Hz] and intensity [W/m^2]
+        Brightness temperature [K_RJ] given a frequency [Hz]
+        and intensity [W/m^2]
 
         Args:
         freq (float): frequencies [Hz]
@@ -204,7 +205,19 @@ class Physics:
         freq, intensity = self._check_inputs(freq, [intensity])
         return intensity * (self.c**2) / (2 * self.kB * (freq**2))
 
-    def intensity_from_antenna_temp(self, freq, bw, ant_temp):
+    def brightness_spec_rad(self, freq, bright_temp):
+        """
+        Spectral radiance [W/(m^2 sr Hz)] given a frequency [Hz] and
+        brightness temperature [K_RJ]
+
+        Args:
+        freq (float): frequencies [Hz]
+        intensity (float): brightness temp [K_RJ]
+        """
+        freq, intensity = self._check_inputs(freq, [bright_temp])
+        return bright_temp * 2 * self.kB * (freq / self.c)**2
+
+    def intensity_from_brightness_temp(self, freq, bw, bright_temp):
         """
         Intensity [W/m^2] given an atenna temperature [K_RJ], frequency [Hz],
         and bandwidth [Hz]
@@ -214,7 +227,7 @@ class Physics:
         bw (float): bandwidth [Hz]
         ant_temp (float): antenna temperature [K_RJ]
         """
-        return 2 * (ant_temp * self.kB * (freq**2) / (self.c**2)) * bw
+        return 2 * (bright_temp * self.kB * (freq**2) / (self.c**2)) * bw
 
     def Trj_over_Tb(self, freq, thermo_temp):
         """
@@ -334,7 +347,7 @@ class Physics:
 
     def bb_spec_rad(self, freq, temp, emis=1.0):
         """
-        Blackbody spectral radiance [W/(m^2-Hz)] given a frequency [Hz],
+        Blackbody spectral radiance [W/(m^2 sr Hz)] given a frequency [Hz],
         blackbody temperature [K], and blackbody emissivity
 
         Args:

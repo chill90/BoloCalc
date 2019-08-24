@@ -1,14 +1,9 @@
 # Built-in modules
 import numpy as np
 import sys as sy
+import pickle as pk
 import os
 import io
-# Use fastest pickling module
-PY2 = (sy.version_info[0] == 2)
-if PY2:
-    import cPickle as pk
-else:
-    import pickle as pk
 
 
 class Noise:
@@ -175,7 +170,7 @@ class Noise:
         """
         return np.sqrt(4 * self._phys.kB * flink * (Tc**2) * G)
 
-    def read_NEP(self, pelec, boloR, nei):
+    def read_NEP(self, pelec, boloR, nei, sfact=1.):
         """
         Readout NEP [W/rtHz] for a voltage-biased bolo
 
@@ -184,7 +179,8 @@ class Noise:
         boloR (float): bolometer resistance [Ohms]
         nei (float): noise equivalent current [A/rtHz]
         """
-        return np.sqrt(boloR * pelec) * nei
+        responsivity = sfact / np.sqrt(boloR * pelec)
+        return nei / responsivity
 
     def dPdT(self, eff, freqs):
         """

@@ -115,6 +115,10 @@ class Experiment:
                 "sync_amp": pr.Parameter(
                     self._log, 'Synchrotron Amplitude',
                     params['Synchrotron Amplitude'],
+                    min=0.0, max=np.inf),
+                "sync_freq": pr.Parameter(
+                    self._log, 'Sync Scale Frequency',
+                    params['Sync Scale Frequency'],
                     min=0.0, max=np.inf)}
             self._param_names = {
                 param.name: pid

@@ -178,12 +178,12 @@ class Display:
         # self._title_tel_d = (("%-9s "*3
         #                     % ("ArrNET", "ArrNETRJ", "MapDep"))+" | ")
         # Optical power files
-        self._title_opt = ("| %-15s | %-23s | %-23s | %-23s |\n"
+        self._title_opt = ("| %-15s | %-26s | %-23s | %-23s |\n"
                            % ("Element", "Power from Sky",
                               "Power to Detect", "Cumulative Eff"))
-        self._unit_opt = ("| %-15s | %-23s | %-23s | %-23s |\n"
+        self._unit_opt = ("| %-15s | %-26s | %-23s | %-23s |\n"
                           % ("", "[pW]", "[pW]", ""))
-        self._break_opt = "-"*97+"\n"
+        self._break_opt = "-"*100+"\n"
         return
 
     def _init_exp_table(self):
@@ -337,8 +337,8 @@ class Display:
         opt = self._opts[tup[0]][tup[1]][tup[2]]
         band_name = ch.param("band_id")
         band_title = ("%s %11s %-12s %s\n"
-                      % ("*"*36, ch.cam.param("cam_name"),
-                         band_name, "*"*35))
+                      % ("*"*37, ch.cam.param("cam_name"),
+                         band_name, "*"*37))
         self._opt_f.write(band_title)
         self._opt_f.write(self._title_opt)
         self._opt_f.write(self._break_opt)
@@ -346,7 +346,7 @@ class Display:
         self._opt_f.write(self._break_opt)
         for m in range(len(ch.elem[0][0])):  # nelem
             elem_name = ch.elem[0][0][m]
-            wstr = ("| %-15s | %-5.3f +/- (%-5.3f,%5.3f) | "
+            wstr = ("| %-15s | %-6.3f +/- (%-6.3f,%6.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) |\n"
                     % (elem_name,
