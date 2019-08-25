@@ -51,7 +51,7 @@ class OpticalChain:
     # ***** Private Methods *****
     def _store_band_dict(self):
         band_dir = os.path.join(self.cam.config_dir, 'Optics')
-        self._band_dict = self._load.band_dir(band_dir)
+        self._band_dict = self._load.optics_band_dir(band_dir)
         return
 
     def _store_optics(self):
@@ -67,13 +67,12 @@ class OpticalChain:
             # Check for optic band file
             if (self._band_dict is not None and param_dict["Element"] in
                self._band_dict.keys()):
-                band_file = self._band_dict[param_dict["Element"]]
+                band_files = self._band_dict[param_dict["Element"]]
                 self._log.log("Using user-input spectra for optic '%s'"
-                              % (param_dict["Element"].fetch()),
-                              self._log.level["MODERATE"])
+                              % (param_dict["Element"].fetch()))
             else:
-                band_file = None
+                band_files = None
             # Store optic
             self.optics.update({param_dict['Element']: op.Optic(
-                self, param_dict, band_file=band_file)})
+                self, param_dict, band_files=band_files)})
         return

@@ -25,6 +25,8 @@ class Band:
         self._freq_inp = freq_inp
         self._ftype = band_file.split('.')[-1]
 
+        self._log.log(
+            "Processing band file %s" % (self._band_file))
         # Parse band file
         self._load_band()
         self._store_data()
@@ -32,65 +34,77 @@ class Band:
     # ***** Public Methods *****
     def get_avg(self, nsample=1):
         """
-        Return the average transmission for each frequency
+        Return the average spectrum
 
         Args:
         nsample (int): number of lists to return
         """
-        return np.array([self._tran for n in range(nsample)])
+        return np.array([self._band for n in range(nsample)])
 
     def sample(self, nsample=1):
         """
-        Return a sampled of the band transmission given its errors
+        Return a sampled spectrum given its errors
 
         Args:
         nsample (int): number of sample lists to return
         """
-        if self._tran is None:
-            return [None]
+        # Return the average if no errors are defined
         if self._err is None:
             return self.get_avg(nsample)
+        # Otherwise, sample assuming data at each frequency is Gaussian
         else:
             if nsample == 1:
-                return np.array([np.random.normal(self._tran, self._err)])
+                return np.array([np.random.normal(self._band, self._err)])
             else:
-                return np.random.normal(self._tran, self._err,
-                                        (nsample, len(self._tran)))
+                return np.random.normal(self._band, self._err,
+                                        (nsample, len(self._band)))
 
     def interp_freqs(self, freq_inp):
+        """
+        Interpolate the band to the passed frequencies
+
+        Args:
+        freq_inp (list): frequencies for the band to interpolated to
+        """
+        # If the input array isn't None, interpolate the band to it
         if freq_inp is not None:
+            # Don't extrapolate outside of band's defined frequency range
             mask = (freq_inp < self._freqs[-1]) * (
                 freq_inp > self._freqs[0])
-            self._tran = np.interp(
-                freq_inp, self._freqs, self._tran) * mask
+            # Interpolate the band
+            self._band = np.interp(
+                freq_inp, self._freqs, self._band) * mask
+            # Interpolate the errors, if there are any
             if self._err is not None:
                 self._err = np.interp(
                     freq_inp, self._freqs, self._err) * mask
             self.freqs = freq_inp
-            self.tran = self._tran
+            self.tran = self._band
+        # Otherwise, don't do anything
         else:
             self.freqs = self._freqs
-            self.tran = self._tran
+            self.tran = self._band
         return
 
     # ***** Helper Methods *****
     def _load_band(self):
-        try:
-            data = self._load.band(self._band_file)
-            if len(data) == 3:
-                self._freqs, self._tran, self._err = data
-            elif len(data) == 2:
-                self._freqs, self._tran = data
-                self._err = None
-            else:
-                self._log.err(
-                    "Could not understand band CSV file '%s'. \
-                    Too many or too few colums." % (self._band_file))
-        except:
-            self._log.err('Unable to parse band file %s.' % (self._band_file))
+        """ Load band data """
+        # Load the data
+        data = self._load.band(self._band_file)
+        # Check for error bars
+        if len(data) == 3:
+            self._freqs, self._band, self._err = data
+        elif len(data) == 2:
+            self._freqs, self._band = data
+            self._err = None
+        else:
+            self._log.err(
+                "Could not understand band CSV file '%s'. \
+                Too many or too few colums." % (self._band_file))
         return
 
     def _store_data(self):
+        """ Store the loaded data in SI units """
         # Convert to Hz if band file is in GHz
         if not np.all(self._freqs) > 1.e5:
             self._freqs = self._freqs * 1.e+09

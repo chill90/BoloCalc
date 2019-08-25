@@ -11,24 +11,24 @@ class ScanStrategy:
         self._log = self._tel.exp.sim.log
 
         # Mininum and maximum allowed elevations
-        self._min_elev = 20.
-        self._max_elev = 90.
+        self.min_elev = 20.
+        self.max_elev = 90.
 
     # ***** Public Methods *****
     def elev_sample(self):
-        """ Sample elevation """
+        """ Sample telescope elevation """
         samp = self._tel.elev_sample()
-        if samp < self._min_elev:
+        # Minimum allowed elevation = 20 deg
+        if samp < self.min_elev:
             self._log.log(
                 "Cannot have elevation %.1f < %.1f. Using %.1f instead"
-                % (samp, self._min_elev, self._min_elev),
-                self._log.level["NOTIFY"])
-            return self._min_elev
-        elif samp > self._max_elev:
+                % (samp, self.min_elev, self.min_elev))
+            return self.min_elev
+        # Maximum allowed elevation = 90 deg
+        elif samp > self.max_elev:
             self._log.log(
                 "Cannot have elevation %.1f > %.1f. Using %.1f instead"
-                % (samp, self._max_elev, self._max_elev),
-                self._log.level["NOTIFY"])
-            return self._max_elev
+                % (samp, self.max_elev, self.max_elev))
+            return self.max_elev
         else:
             return samp

@@ -25,14 +25,14 @@ class Detector:
         self._phys = self._ch.cam.tel.exp.sim.phys
         self._ndet = self._ch.cam.tel.exp.sim.param("ndet")
 
+        # Minimum allowed Tc minus Tb [K]
+        self._min_tc_tb_diff = 0.010
         # Generate detector parameters
         self._store_param_dict()
 
-        # Minimum allowed Tc - Tb [K]
-        self._min_tc_tb_diff = 0.010
-
         # Store static arrays
         self.elem = ["Detector"]
+        # On-chip absorption isn't differentiated from on-chip reflection
         self.emis = [[0.000 for f in self._ch.freqs]]
         return
 
@@ -45,7 +45,7 @@ class Detector:
         # Evaluate detector parameters
         self._store_param_vals()
         # Evaluate bandwidth
-        self._store_bw(band)
+        self._store_bw_bc(band)
         # Evaluate transmission
         self._store_band(band)
         # Store transmission and temperature
@@ -58,12 +58,14 @@ class Detector:
 
     # ***** Helper Methods *****
     def _param_samp(self, param):
+        """ Sample detector parameter """
         if self._ndet == 1:
             return param.get_avg(band_id=self._band_id)
         else:
             return param.sample(band_id=self._band_id, nsample=1)
 
     def _store_param_dict(self):
+        """ Store the paramter dictionary, which is defined at the channel """
         self._param_dict = self._ch.det_dict
         return
 
@@ -83,8 +85,8 @@ class Detector:
                     % (self._ch.name, self._ch.cam.dir))
             else:
                 self._param_vals["tc"] = (
-                    self._tb *
-                    self._param_vals("tc_frac"))
+                    self.param("tb") *
+                    self.param("tc_frac"))
         else:
             tc_tb_diff = self._param_vals["tc"] - self._param_vals["tb"]
             if tc_tb_diff < self._min_tc_tb_diff:
@@ -100,6 +102,7 @@ class Detector:
         return
 
     def _store_band(self, band=None):
+        """ Store the detector band """
         freqs = self._ch.freqs
         # Define top-hat band
         if self.param("det_eff") is not "NA":
@@ -109,7 +112,6 @@ class Detector:
                 else 0. for f in freqs]
         else:
             top_hat = None
-
         # Scale and store the input band transmission
         if band is not None:
             if top_hat is not None:
@@ -132,8 +134,10 @@ class Detector:
             else:
                 # Default to top hat band
                 self.band = top_hat
+        return
 
-    def _store_bw(self, band=None):
+    def _store_bw_bc(self, band=None):
+        """ Store the bandwidth for this detector """
         freqs = self._ch.freqs
         if band is not None:
             # Define band edges to be -3 dB point
@@ -152,11 +156,10 @@ class Detector:
             self._param_vals["fhi"] = (
                 self.param("bc") * (1. + 0.5 * self.param("fbw")))
 
-        # Store bandwidth
+        # Store bandwidth and band center
         self._param_vals["bw"] = self.param("fhi") - self.param("flo")
         self._param_vals["bc"] = (self.param("fhi") + self.param("flo")) / 2.
         self.band_mask = [
             1. if f >= self.param("flo") and f < self.param("fhi")
             else 0. for f in freqs]
-
         return

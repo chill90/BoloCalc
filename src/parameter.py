@@ -22,7 +22,7 @@ class Parameter:
     max (float): maximum allowe value. Defaults to None
     type (type): cast parameter data type. Defaults to numpy.float
 
-    Attributes:
+    Attributes
     name (str): where the 'name' arg is stored
     unit (src.Unit): where the 'unit' arg is stored
     type (type): where the 'type' arg is stored
@@ -42,6 +42,11 @@ class Parameter:
         self._min = self._float(min)
         self._max = self._float(max)
         self._type = inp_type
+
+        # Spread delimiter
+        self._spread_delim = '+/-'
+        # Allowed parameter string values when input type is float
+        self._float_str_vals = ["NA", "PDF", "BAND"]
 
         # Store the parameter value, mean, and standard deviation
         self._store_param(inp)
@@ -88,14 +93,18 @@ class Parameter:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
         if self._val is not None and self._avg is None:
-            return (self._val, 0.)
+            return (self._val, 'NA', 'NA')
         if self.is_empty():
-            return ('NA', 'NA')
+            return ('NA', 'NA', 'NA')
         else:
             if self._mult_bands:
-                return (self._avg[band_id - 1], self._std[band_id - 1])
+                return (self._avg[band_id - 1],
+                        self._med[band_id - 1],
+                        self._std[band_id - 1])
             else:
-                return (self._avg, self._std)
+                return (self._avg,
+                        self._med,
+                        self._std)
 
     def change(self, new_avg, new_std=None, band_id=1):
         """
@@ -171,6 +180,15 @@ class Parameter:
         """
         return self.fetch(band_id)[0]
 
+    def get_med(self, band_id=1):
+        """
+        Return average value for band_id
+
+        Args:
+        band_id (int): band ID indexed from 1. Defaults to 1.
+        """
+        return self.fetch(band_id)[1]
+    
     def get_std(self, band_id=1):
         """
         Return standard deviation for band_id
@@ -178,7 +196,7 @@ class Parameter:
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
-        return self.fetch(band_id)[1]
+        return self.fetch(band_id)[2]
 
     def sample(self, band_id=1, nsample=1, min=None, max=None):
         """
@@ -201,7 +219,9 @@ class Parameter:
         elif isinstance(self._val, ds.Distribution):
             return self._val.sample()
         else:
-            avg, std = self.fetch(band_id)
+            vals = self.fetch(band_id)
+            avg = vals[0]
+            std = vals[2]
             if np.any(std <= 0.):
                 return avg
             else:
@@ -218,7 +238,7 @@ class Parameter:
 
     # ***** Private Methods *****
     def _float(self, val):
-        """Convert val to an array of or single float(s)"""
+        """ Convert val to an array of or single float(s) """
         if val is None:
             self._mult_bands = False
             return None
@@ -233,7 +253,13 @@ class Parameter:
                 return self.unit.to_SI(arr_val)
             except:
                 self._mult_bands = False
-                return str(val)
+                ret = str(val).strip().upper()
+                if ret in self._float_str_vals:
+                    return ret
+                else:
+                    self._log.err(
+                        "Passed parameter '%s' with value '%s' cannot be type "
+                        "casted to float" % (self.name, str(val)))
 
     def _zero(self, val):
         """Convert val to an array of or single zero(s)"""
@@ -248,7 +274,7 @@ class Parameter:
         else:
             avg = np.array(self._avg)
             if self._min is not None and np.any(avg < self._min):
-                self.log.err(
+                self._log.err(
                     "Passed value %s for parameter %s lower than the mininum \
                     allowed value %f" % (
                         str(self._avg), self.name, self._min), 0)
@@ -262,40 +288,23 @@ class Parameter:
 
     def _store_param(self, inp):
         if self._type is bool:
-            self._mult_bands = False
-            self._val = bool(eval(inp.lower().capitalize()))
-            self._avg = None
-            self._std = None
+            self._store_bool(inp)
         elif self._type is float:
-            if isinstance(inp, str):
-                self._spread_delim = '+/-'
-                if self._spread_delim in inp:
-                    self._val = None
-                    vals = inp.split(self._spread_delim)
-                    self._avg = self._float(vals[0])
-                    self._std = self._float(vals[1])
-                else:
-                    self._val = self._float(inp)
-                    self._avg = self._float(inp)
-                    self._std = self._zero(self._avg)
-            elif isinstance(inp, ds.Distribution):
-                self._val = inp
-                self._avg = self._float(inp.mean())
-                self._std = self._float(inp.std())
+            self._store_float(inp)
         elif self._type is int:
-            self._val = int(inp)
-            self._avg = int(inp)
-            self._std = None
+            self._store_int(inp)
         elif self._type is str:
             self._val = str(inp)
             self._avg = None
+            self._med = None
             self._std = None
         elif self._type is list:
-            self._val = eval(str(inp))
+            self._val = eval(inp)
             self._avg = None
+            self._med = None
             self._std = None
         else:
-            self.log.err(
+            self._log.err(
                 "Passed paramter '%s' not one of allowed data types: \
                 bool, float, int, str, list" % (self.name))
         return True
@@ -305,3 +314,47 @@ class Parameter:
             return inp
         else:
             return round(inp, sig-int(np.floor(np.log10(abs(inp))))-1)
+
+    def _store_bool(self, inp):
+        val = inp.lower().capitalize().strip()
+        if val is not "True" or val is not "False":
+            self._log.err(
+                "Failed to parse boolean input '%s'" % (inp))
+        self._mult_bands = False
+        self._val = eval(val)
+        self._avg = None
+        self._med = None
+        self._std = None
+        return
+
+    def _store_float(self, inp):
+        if isinstance(inp, str):
+            if self._spread_delim in inp:
+                self._val = None
+                vals = inp.split(self._spread_delim)
+                self._avg = self._float(vals[0])
+                self._med = self._avg
+                self._std = self._float(vals[1])
+            else:
+                self._val = None
+                self._avg = self._float(inp)
+                self._med = self._avg
+                self._std = self._zero(self._avg)
+        elif isinstance(inp, ds.Distribution):
+            self._val = None
+            self._avg = self._float(inp.mean())
+            self._med = self._float(inp.median())
+            self._std = self._float(inp.std())
+        return
+
+    def _store_int(self, inp):
+        try:
+            self._val = None
+            self._avg = int(inp)
+            self._med = self._avg
+            self._std = None
+        except ValueError:
+            self._log.err(
+                    "Passed parameter '%s' with value '%s' cannot be type "
+                    "casted to int" % (self.name, str(inp)))
+        return

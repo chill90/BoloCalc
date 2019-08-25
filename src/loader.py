@@ -64,24 +64,59 @@ class Loader:
         else:
             self._log.err("Illegal file format passed to Loader.band()")
 
-    def band_dir(self, inp_dir):
+    def optics_band_dir(self, inp_dir):
         """
-        Load all band files in a specified directory
+        Load all band files in a specified directory for an optical chain
 
         Args:
-        inp_dir (str): band directory
+        inp_dir (str): optics band directory
         """
-
         band_files = sorted(gb.glob(os.path.join(inp_dir, '*')))
         if len(band_files):
-            names = [os.path.split(f)[-1].split('.')[0]
-                     for f in band_files if "~" not in f]
-            if len(names):
-                return {
-                    names[i].strip(): band_files[i]
-                    for i in range(len(names))}
-            else:
+            # No temporary files
+            band_files = [f for f in band_files if "~" not in f]
+            if not len(band_files):
                 return None
+            names = [os.path.split(name)[-1].split('.')[0]
+                     for name in band_files]
+            # No repeat names allowed
+            if len(set(names)) != len(names):
+                self._log.err(
+                    "Repeat band name found in %s" % (inp_dir))
+            # Group repeat distribution IDs
+            dist_ids = [name.split('_')[0] for name in names]
+            unique_ids = set(dist_ids)
+            ret_dict = {}
+            for u_id in unique_ids:
+                args = np.argwhere(np.array(dist_ids) == u_id).flatten()
+                dist_id = str(dist_ids[args[0]]).strip()
+                files = np.take(np.array(names), args)
+                ret_dict[dist_id] = files
+        else:
+            return None
+
+    def det_band_dir(self, inp_dir):
+        """
+        Load all band files in a specified directory for detectors
+
+        Args:
+        inp_dir (str): optics band directory
+        """
+        band_files = sorted(gb.glob(os.path.join(inp_dir, '*')))
+        if len(band_files):
+            # No temporary files
+            band_files = [f for f in band_files if "~" not in f]
+            if not len(band_files):
+                return None
+            names = [os.path.split(name)[-1].split('.')[0]
+                     for name in band_files]
+            # No repeat names allowed
+            if len(set(names)) != len(names):
+                self._log.err(
+                    "Repeat band name found in %s" % (inp_dir))
+            return {
+                names[i].strip(): band_files[i].strip()
+                for i in range(len(names))}
         else:
             return None
 
@@ -199,17 +234,28 @@ class Loader:
     def _dict(self, params, vals, dist_dir=None):
         data = {params[i].strip(): vals[i].strip()
                 for i in range(len(params))}
-        if dist_dir is not None:
-            for key, val in data.items():
-                if 'NA' in val.upper():
-                    for fname in self._dist_fnames(dist_dir, key):
-                        fpath = os.path.join(dist_dir, fname)
-                        if os.path.exists(fpath):
-                            data[key] = ds.Distribution(self.pdf(fpath))
-                        else:
-                            continue
-                else:
-                    continue
+        for key, val in data.items():
+            if 'PDF' in val.upper():
+                if dist_dir is None:
+                    self._log.err(
+                        "Parameter '%s' has value 'PDF' but no "
+                        "distribution directory %s not found"
+                        % (str(key), dist_dir))
+                file_found = False
+                for fname in self._dist_fnames(dist_dir, key):
+                    fpath = os.path.join(dist_dir, fname)
+                    if os.path.exists(fpath):
+                        data[key] = ds.Distribution(self.pdf(fpath))
+                        file_found = True
+                    else:
+                        continue
+                if not file_found:
+                    self._log.err(
+                        "Parameter '%s' has value 'PDF' but no "
+                        "distribution file found in %s"
+                        % (str(key), dist_dir))
+            else:
+                continue
         return data
 
     def _dist_dir(self, fname):

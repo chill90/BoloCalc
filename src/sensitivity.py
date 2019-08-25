@@ -20,7 +20,7 @@ class Sensitivity:
         self._nobs = sim.param("nobs")
         self._ndet = sim.param("ndet")
 
-    # ***** Public Methods *****
+    # ***** Public methods *****
     def sensitivity(self, exp=None):
         if exp is None:
             exp = self.exp
@@ -71,9 +71,9 @@ class Sensitivity:
                 self._map_depth.flatten().tolist(),
                 self._map_depth_RJ.flatten().tolist()]
 
+    # *** Helper methods ***
     def _opt_pow(self, ch):
         # Store passed parameters
-        tp = ch.cam.tel
         self._pow_sky_side = []
         self._pow_det_side = []
         self._eff_det_side = []
@@ -84,8 +84,6 @@ class Sensitivity:
             for j in range(len(ch.elem[i])):  # ndet
                 det_band = np.array(ch.det_arr.dets[j].band)
                 bw = ch.det_arr.dets[j].param("bw")
-                band_int = np.trapz(
-                    det_band, ch.freqs) / bw
                 pows = []
                 pow_sky_side_2 = []
                 pow_det_side_2 = []
@@ -183,12 +181,13 @@ class Sensitivity:
             pass_ch = ch
         else:
             pass_ch = None
-        NEP_ph_arr = np.array([[self._photon_NEP(
+        NEP_ph_out = np.array([[self._photon_NEP(
             ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
             ch.temp[i][j], ch.freqs, pass_ch)
             for j in range(self._ndet)]
             for i in range(self._nobs)])
-        NEP_ph_arr, NEP_ph_arr_corr = np.split(NEP_ph_arr, 2, axis=2)
+        # pylint: disable=unbalanced-tuple-unpacking
+        NEP_ph_arr, NEP_ph_arr_corr = np.split(NEP_ph_out, 2, axis=2)
         self._NEP_ph_arr = np.reshape(
             NEP_ph_arr, np.shape(NEP_ph_arr)[:2])
         self._NEP_ph_arr_corr = np.reshape(

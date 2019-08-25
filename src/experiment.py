@@ -31,21 +31,28 @@ class Experiment:
         # Experiment directory
         self.dir = self.sim.exp_dir
 
+        # Generate the experiment
+        self._log.log(
+            "Generating expeiment realization from %s"
+            % (self.dir))
         # Check whether experiment and config dirs exist
         self._check_dirs()
-
         # Store foreground parameter dictionary
         self._store_param_dict()
-
         # Store telescopes
         self._store_tels()
 
     # ***** Public Methods *****
     def evaluate(self):
-        """ Generate param dict and telescope dict"""
+        """ Generate param dict and telescope dict """
+        self._log.log(
+            "Evaluating experiment %s" % (self.dir))
         # Generate parameter values
         self._store_param_vals()
         # Evaluate telescopes
+        self._log.log(
+            "Evaluating telescopes in experiment %s"
+            % (self.dir))
         for tel in self.tels.values():
             tel.evaluate()
         return
@@ -60,10 +67,22 @@ class Experiment:
         return self._param_vals[param]
 
     def change_param(self, param, new_val):
+        """
+        Change foreground parameter values
+
+        Args:
+        param (str): name of parameter or param dict key
+        new_val (float): new value to set the parameter to
+        """
+        self._log.log(
+            "Changing foreground parameter '%s' to new value '%s'"
+            % (str(param), str(new_val)))
+        # Check that foreground parameters are defined
         if self._param_dict is None:
             self._log.err(
                 "Cannot change foreground parameter in %s when foregrounds "
                 "are disabled" % (self.dir))
+        # Check if the parameter label is by name
         if param not in self._param_dict.keys():
             if param in self._param_names.keys():
                 return (self._param_dict[
@@ -73,24 +92,35 @@ class Experiment:
                     "Parameter '%s' not understood by "
                     "Experiment.change_param()"
                     % (str(param)))
+        # Check if the parameter label is by dict key
         elif param in self._param_dict.keys():
             return self._param_dict[param].change(new_val)
+        # Throw an error if they parameter cannot be identified
         else:
             self._log.err(
                 "Parameter '%s' not understood by Experiment.change_param()"
                 % (str(param)))
+        return
 
     # ***** Helper Methods *****
     def _param_samp(self, param):
+        """ Sample experiment parameter """
         if self.sim.param("nexp"):
-            return param.get_avg()
+            return param.get_med()
         else:
             return param.sample(nsample=1)
 
     def _store_param_dict(self):
         if self.sim.param("infg"):
+            # Load foreground file into a dictionary
             fgnd_file = os.path.join(self._config_dir, 'foregrounds.txt')
+            self._log.log(
+                "Loading foreground file '%s'" % (fgnd_file))
             params = self._load.foregrounds(fgnd_file)
+
+            # Dictionary of the foreground Parameter objects
+            self._log.log(
+                "Storing foreground parameters for %s" % (self.dir))
             self._param_dict = {
                 "dust_temp": pr.Parameter(
                     self._log, "Dust Temperature",
@@ -120,33 +150,48 @@ class Experiment:
                     self._log, 'Sync Scale Frequency',
                     params['Sync Scale Frequency'],
                     min=0.0, max=np.inf)}
+            # Dictionary for ID-ing parameters for changing
             self._param_names = {
                 param.name: pid
                 for pid, param in self._param_dict.items()}
         else:
             self._param_dict = None
-            self._log.log("Ignoring foregrounds")
+            self._param_names = None
+            self._log.log(
+                "Ignoring foregrounds for experiment %s" % (self.dir))
         return
 
     def _store_param_vals(self):
+        self._log.log(
+            "Evaluating parameters for experiment %s"
+            % (self.dir))
+        # Store foreground parameters
         self._param_vals = {}
         if self._param_dict is not None:
             for k in self._param_dict.keys():
                 self._param_vals[k] = self._param_samp(self._param_dict[k])
-        # Store other experiment parameters
+        # Store experiment name
         self._param_vals["exp_name"] = os.path.split(self.dir.rstrip('/'))[-1]
         return
 
     def _store_tels(self):
+        """ Store telescopes """
+        self._log.log(
+            "Storing telescopes in experiment %s"
+            % (self.dir))
+        # Gather directories in experiment, ignoring 'config' and 'paramVary'
         tel_dirs = sorted(gb.glob(os.path.join(self.dir, '*' + os.sep)))
         tel_dirs = [x for x in tel_dirs
                     if 'config' not in x and 'paramVary' not in x]
+        # Check that at least one telescope is present
         if len(tel_dirs) == 0:
             self._log.err(
                 "Zero telescopes in '%s'" % (self.dir))
+        # Check for duplicate telescope names
         tel_names = [tel_dir.split(os.sep)[-2] for tel_dir in tel_dirs]
         if len(tel_names) != len(set(tel_names)):
             self._log.err("Duplicate telescope name in '%s'" % (self.dir))
+        # Store telescope objects
         self.tels = {}
         for i in range(len(tel_names)):
             self.tels.update({tel_names[i].strip():
@@ -154,9 +199,12 @@ class Experiment:
         return
 
     def _check_dirs(self):
+        """ Check that passed experiment directory exists with a config dir """
+        # Check that experiment directory exists
         if not os.path.isdir(self.dir):
             self._log.err(
                 "Experiment dir '%s' does not exist" % (self.dir))
+        # Check that experiment config directory exists
         self._config_dir = os.path.join(self.dir, 'config')
         if not os.path.isdir(self._config_dir):
             self._log.err(

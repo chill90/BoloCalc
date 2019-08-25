@@ -1,8 +1,8 @@
 # Built-in modules
 import numpy as np
 import sys as sy
-import os
 import copy as cp
+import os
 
 # BoloCalc modules
 import src.experiment as ex
@@ -44,7 +44,7 @@ class Vary:
         # Configure parameter arrays
         # self._config_params()
 
-    # **** Public Methods ****
+    # **** Public methods ****
     def vary(self):
         # Start by generating "fiducial" experiments
         tot_sims = (self._sim.param("nexp") * self._sim.param("ndet") *
@@ -82,7 +82,7 @@ class Vary:
         self._save()
         return
 
-    # ***** Helper Methods *****
+    # ***** Helper methods *****
     def _save(self):
         # Write parameter by parameter
         tot_writes = len(self.adj_sns)

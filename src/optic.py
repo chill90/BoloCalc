@@ -20,11 +20,11 @@ class Optic:
     Attributes:
     name (str): optical element name
     """
-    def __init__(self, opt_chn, inp_dict, band_file=None):
+    def __init__(self, opt_chn, inp_dict, band_files=None):
         # Store passed parameters
         self._opt_chn = opt_chn
         self._inp_dict = inp_dict
-        self._band_file = band_file
+        self._band_files = band_files
         self._log = self._opt_chn.cam.tel.exp.sim.log
         self._load = self._opt_chn.cam.tel.exp.sim.load
         self._phys = self._opt_chn.cam.tel.exp.sim.phys
@@ -33,6 +33,9 @@ class Optic:
         # Names for the special optical elements
         self._ap_names = ["APERTURE", "STOP", "LYOT"]
         self._mirr_names = ["MIRROR", "PRIMARY", "SECONDARY"]
+
+        # Allowed band names
+        self._band_names = ["REFL", "TRAN", "ABSO", "SPILL", "SCAT"]
 
         # Store parameter dict
         self._store_param_dict()
@@ -48,112 +51,24 @@ class Optic:
         parameters
         """
         # Generate the parameter values
-        self._store_param_vals(ch)
+        self._ch = ch
+        self._store_param_vals(self._ch)
 
         # Name
-        elem = self._param_vals["elem"]
-        self.name = elem
-        nfreq = len(ch.freqs)
+        self._elem = self._param_vals["elem"]
+        self.name = self._elem
+        self._nfreq = len(self._ch.freqs)
 
-        # Temperature
-        temp = np.ones(nfreq) * self._param_vals["temp"]
+        self._store_temp()
+        self._store_tran()
+        self._store_refl()
+        self._store_spill()
+        self._store_spill_temp()
+        self._store_scatt()
+        self._store_scatt_temp()
+        self._store_abso()
 
-        # Efficiency and reflection from a band file
-        if self._band_file is not None:
-            band = bd.Band(self._log, self._load, self._band_file, ch.freqs)
-            eff = band.sample()[0]
-            if eff is not None:
-                eff = np.array([e if e > 0 else 0. for e in eff])
-                eff = np.array([e if e < 1 else 1. for e in eff])
-        else:
-            eff = None
-
-        # Reflection -- use only if no band file
-        if eff is None:
-            if not self._param_vals["refl"] == "NA":
-                refl = np.ones(nfreq) * self._param_vals["refl"]
-            else:
-                refl = np.zeros(nfreq)
-
-        # Spillover
-        if not self._param_vals["spill"] == 'NA':
-            spill = np.ones(nfreq) * self._param_vals["spill"]
-        else:
-            spill = np.zeros(nfreq)
-        if not self._param_vals["spill_temp"] == "NA":
-            spill_temp = np.ones(nfreq) * self._param_vals["spill_temp"]
-        else:
-            spill_temp = np.ones(nfreq) * temp
-
-        # Scattering
-        if not self._param_vals["surfr"] == "NA":
-            scatt = 1. - self._phys.ruze_eff(
-                ch.freqs, self._param_vals["surfr"])
-        elif not self._param_vals["scat_frac"] == "NA":
-            scatt = np.ones(nfreq) * self._param_vals["scat_frac"]
-        else:
-            scatt = np.zeros(nfreq)
-        if not self._param_vals["scat_temp"] == 'NA':
-            scatt_temp = np.ones(nfreq) * self._param_vals["scat_temp"]
-        else:
-            scatt_temp = np.ones(nfreq) * temp
-
-        # Absorption
-        if elem.strip().upper() in self._ap_names:
-            if eff is None:
-                if not self._param_vals["abs"] == 'NA':
-                    abso = np.ones(nfreq)*self._param_vals["abs"]
-                else:
-                    abso = 1. - self._phys.spill_eff(
-                        ch.freqs, ch.param("pix_sz"),
-                        ch.param("fnum"), ch.param("wf"))
-            else:
-                abso = 1. - eff
-        else:
-            if not self._param_vals["abs"] == "NA":
-                abso = np.ones(nfreq) * self._param_vals["abs"]
-            elif elem.strip().upper() in self._mirr_names:
-                abso = 1. - self._phys.ohmic_eff(
-                    ch.freqs, self._param_vals["cond"])
-            else:
-                try:
-                    abso = self._phys.dielectric_loss(
-                        ch.freqs, self._param_vals["thick"],
-                        self._param_vals["ind"], self._param_vals["ltan"])
-                except:
-                    abso = np.zeros(nfreq)
-
-        # Reflection
-        if eff is not None:
-            refl = 1. - eff - abso
-            refl = np.where(refl < 0, np.zeros(len(refl)), refl)
-            refl = np.where(refl > 1, np.ones(len(refl)), refl)
-
-        # Element, absorption, efficiency, and temperature
-        if scatt is not None and spill is not None:
-            emiss = (abso + scatt *
-                     self._pow_frac(scatt_temp, temp, ch.freqs) +
-                     spill * self._pow_frac(spill_temp, temp, ch.freqs))
-        elif spill is not None:
-            emiss = abso + spill * self._pow_frac(spill_temp, temp, ch.freqs)
-        elif scatt is not None:
-            emiss = abso + scatt * self._pow_frac(scatt_temp, temp, ch.freqs)
-        else:
-            emiss = abso
-        if eff is not None:
-            effic = eff
-        else:
-            effic = 1. - refl - abso - spill - scatt
-
-        # Store channel pixel parameters
-        if elem.strip().upper() in self._ap_names:
-            ch_eff = (np.trapz(effic, ch.freqs) /
-                      float(ch.freqs[-1] - ch.freqs[0]))
-            ch_taper = self._phys.edge_taper(ch_eff)
-            ch.set_param("ap_eff", ch_eff)
-            ch.set_param("edge_tap", ch_taper)
-
-        return (elem, emiss, effic, temp)
+        return (self._elem, self._emiss, self._effic, self._temp)
 
     def change_param(self, param, new_val, band_id=None):
         if param not in self._param_dict.keys():
@@ -174,8 +89,8 @@ class Optic:
     # ***** Helper Methods *****
     # Ratio of blackbody power between two temperatures
     def _pow_frac(self, T1, T2, freqs):
-        return (np.trapz(self._phys.bb_pow_spec(freqs, T1), freqs) /
-                float(np.trapz(self._phys.bb_pow_spec(freqs, T2), freqs)))
+        return (self._phys.bb_pow_spec(freqs, T1) /
+                self._phys.bb_pow_spec(freqs, T2))
 
     def _param_samp(self, param, band_id):
         if self._nexp == 1:
@@ -233,3 +148,173 @@ class Optic:
         for k in self._param_dict.keys():
             self._param_vals[k] = self._param_samp(
                 self._param_dict[k], ch.param("band_id"))
+
+    def _store_bands(self):
+        self._band_dict = {}
+        b_ids = ['_'.join(f.split('_')[1:]).upper() for f in self._band_files]
+        for b_name in self._band_names:
+            args = np.argwhere(b_name in np.array(b_ids)).flatten()
+            if len(args) > 1:
+                self._log.err(
+                    "More than one band file tagged '%s' for optic '%s' "
+                    "in camera '%s': %s"
+                    % (b_name, self._param_dict['elem'].get_val(),
+                       self._opt_chn.cam.param('cam_name'),
+                       np.array(self._band_names)[args]))
+            else:
+                self._band_dict[b_name] = self._band_files[args]
+        return
+
+    def _store_temp(self):
+        self._temp = np.ones(self._nfreq) * self._param_vals["temp"]
+        return
+
+    def _store_tran(self):
+        # Efficiency from a band file?
+        if "TRAN" in self._band_dict.keys():
+            tran_band = bd.Band(self._log, self._load,
+                                self._band_dict["TRAN"], self._ch.freqs)
+            self._tran = self._phys_lims(tran_band.sample()[0])
+        else:
+            self._tran = None  # for now
+        return
+    
+    def _store_refl(self):
+        # Reflection from a band file?
+        if "REFL" in self._band_dict.keys():
+            refl_band = bd.Band(self._log, self._load,
+                                self._band_dict["REFL"], self._ch.freqs)
+            self._refl = refl_band.sample()[0]
+            # Maximum reflection is 1, minimum is 0
+            if self._refl is not None:
+                self._refl = np.array([r if r > 0 else 0. for r in self._refl])
+                self._refl = np.array([r if r < 1 else 1. for r in self._refl])
+        # Otherwise store reflection only if transmission is known yet
+        elif self._tran is None:
+            if not self._param_vals["refl"] == "NA":
+                self._refl = np.ones(self._nfreq) * self._param_vals["refl"]
+            else:
+                self._refl = np.zeros(self._nfreq)
+        else:
+            self._refl = None  # for now
+        return
+    
+    def _store_spill(self):
+        # Spillover from a band file?
+        if "SPILL" in self._band_dict.keys():
+            spill_band = bd.Band(self._log, self._load,
+                                self._band_dict["SPILL"], self._ch.freqs)
+            self._spill = spill_band.sample()[0]
+            # Maximum spill is 1, minimum is 0
+            if self._spill is not None:
+                self._spill = np.array([s if s > 0 else 0.
+                                        for s in self._spill])
+                self._spill = np.array([s if s < 1 else 1.
+                                        for s in self._spill])
+        # Otherwise assume flat spill vs frequency
+        elif not self._param_vals["spill"] == 'NA':
+            self._spill = np.ones(self._nfreq) * self._param_vals["spill"]
+        else:
+            self._spill = np.zeros(self._nfreq)
+        return
+    
+    def _store_spill_temp(self):
+        if not self._param_vals["spill_temp"] == "NA":
+            self._spill_temp = np.ones(self._nfreq) * self._param_vals["spill_temp"]
+        else:
+            self._spill_temp = np.ones(self._nfreq) * self._temp
+        return
+    
+    def _store_scatt(self):
+        # Scattering from a band file?
+        if "SCAT" in self._band_dict.keys():
+            scatt_band = bd.Band(self._log, self._load,
+                                self._band_dict["SCAT"], self._ch.freqs)
+            self._scatt = self._phys_lims(scatt_band.sample()[0])
+        # Otherwise calculate using other input parameters
+        elif not self._param_vals["scat_frac"] == "NA":
+            self._scatt = np.ones(self._nfreq) * self._param_vals["scat_frac"]
+        elif not self._param_vals["surfr"] == "NA":
+            self._scatt = 1. - self._phys.ruze_eff(
+                self._ch.freqs, self._param_vals["surfr"])
+        else:
+            self._scatt = np.zeros(self._nfreq)
+        return
+    
+    def _store_scatt_temp(self):
+        if not self._param_vals["scat_temp"] == 'NA':
+            self._scatt_temp = np.ones(self._nfreq) * self._param_vals["scat_temp"]
+        else:
+            self._scatt_temp = np.ones(self._nfreq) * self._temp
+        return
+
+    def _store_abso(self):
+        # Absorption from a band file?
+        if "ABSO" in self._band_dict.keys():
+            abso_band = bd.Band(self._log, self._load,
+                                self._band_dict["ABSO"], self._ch.freqs)
+            self._abso = self._phys_lims(abso_band.sample()[0])
+        # Otherwise calculate from other parameters
+        # Treat the case of the aperture stop
+        elif self._elem.strip().upper() in self._ap_names:
+            if self._tran is None:
+                if not self._param_vals["abs"] == 'NA':
+                    self._abso = np.ones(self._nfreq)*self._param_vals["abs"]
+                else:
+                    self._abso = 1. - self._phys.spill_eff(
+                        self._ch.freqs, self._ch.param("pix_sz"),
+                        self._ch.param("fnum"), self._ch.param("wf"))
+            else:
+                self._abso = 1. - self._tran
+        # Treat all other optics
+        else:
+            if not self._param_vals["abs"] == "NA":
+                self._abso = np.ones(self._nfreq) * self._param_vals["abs"]
+            elif self._elem.strip().upper() in self._mirr_names:
+                self._abso = 1. - self._phys.ohmic_eff(
+                    self._ch.freqs, self._param_vals["cond"])
+            else:
+                if (not self._param_vals["thick"] == "NA" and
+                   not self._param_vals["ind"] == "NA" and
+                   not self._param_vals["ltan"] == "NA"):
+                    self._abso = self._phys.dielectric_loss(
+                        self._ch.freqs, self._param_vals["thick"],
+                        self._param_vals["ind"], self._param_vals["ltan"])
+                else:
+                    self._abso = np.zeros(self._nfreq)
+        return
+
+    def _calculate(self):
+        # Store reflection if it hasn't already
+        if self._refl is None and self._tran is not None:
+            self._refl = self._phys_lims(1. - self._tran - self._abso)
+
+        # Absorption array
+        self._emiss = (
+            self._abso +
+            self._spill * self._pow_frac(
+                self._spill_temp, self._temp, self._ch.freqs) +
+            self._scatt * self._pow_frac(
+                self._scatt_temp, self._temp, self._ch.freqs))
+        
+        # Efficiency array
+        if self._tran is not None:
+            self._effic = self._tran
+        else:
+            self._effic = (
+                1. - self._refl - self._abso - self._spill - self._scatt)
+
+        # Store channel beam coupling efficiency if this is the aperture
+        if self._elem.strip().upper() in self._ap_names:
+            ch_eff = (np.trapz(self._effic, self._ch.freqs) /
+                      float(self._ch.freqs[-1] - self._ch.freqs[0]))
+            ch_taper = self._phys.edge_taper(ch_eff)
+            self._ch.set_param("ap_eff", ch_eff)
+            self._ch.set_param("edge_tap", ch_taper)
+        return
+    
+    def _phys_lims(self, band):
+        if band is not None:
+            band = np.array([x if x > 0 else 0. for x in band])
+            band = np.array([x if x < 1 else 1. for x in band])
+        return band

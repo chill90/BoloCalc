@@ -72,7 +72,7 @@ class Distribution:
         if self.prob is not None:
             lo, hi = np.interp((0.159, 0.841), self._cum, self.val)
         else:
-            lo, hi = np.pecentile(self.val, [0.159, 0.841])
+            lo, hi = np.percentile(self.val, [0.159, 0.841])
         return (hi-med, med-lo)
 
     def two_sigma(self):

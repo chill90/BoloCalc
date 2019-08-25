@@ -23,7 +23,7 @@ def usage():
                  "[--vary] [--vary_tog] [--vary_name vary_name]\n"
                  "Example: python3 mappingSpeed.py %s\n"
                  % (os.path.join("Experiments", "ExampleExperiment", "V0")))
-    sy.exit(False)
+    sy.exit(usage_str)
 
 # Verify the python version
 if sy.version_info.major == 2:

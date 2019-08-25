@@ -223,7 +223,6 @@ class Display:
         # tup (i,j,k) = (tel,cam,ch) tuple
         sns = self._sns[tup[0]][tup[1]][tup[2]]
         # Save the camera data
-        # Skip correlation-impacted NETs
         self._cam_data.append(
             self._output_units(np.concatenate((sns[:9], sns[10:11]))))
         # Values to be stored for combining later

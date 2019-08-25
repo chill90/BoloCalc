@@ -46,82 +46,6 @@ class Physics:
         freq, ind = self._check_inputs(freq, [ind])
         return self.c/(freq*ind)
 
-    def phase_to_thick(self, freq, phase, ind=1.0):
-        """
-        Convert from wave phase [rad] to thickness [m]
-
-        Args:
-        freq (float): frequencies [Hz]
-        phase (float): wave phase
-        ind (float): index of refraction
-        """
-        freq, phase, ind = self._check_inputs(freq, [phase, ind])
-        return self.lamb(freq, ind) * phase
-
-    def thick_to_phase(self, freq, thick, ind=1.0):
-        """
-        Convert thickness [m] to phase [rad]
-
-        Args:
-        freq (float): frequencies [Hz]
-        thick (float): thickness [m]
-        ind (float): index of refraction
-        """
-        freq, thick, index = self._check_inputs(freq, [thick, ind])
-        return 2 * np.pi * (thick / self.lamb(freq, ind))
-
-    def birefringent_rot(self, freq, thick, n_o, n_e):
-        """
-        Angle rotation by a birefringent material [deg]
-
-        Args:
-        freq (float): frequencies [Hz]
-        thick (float): thickness [m]
-        n_o (float): ordinary index of refraction
-        n_e (float): extraordinary index of refraction
-        """
-        freq, thick, n_o, n_e = self._check_inputs(freq, [thick, n_o, n_e])
-        return 360. * (n_e - n_o) * thick / (self.lamb(freq))
-
-    def stokes(self, pol_frac, pol_ang):
-        """
-        Stokes vector given an input polarization fraction and angle [deg]
-
-        Args:
-        pol_frac (float): polarization fraction
-        pol_ang (float): polarization angle [deg]
-        """
-        pol_ang = self.deg_to_rad(pol_ang)
-        return np.matrix([[1.],
-                          [pol_frac * np.cos(2. * pol_ang)],
-                          [pol_frac * np.sin(2. * pol_ang)],
-                          [0]])
-
-    def band_edges(self, fcent, fbw):
-        """
-        Band edges given a band center and percent bandwidth
-
-        Args:
-        fcent (float): band center [Hz]
-        fbw (float): percent bandwidth
-        """
-        flo = fcent - (fcent * fbw) / 2.
-        fhi = fcent + (fcent * fbw) / 2.
-        return flo, fhi
-
-    def band(self, fcent, fbw, fstep=1.e9):
-        """
-        Band frequencies given a band center, percent bandwidth,
-        and frequency step
-
-        Args:
-        fcent (float): band center [Hz]
-        fbw (float): percent bandwidth
-        fstep (float): frequency step [Hz]. Defaults to 1e9 Hz
-        """
-        flo, fhi = self.band_edges(fcent, fbw)
-        return np.arange(flo, fhi, fstep)
-
     def spill_eff(self, freq, pixd, fnum, wf=3.0):
         """
         Pixel beam coupling efficiency given a frequency [Hz],
@@ -193,18 +117,6 @@ class Physics:
         freq, sigma = self._check_inputs(freq, [sigma])
         return 1. - 4. * np.sqrt(np.pi * freq * self.mu0 / sigma) / self.Z0
 
-    def brighntess_temp(self, freq, intensity):
-        """
-        Brightness temperature [K_RJ] given a frequency [Hz]
-        and intensity [W/m^2]
-
-        Args:
-        freq (float): frequencies [Hz]
-        intensity (float): intensity [W/m^2]
-        """
-        freq, intensity = self._check_inputs(freq, [intensity])
-        return intensity * (self.c**2) / (2 * self.kB * (freq**2))
-
     def brightness_spec_rad(self, freq, bright_temp):
         """
         Spectral radiance [W/(m^2 sr Hz)] given a frequency [Hz] and
@@ -214,20 +126,8 @@ class Physics:
         freq (float): frequencies [Hz]
         intensity (float): brightness temp [K_RJ]
         """
-        freq, intensity = self._check_inputs(freq, [bright_temp])
+        freq, bright_temp = self._check_inputs(freq, [bright_temp])
         return bright_temp * 2 * self.kB * (freq / self.c)**2
-
-    def intensity_from_brightness_temp(self, freq, bw, bright_temp):
-        """
-        Intensity [W/m^2] given an atenna temperature [K_RJ], frequency [Hz],
-        and bandwidth [Hz]
-
-        Args:
-        freq (float): frequencies [Hz]
-        bw (float): bandwidth [Hz]
-        ant_temp (float): antenna temperature [K_RJ]
-        """
-        return 2 * (bright_temp * self.kB * (freq**2) / (self.c**2)) * bw
 
     def Trj_over_Tb(self, freq, thermo_temp):
         """
@@ -243,24 +143,6 @@ class Physics:
         thermo_fact = np.power(
             (np.exp(x) - 1.), 2.) / (np.power(x, 2.) * np.exp(x))
         return 1. / thermo_fact
-
-    def deg_to_rad(self, deg):
-        """
-        Convert degrees to radians
-
-        Args:
-        deg (float): degree [deg]
-        """
-        return (deg / 360.) * 2 * self.PI
-
-    def rad_to_deg(self, rad):
-        """
-        Convert radians to degrees
-
-        Args:
-        rad (float): radians [rad]
-        """
-        return (rad / (2. * self.PI)) * 360.
 
     def inv_var(self, err):
         """
@@ -287,22 +169,6 @@ class Physics:
             freq, [thick, ind, ltan])
         return 1. - np.exp(
             (-2. * self.PI * ind * ltan * thick) / (self.lamb(freq)))
-
-    def dielectric_band_avg_loss(self, freq, thick, ind, ltan):
-        """
-        The dielectric integrated loss of a substrate given the frequency [Hz],
-        substrate thickness [m], index of refraction, and loss tangent
-
-        Args:
-        freq (float): frequencies [Hz]
-        thick (float): substrate thickness [m]
-        ind (float): index of refraction
-        ltan (float): loss tangent
-        """
-        freq, thick, ind, ltan = self._check_inputs(
-            freq, [thick, ind, ltan])
-        return (np.trapz(dielectricLoss(freq, thick, ind, ltan), freq) /
-                float(freq[-1] - freq[0]))
 
     def rj_temp(self, powr, bw, eff=1.0):
         """
@@ -373,50 +239,6 @@ class Physics:
         freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
         return 0.5 * self.a_omega(freq) * self.bb_spec_rad(freq, temp, emiss)
 
-    def bb_power(self, freq, temp, emiss=1.0):
-        """
-        Blackbody power [J] on a diffraction-limited polarimeter for a
-        frequency [Hz], blackbody temperature [K], and a blackbody
-        emissivity
-
-        Args:
-        freq (float): frequency [Hz]
-        temp (float): blackbody temperature [K]
-        emiss (float): blackbody emissivity. Defaults to 1.
-        """
-        freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
-        return np.trapz(self.bb_pow_spec(freq, temp, emiss), freq)
-
-    def bb_pow_cmb_temp_spec(self, freq, temp, emiss=1.0):
-        """
-        Blackbody equivalent CMB temperature spectrum [K_CMB/Hz]
-        for a frequency [Hz], blackbody temperature [K], and
-        blackbody emissivity
-
-        Args:
-        freq (float): frequency [Hz]
-        temp (float): blackbody temperature [K]
-        emiss (float): blackbody emissivity. Defaults to 1.
-        """
-        freq, temp, emiss, Tcmb = self._check_inputs(
-            freq, [temp, emiss, self.Tcmb])
-        return (self.bb_pow_spec(freq, temp, emiss) /
-                (self.ani_pow_spec(freq, Tcmb, emiss)))
-
-    def bb_pow_cmb_temp(self, freq, temp, emiss=1.0):
-        """
-        Blackbody equivalent CMB temperature [K_CMB] on a diffraction-limited
-        detector for a frequency [Hz], blackbody temperature [K],
-        and blackbody emssivity
-
-        Args:
-        freq (float): frequency [Hz]
-        temp (float): blackbody temperature [K]
-        emiss (float): blackbody emissivity. Defaults to 1.
-        """
-        freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
-        return np.trapz(self.bb_pow_cmb_temp_spec(freq, temp, emiss), freq)
-
     def ani_pow_spec(self, freq, temp, emiss=1.0):
         """
         Derivative of blackbody power spectrum with respect to blackbody
@@ -433,21 +255,6 @@ class Physics:
         return (((self.h**2) / self.kB) * emiss *
                 (self.n_occ(freq, temp)**2) * ((freq**2)/(temp**2)) *
                 np.exp((self.h * freq)/(self.kB * temp)))
-
-    def ani_power(self, freq, temp, emiss=1.0):
-        """
-        Derivative of blackbody power with respect to blackbody
-        temperature, dP/dT, on a diffraction-limited detector [W/K] given
-        a frequency [Hz], blackbody temperature [K], and blackbody
-        emissivity
-
-        Args:
-        freq (float): frequency [Hz]
-        temp (float): blackbody temperature [K]
-        emiss (float): blackbody emissivity. Defaults to 1.
-        """
-        freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
-        return np.trapz(self.aniPowSpec(freq, temp, emiss), freq)
 
     # ***** Helper Methods *****
     def _check_inputs(self, x, inputs=None):

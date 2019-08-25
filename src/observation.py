@@ -20,12 +20,14 @@ class Observation:
     def __init__(self, obs_set):
         # Store passed parameters
         self._obs_set = obs_set
-        self._sky = self._obs_set.ch.cam.tel.sky
-        self._scn = self._obs_set.ch.cam.tel.scn
-        self._det_arr = self._obs_set.ch.det_arr
-        self._ndet = self._obs_set.ch.cam.tel.exp.sim.param("ndet")
+        self._ch = self._obs_set.ch
+        self._sky = self._ch.cam.tel.sky
+        self._scn = self._ch.cam.tel.scn
+        self._det_arr = self._ch.det_arr
+        self._ndet = self._ch.cam.tel.exp.sim.param("ndet")
 
     def evaluate(self):
+        """ Evaluate the observation's elem, emiss, tran, and temp arrays """
         # Store PWV and elevation
         self._get_pwv_elev()
 
@@ -35,22 +37,34 @@ class Observation:
         self.emis = np.squeeze(emis, axis=1).tolist()
         self.tran = np.squeeze(tran, axis=1).tolist()
         self.temp = np.squeeze(temp, axis=1).tolist()
+        return
 
     # ***** Helper Methods *****
     def _get_pwv_elev(self):
+        """ Sample the pixel elevation """
         # Sample PWV
         self._pwv = self._sky.pwv_sample()
-        # Sample Elevation
+        # Sample telescope elevation
         tel_elev = self._scn.elev_sample()
+        # Retrieve camera boresight elevation
         cam_elev = self._obs_set.ch.cam.param("bore_elev")
-        # Sample and store sky optical parameters
+        # Sample pixel elevation
+        bore_elev = tel_elev + cam_elev
         if self._ndet == 1:
-            self._elev = tel_elev + cam_elev
+            self._pix_elev = [bore_elev]
         else:
-            self._elev = tel_elev + cam_elev + self._obs_set.sample_pix_elev()
+            self._pix_elev = self._obs_set.sample_pix_elev(self._ndet) + bore_elev
+        # Maximum allowed elevation = 90 deg, minimum = 20 deg
+        self._pix_elev = np.array([e if e > self._sky.min_elev
+                                   else self._scn.min_elev
+                                   for e in self._pix_elev])
+        self._pix_elev = np.array([e if e < self._sky.max_elev
+                                   else self._scn.max_elev
+                                   for e in self._pix_elev])
         return
 
     def _get_sky_vals(self):
+        """ Get the sky values """
         return np.hsplit(np.array([self._sky.evaluate(
-            self._pwv, self._elev, self._det_arr.ch.freqs)
-            for det in self._det_arr.dets]), 4)
+            self._pwv, elev, self._ch.freqs)
+            for elev in self._pix_elev]), 4)

@@ -71,8 +71,8 @@ class Log:
         """
         wrn_msg = self._wrn_preamble + msg
         self._write(wrn_msg)
-        print(wrnmsg),
-        raise Exception(err_msg)
+        print(wrn_msg),
+        return
 
     # ***** Private methods *****
     def _write(self, msg):

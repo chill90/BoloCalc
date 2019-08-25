@@ -18,7 +18,6 @@ class Foregrounds:
         """
         # Passed amplitude [W/(m^2 sr Hz)] converted from [MJy]
         amp = emiss * self._param("dust_amp")
-
         # Frequency scaling
         # (freq / scale_freq)**dust_ind
         if (self._param("dust_freq") is not "NA" and
@@ -27,7 +26,6 @@ class Foregrounds:
                         self._param("dust_ind"))
         else:
             freq_scale = 1.
-
         # Effective blackbody scaling
         # BB(freq, dust_temp) / BB(dust_freq, dust_temp)
         if (self._param("dust_temp") is not "NA" and
@@ -52,15 +50,14 @@ class Foregrounds:
         """
         # Passed brightness temp [K_RJ]
         bright_temp = emiss * self._param("sync_amp")
-
         # Spectral radiance [W/(m^2 sr Hz)]
         amp = self._phys.brightness_spec_rad(freq, bright_temp)
-
         # Frequency scaling (freq / sync_freq)**sync_ind
         freq_scale = (freq / self._param("sync_freq"))**self._param("sync_ind")
 
         return (amp * freq_scale)
 
-    # ***** Helper Methods *****
+    # ***** Helper methods *****
     def _param(self, param):
+        """ Retrieve a foreground parameter """
         return self._sky.tel.exp.param(param)

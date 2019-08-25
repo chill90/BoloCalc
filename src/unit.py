@@ -1,5 +1,3 @@
-
-
 class Unit:
     """
     Object for handling unit conversions
@@ -11,6 +9,7 @@ class Unit:
     name (str): where 'unit' arg is stored
     """
     def __init__(self, unit):
+        # Dictionary of SI unit conversions
         self._to_SI_dict = {
             "GHz": 1.e+09,
             "mm": 1.e-03,
@@ -57,10 +56,12 @@ class Unit:
         return val * self._SI
 
     def from_SI(self, val):
+        """ Convert value from SI unit """
         return val / self._SI
 
         # Dictionary of units used in BoloCalc,
-# identified by parameter name
+
+# BoloCalc units identified by parameter name
 std_units = {
     "NA": Unit("NA"),
     "Resolution": Unit("GHz"),

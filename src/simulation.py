@@ -50,12 +50,15 @@ class Simulation:
         self.phys = ph.Physics()
         self.noise = ns.Noise(self.phys)
 
+        self.log.log(
+            "Generating Simulation object")
         # Store parameter values
         self._store_param_dict()
-
         # Length of status bar
         self._bar_len = 100
 
+        self.log.log(
+            "Generating Experiment, Sensitivity, and Display objects")
         # Generate simulation objects
         self.exp = ex.Experiment(self)
         self.sns = sn.Sensitivity(self)
@@ -68,16 +71,34 @@ class Simulation:
     # **** Public Methods ****
     # @pf.profiler
     def simulate(self):
-        self.evaluate()
-        self.display()
+        """ Run simulation """
+        self._evaluate()
+        self._display()
         return
 
     def vary_simulate(self, param_file, vary_name, vary_tog):
+        """
+        Run parameter vary simulation
+        
+        Args:
+        param_file (str): file that contains the parameters to be varied
+        vary_name (str): name of the vary output directory
+        vary_tog(bool): whether or not to vary the parameter arrays together
+        """
         vary = vr.Vary(self, param_file, vary_name, vary_tog)
         vary.vary()
         return
 
-    def evaluate(self):
+    def param(self, param):
+        """ Return parameter from param_dict
+
+        Args:
+        param (str): name or parameter, param_dict key
+        """
+        return self._param_dict[param].get_val()
+
+    # **** Helper Methods ****
+    def _evaluate(self):
         """ Evaluate experiment """
         tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")
         self.log.out((
@@ -90,21 +111,14 @@ class Simulation:
             self._evaluate_exp(n)
         self._done()
         return
-
-    def display(self):
+    
+    def _display(self):
+        """ Display sensitivity output """
         self.dsp.display()
         return
-
-    def param(self, param):
-        """ Return parameter from param_dict
-
-        Args:
-        param (str): name or parameter, param_dict key
-        """
-        return self._param_dict[param].get_val()
-
-    # **** Helper Methods ****
+    
     def _evaluate_exp(self, n):
+        """ Evaluate and calculate sensitivity for a generated experiment """
         self._status(n)
         self.exp.evaluate()
         self.senses.append(self.sns.sensitivity())
@@ -132,10 +146,13 @@ class Simulation:
 
     def _store_param_dict(self):
         """ Store input parameters in dictionary """
+        # Check whether the simulation file exists
         if not os.path.isfile(self._sim_file):
-            self._log.err(
+            self.log.err(
                 "Simulation file '%s' does not exist" % (self._sim_file))
+        # Load the simulation file to a parameter dictionary
         params = self.load.sim(self._sim_file)
+        # Store dictionary of Parameter objects
         self._param_dict = {
             "nexp": pr.Parameter(
                 self.log, "Experiments", params["Experiments"],
