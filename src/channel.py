@@ -38,17 +38,18 @@ class Channel:
         # Store passed parameters
         self.cam = cam
         self._inp_dict = inp_dict
+        self.band_id = "%s" % (self._inp_dict["Band ID"])
         self._band_file = band_file
-        self._name = "%s%d" % (
-            self.cam.param("cam_name"), int(self._inp_dict["Band ID"]))
         self._log = self.cam.tel.exp.sim.log
         self._load = self.cam.tel.exp.sim.load
+        self._phys = self.cam.tel.exp.sim.phys
         self._nexp = self.cam.tel.exp.sim.param("nexp")
         self._fres = self.cam.tel.exp.sim.param("fres")
         self._ndet = self.cam.tel.exp.sim.param("ndet")
 
         self._log.log(
-            "Generating realization for channel %s" % (self._name))
+            "Generating realization for channel Band_ID='%s'"
+            % (self.band_id))
         # Store the channel parameters in a dictionary
         self._store_param_dict()
         # Elevation distribution for pixels in the camera
@@ -58,7 +59,7 @@ class Channel:
 
         self._log.log(
             "Generating DetectorArray and ObservationSet objects "
-            "in channel %s" % (self._name))
+            "in channel %s" % (self.band_id))
         # Store the detector array object
         self.det_arr = da.DetectorArray(self)
         # Store the observation set object
@@ -68,8 +69,8 @@ class Channel:
     def evaluate(self):
         """ Evaluate channel """
         self._log.log(
-            "Evaluating channel %s%d"
-            % (self._name))
+            "Evaluating channel Band_ID='%s'"
+            % (self.band_id))
         # Generate parameter values
         self._store_param_vals()
         # Evaluate focal plane
@@ -113,7 +114,7 @@ class Channel:
         """
         self._log.log(
             "Changing channel '%s' parameter '%s' to new value '%s'"
-            % (self._name, str(param), str(new_val)))
+            % (self.param("ch_name"), str(param), str(new_val)))
         # Check if the parameter label is by name
         if (param not in self._param_dict.keys() and
            param not in self.det_dict.keys()):
@@ -268,8 +269,8 @@ class Channel:
     def _store_param_vals(self):
         """ Evaluate channel parameters """
         self._log.log(
-            "Evaluating parameters for channel %s"
-            % (self._name))
+            "Evaluating parameters for channel Band_ID='%s'"
+            % (self.band_id))
         self._param_vals = {}
         # Store ID parameters first
         self._param_vals["band_id"] = int(self._inp_dict["Band ID"])
@@ -292,6 +293,9 @@ class Channel:
             self._param_vals["cdet"] = self._param_vals["ndet"]
         else:
             self._param_vals["cdet"] = self.cam.tel.exp.sim.param("ndet")
+        # Store estimated band center if user-defined band
+        if self._band_file:
+            self._param_vals["bc"] = self._bc
         # To be stored by specific optic
         self._param_vals["ap_eff"] = None
         self._param_vals["edge_tap"] = None
@@ -321,10 +325,12 @@ class Channel:
     def _store_band(self):
         """ Store detector band """
         self._log.log(
-            "Storing detector band for channel %s" % (self._name))
+            "Storing detector band for channel Band_ID='%s'"
+            % (self.band_id))
         if self._band_file is not None:
             self._log.log(
-                "Using custom band for channel %s" % (self._name))
+                "Using custom band for channel Band_ID='%s'"
+                % (self.band_id))
             # Use defined band
             self.det_band = bd.Band(self._log, self._load, self._band_file)
             # Frequencies to integrate over
@@ -334,6 +340,11 @@ class Channel:
                 lo_freq, hi_freq + self._fres, self._fres)
             # Interpolate band using defined frequencies
             self.det_band.interp_freqs(self.freqs)
+            # Estimate and store band center
+            # Define band "edges" as -3 dB points
+            tran = self.det_band.get_avg()[0] 
+            flo, fhi = self._phys.band_edges(self.freqs, tran)
+            self._bc = (fhi + flo) / 2.
         else:
             self.det_band = None
             # Define edges of frequencies to integrate over

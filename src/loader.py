@@ -16,8 +16,11 @@ class Loader:
     """
     def __init__(self, log):
         self._log = log
-        self._dir = "Dist/"
-        self._ftypes = [".csv", ".txt"]
+        self._ds_dir = "Dist"
+        self._bd_dir = "Bands"
+        self._opt_dir = "Optics"
+        self._det_dir = "Detectors"
+        self._ftypes = ["CSV", "TXT"]
         return
 
     # ***** Public methods *****
@@ -57,41 +60,47 @@ class Loader:
         Args:
         fname (str): band file name
         """
-        if "CSV" in fname.upper():
+        if ".CSV" in fname.upper():
             return self._csv(fname)
-        elif "TXT" in fname.upper():
+        elif ".TXT" in fname.upper():
             return self._txt(fname)
         else:
             self._log.err("Illegal file format passed to Loader.band()")
 
-    def optics_band_dir(self, inp_dir):
+    def optics_bands(self, inp_dir):
         """
-        Load all band files in a specified directory for an optical chain
+        Load all band files in a specified directory for an optical chain.
+        Bands assumed to cover all frequency channels. 
+        Returns a dictionary with key = optic name and value = list of 
+        valid band files, which will be sorted through at the optic level.
 
         Args:
         inp_dir (str): optics band directory
         """
-        band_files = sorted(gb.glob(os.path.join(inp_dir, '*')))
+        # Gather band files
+        band_dir = os.path.join(inp_dir, self._bd_dir, self._det_dir)
+        band_files = os.listdir(band_dir)
+        # Ignore temporary files
+        band_files = [f for f in band_files if "~" not in f]
+        # Case-insensitive fname comparison
+        band_files_upper = [band_file.upper() for band_file in band_files]
         if len(band_files):
-            # No temporary files
-            band_files = [f for f in band_files if "~" not in f]
-            if not len(band_files):
-                return None
-            names = [os.path.split(name)[-1].split('.')[0]
-                     for name in band_files]
+            names = [band_file.split('.')[0]
+                     for band_file in band_files_upper]
             # No repeat names allowed
             if len(set(names)) != len(names):
                 self._log.err(
                     "Repeat band name found in %s" % (inp_dir))
-            # Group repeat distribution IDs
+            # Group repeat distributions, IDed by optic name
             dist_ids = [name.split('_')[0] for name in names]
-            unique_ids = set(dist_ids)
+            unique_ids = set(dist_ids)  # unique optics
+            # Return dictionary of band files for each unique optic,
+            # keyed by the optic name listed in the band file name
             ret_dict = {}
             for u_id in unique_ids:
                 args = np.argwhere(np.array(dist_ids) == u_id).flatten()
-                dist_id = str(dist_ids[args[0]]).strip()
-                files = np.take(np.array(names), args)
-                ret_dict[dist_id] = files
+                files = np.take(np.array(band_files), args)
+                ret_dict[u_id] = [os.path.join(band_dir, f) for f in files]
         else:
             return None
 
@@ -128,13 +137,14 @@ class Loader:
         fname (str): foreground file name
         """
         try:
-            params, vals = np.loadtxt(
+            keys, values = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2],
                 dtype=np.str, delimiter='|')
         except:
             self._log.err(
                 "Failed to load foreground file '%s'" % (fname))
-        return self._dict(params, vals, self._dist_dir(fname))
+        fgnd_dict = self._dict(keys, values, self._dist_dir(fname))
+        return fgnd_dict
 
     def telescope(self, fname):
         """
@@ -143,13 +153,14 @@ class Loader:
         fname (str): telescope file name
         """
         try:
-            params, vals = np.loadtxt(
+            keys, values = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2],
                 dtype=bytes, delimiter='|').astype(str)
         except:
             self._log.err(
                 "Failed to load telescope file '%s'" % (fname))
-        return self._dict(params, vals, self._dist_dir(fname))
+        tel_dict = self._dict(keys, values, self._dist_dir(fname))
+        return tel_dict
 
     def camera(self, fname):
         """
@@ -159,13 +170,14 @@ class Loader:
         fname (str): camera file name
         """
         try:
-            params, vals = np.loadtxt(
+            keys, values = np.loadtxt(
                 fname, dtype=bytes, unpack=True,
                 usecols=[0, 2], delimiter='|').astype(str)
         except:
             self._log.err(
                 "Failed to load camera file '%s'" % (fname))
-        return self._dict(params, vals, self._dist_dir(fname))
+        cam_dict = self._dict(keys, values, self._dist_dir(fname))
+        return cam_dict
 
     def optics(self, fname):
         """
@@ -174,16 +186,22 @@ class Loader:
         Args:
         fname (str): optics file name
         """
-        return self._txt_2D(fname)
+        keys, values = self._txt_2D(fname)
+        opt_dict = self._dict_optics(
+            keys, values, self._dist_dir_opt(fname))
+        return opt_dict
 
-    def channel(self, fname):
+    def channels(self, fname):
         """
         Load channel file
 
         Args:
         fname (str): camera file name
         """
-        return self._txt_2D(fname)
+        keys, values = self._txt_2D(fname)
+        chan_dict = self._dict_channels(
+            keys, values, self._dist_dir_det(fname))
+        return chan_dict
 
     def elevation(self, fname):
         """
@@ -202,7 +220,21 @@ class Loader:
         return {params[i].strip(): vals[i].strip()
                 for i in range(2, len(params))}
 
-    def pdf(self, fname):
+    # ***** Helper methods *****
+    def _csv(self, fname):
+        return np.loadtxt(fname, unpack=True, dtype=np.float, delimiter=',')
+
+    def _txt(self, fname):
+        return np.loadtxt(fname, unpack=True, dtype=np.float)
+
+    def _txt_2D(self, fname):
+        output = np.loadtxt(fname, dtype=bytes, delimiter='|').astype(str)
+        output = np.char.strip(output)
+        keys = output[0]
+        values = output[1:]
+        return keys, values
+
+    def _pdf(self, fname):
         """
         Load either a CSV or TXT PDF file
 
@@ -216,24 +248,17 @@ class Loader:
         else:
             self._log.err("Illegal file format passed to Loader.pdf()")
 
-    # ***** Helper methods *****
-    def _csv(self, fname):
-        return np.loadtxt(fname, unpack=True, dtype=np.float, delimiter=',')
-
-    def _txt(self, fname):
-        return np.loadtxt(fname, unpack=True, dtype=np.float)
-
-    def _txt_2D(self, fname):
-        output = np.loadtxt(fname, dtype=bytes, delimiter='|').astype(str)
-        keys = output[0]
-        elems = output[1:]
-        return [{keys[i].strip(): elem[i].strip()
-                for i in range(len(keys))}
-                for elem in elems]
-
     def _dict(self, params, vals, dist_dir=None):
+        if dist_dir is not None:
+            # Available distribution files
+            dist_files = os.listdir(dist_dir)
+            dist_files = [f for f in dist_files
+                          if '~' not in f and '#' not in f]
+            dist_files_upper = [dist_file.upper() for dist_file in dist_files]
+        # Load data into a dictionary and modify as needed
         data = {params[i].strip(): vals[i].strip()
                 for i in range(len(params))}
+        # Check for PDFs
         for key, val in data.items():
             if 'PDF' in val.upper():
                 if dist_dir is None:
@@ -241,30 +266,213 @@ class Loader:
                         "Parameter '%s' has value 'PDF' but no "
                         "distribution directory %s not found"
                         % (str(key), dist_dir))
-                file_found = False
-                for fname in self._dist_fnames(dist_dir, key):
-                    fpath = os.path.join(dist_dir, fname)
-                    if os.path.exists(fpath):
-                        data[key] = ds.Distribution(self.pdf(fpath))
-                        file_found = True
-                    else:
-                        continue
-                if not file_found:
+                dist_files_found = 0
+                f_id = key.upper()
+                for i, fname in enumerate(self._dist_fnames(f_id)):
+                    if fname in dist_files_upper:
+                        data[key] = ds.Distribution(
+                            self._pdf(os.path.join(dist_dir, dist_files[i])))
+                        dist_files_found += 1
+                if dist_files_found == 0:
                     self._log.err(
-                        "Parameter '%s' has value 'PDF' but no "
-                        "distribution file found in %s"
-                        % (str(key), dist_dir))
+                        "Parameter '%s' has "
+                        "value 'PDF' but no distribution file found in %s"
+                        % (key, dist_dir))
+                if dist_files_found > 1:
+                    self._log.err(
+                        "Multiple distribution files found in %s for "
+                        "parameter '%s'"
+                        % (dist_dir, key))
             else:
                 continue
         return data
 
+    def _dict_optics(self, keys, values, dist_dir=None):
+        # Optic names stored in first column
+        optic_names = [value[0] for value in values]
+        # Parameter names stored in first row
+        param_names = keys
+        # Parameter values stored in subsequent rows
+        vals = [value for value in values]
+        # Loop over optics
+        opt_dict = {}
+        for i, optic_name in enumerate(optic_names):
+            # Loop over parameters for each optic
+            param_dict = {}
+            for j, param_name in enumerate(param_names):
+                # Check if the parameter calls for a PDF in either of its bands
+                if vals[i][j].upper().strip() == 'PDF':
+                    # Throw error if the dist directory doesn't exist
+                    if dist_dir is None:
+                        self._log.err(
+                            "Parameter '%s' for optic '%s' has value 'PDF' "
+                            "but no distribution directory %s not found"
+                            % (param_name, optic_name, dist_dir))
+                    # Store dict of distributions where a PDF file is found
+                    dist_dict = self._dict_optics_params(
+                        dist_dir, optic_name, param_name)
+                    # Throw an error if the dict is empty
+                    if not dist_dict:
+                        self._log.err(
+                            "Parameter '%s' for optic '%s' has value 'PDF' "
+                            "but no file '%s_%s_*.txt/csv' (case insensitive) "
+                            "found in %s"
+                            % (param_name, optic_name,
+                               optic_name.replace(" ", ""),
+                               param_name.replace(" ", ""),
+                               dist_dir))
+                    # Tuple = (param string, dict of dists)
+                    param_dict[param_name] = (vals[i][j], dist_dict)
+                # Otherwise, just store the paramter string
+                else:
+                    param_dict[param_name] = (vals[i][j], None)
+            opt_dict[optic_name] = param_dict
+        return opt_dict
+
+    def _dict_optics_params(self, dist_dir, optic_name, param_name):
+        ret_dict = {}
+        # Available distribution files
+        dist_files = os.listdir(dist_dir)
+        dist_files = [f for f in dist_files
+                      if '~' not in f and '#' not in f]
+        dist_files_upper = [dist_file.upper() for dist_file in dist_files]
+        # Accepted filenames need to have a specific structure
+        # opticName_paramName_bandID.txt/csv
+        f_id = "%s_%s" % (
+            optic_name.replace(" ", "").upper(),
+            param_name.replace(" ", "").upper())
+        files = []
+        for fname in dist_files_upper:
+            ftag = fname.split('.')[-1]
+            if f_id in fname and ftag in self._ftypes:
+                ind = dist_files_upper.index(fname)
+                files.append(dist_files[ind])
+        if len(files) == 0:
+            self._log.err(
+                "Parameter '%s' has "
+                "value 'PDF' but no distribution file found in %s"
+                % (f_id, dist_dir))
+        # Use the band ID as the key for the return dictionary
+        for f in files:
+            # Split the file name (minus .csv/txt) into its three
+            # identifiers, separated by underscores
+            ids = os.path.split(f)[-1].split('.')[0].split('_')
+            if len(ids) == 3:
+                # Dictionary key is the third idenfier, which should
+                # be the Band ID
+                key = ids[-1].upper()
+            elif len(ids) == 2:
+                # If no Band ID key, this PDF is assumed to be the same for
+                # all bands (e.g. optic temperature)
+                key = 'ALL'
+            else:
+                # Ignore illegal file names in case the user 'deadened'
+                # it intentionally
+                self._log.log(
+                    "Illegal optic PDF file name '%s'. Ignoring...")
+                continue
+            # Return a dictionary of distributions, keyed by the 
+            # third file identifier, which should be the Band ID,
+            # or keyed by 'ALL'
+            ret_dict[key] = ds.Distribution(self._pdf(
+                os.path.join(dist_dir, f)))
+        return ret_dict
+
+    def _dict_channels(self, keys, values, dist_dir=None):
+        if dist_dir is not None:
+            # Available distribution files
+            dist_files = os.listdir(dist_dir)
+            dist_files = [f for f in dist_files
+                        if '~' not in f and '#' not in f]
+            dist_files_upper = [dist_file.upper() for dist_file in dist_files]
+        # Channel names stored in the first column
+        band_ids = [value[0] for value in values]
+        # Parameter names stored in first row
+        param_names = keys
+        # Parameter values stored in subsequent rows
+        vals = [value for value in values]
+        # Loop over channels
+        chan_dict = {}
+        for i, band_id in enumerate(band_ids):
+            band_id = band_ids[i]
+            # Loop over parameters for each channel
+            param_dict = {}
+            for j, param_name in enumerate(param_names):
+                param_name = param_names[j]
+                # Check if the parameter calls for a PDF
+                if vals[i][j].upper().strip() == 'PDF':
+                    if dist_dir is None:
+                        self._log.err(
+                            "Parameter '%s' for Band ID '%s' has value 'PDF' "
+                            "but no distribution directory %s not found"
+                            % (param_name, band_id, dist_dir))
+                    # Store dist when a PDF file is found
+                    f_id = "%s_%s" % (
+                        param_name.replace(" ", "").upper(),
+                        str(band_id).replace(" ", "").upper())
+                    # Load possible distribution file names
+                    fnames = self._dist_fnames(f_id)
+                    dist_files_found = 0  # keep track of fname matches
+                    for i, fname in enumerate(dist_files_upper):
+                        if fname in fnames:
+                            param_dict[param_name] = ds.Distribution(
+                                self._pdf(os.path.join(
+                                    dist_dir, dist_files[i])))
+                            dist_files_found += 1
+                    if dist_files_found == 0:
+                        self._log.err(
+                            "Channel parameter '%s' for Band ID '%s' has "
+                            "value 'PDF' but no distribution file found in %s"
+                            % (str(param_name), str(band_id), dist_dir))
+                    if dist_files_found > 1:
+                        self._log.err(
+                            "Multiple distribution files found in %s for "
+                            "channel parameter '%s' for Band ID '%s'"
+                            % (dist_dir, str(param_name), str(band_id)))
+                else:
+                    # Otherwise, just store the paramter string
+                    param_dict[param_name] = vals[i][j]
+            chan_dict[band_id] = param_dict
+        return chan_dict
+
     def _dist_dir(self, fname):
-        dist_dir = os.path.join(os.path.split(fname)[0], self._dir)
+        """ Return dist dir given location of pramf file. e.g. config/Dist/ """
+        dist_dir = os.path.join(
+            os.path.split(fname)[0], self._ds_dir)
         if not os.path.exists(dist_dir):
             return None
         else:
             return dist_dir
 
-    def _dist_fnames(self, dist_dir, param_name):
-        return [('_'.join(param_name.lower().split()) + tag)
-                for tag in self._ftypes]
+    def _dist_dir_opt(self, fname):
+        """ Return dist dir for optics e.g. config/Dist/Optics """
+        dist_dir = os.path.join(
+            os.path.split(fname)[0], self._ds_dir, self._opt_dir)
+        if not os.path.exists(dist_dir):
+            return None
+        else:
+            return dist_dir
+
+    def _dist_dir_det(self, fname):
+        """ Return dist dir for detectors e.g. config/Dist/Detectors """
+        dist_dir = os.path.join(
+            os.path.split(fname)[0], self._ds_dir, self._det_dir)
+        if not os.path.exists(dist_dir):
+            return None
+        else:
+            return dist_dir
+
+    def _dist_fnames(self, f_id, dist_dir=None):
+        """
+        Gather possible dist file names given a file ID
+        in a given dist dir
+        """
+        if dist_dir is not None:
+            ret_arr =  [os.path.join(
+                dist_dir, "%s.%s" % (f_id, ftype.upper()))
+                for ftype in self._ftypes]
+        else:
+            ret_arr =  [
+                "%s.%s" % (f_id, ftype.upper())
+                for ftype in self._ftypes]
+        return ret_arr

@@ -53,11 +53,21 @@ class Sky:
         elev (float): elevation
         freqs (float): frequencies [Hz] at which to evlauate the sky
         """
+        site = self.tel.param("site").upper()
+        if site == 'ROOM':
+            Nroom = ['ROOM' for f in freqs]
+            Troom = [295. for f in freqs]
+            Eroom = [1. for f in freqs]
+            Aroom = [1. for f in freqs]
+            return [[Nroom],
+                    [Aroom],
+                    [Eroom],
+                    [Troom]]
         Ncmb = ['CMB' for f in freqs]
         Tcmb = [2.725 for f in freqs]
         Ecmb = [1. for f in freqs]
         Acmb = [1. for f in freqs]
-        if not self.tel.param("site").upper() == 'SPACE':
+        if site != 'SPACE':
             Natm = ['ATM' for f in freqs]
             Tatm, Eatm = self._atm_spectrum(pwv, elev, freqs)[1:]
             Aatm = [1. for f in freqs]
@@ -70,7 +80,7 @@ class Sky:
             Tdst = self._dst_spectrum(freqs)
             Edst = [1. for f in freqs]
             Adst = [1. for f in freqs]
-            if not self.tel.param("site").upper() == 'SPACE':
+            if not site != 'SPACE':
                 return [[Ncmb, Nsyn, Ndst, Natm],
                         [Acmb, Asyn, Adst, Aatm],
                         [Ecmb, Esyn, Edst, Eatm],
@@ -81,7 +91,7 @@ class Sky:
                         [Ecmb, Esyn, Edst],
                         [Tcmb, Tsyn, Tdst]]
         else:
-            if not self.tel.param("site").upper() == 'SPACE':
+            if site != 'SPACE':
                 return [[Ncmb, Natm],
                         [Acmb, Aatm],
                         [Ecmb, Eatm],

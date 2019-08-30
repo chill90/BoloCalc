@@ -28,7 +28,6 @@ class OpticalChain:
         self._load = self.cam.tel.exp.sim.load
 
         # Store optic objects
-        self._store_band_dict()
         self._store_optics()
         return
 
@@ -49,30 +48,35 @@ class OpticalChain:
                 [optic[3] for optic in optics]]
 
     # ***** Private Methods *****
-    def _store_band_dict(self):
-        band_dir = os.path.join(self.cam.config_dir, 'Optics')
-        self._band_dict = self._load.optics_band_dir(band_dir)
-        return
-
     def _store_optics(self):
+        # Load optics parameters from the optics.txt file
         param_dicts = self._load.optics(
             os.path.join(self.cam.config_dir, 'optics.txt'))
+        # Load optics bands
+        opt_band_dict = self._load.optics_bands(self.cam.config_dir)
+        # Store dictionary of optics objects
         self.optics = {}
-        for param_dict in param_dicts:
+        for param_dict in param_dicts.values():
             # Check for duplicate optic names
-            if param_dict["Element"] in self.optics.keys():
+            upper_keys = [key.upper() for key in self.optics.keys()]
+            elem = param_dict["Element"][0]  # tuple = (param_str, dist)
+            elem_upper = elem.upper()
+            if elem_upper in upper_keys:
                 self._log.err(
                     "Multiple optical elements named '%s' in camera '%s'"
-                    % (param_dict["Element"], self.cam.dir))
-            # Check for optic band file
-            if (self._band_dict is not None and param_dict["Element"] in
-               self._band_dict.keys()):
-                band_files = self._band_dict[param_dict["Element"]]
-                self._log.log("Using user-input spectra for optic '%s'"
-                              % (param_dict["Element"].fetch()))
-            else:
+                    % (elem, self.cam.dir))
+            # Check for optic band files
+            if opt_band_dict is None:
                 band_files = None
+            else:
+                upper_keys = [key.upper() for key in opt_band_dict.keys()]
+                if elem_upper in upper_keys:
+                    band_files = opt_band_dict[elem_upper]
+                    self._log.log("Using user-input spectra for optic '%s'"
+                                % (elem))
+                else:
+                    band_files = None
             # Store optic
-            self.optics.update({param_dict['Element']: op.Optic(
+            self.optics.update({elem: op.Optic(
                 self, param_dict, band_files=band_files)})
         return

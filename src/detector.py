@@ -112,8 +112,13 @@ class Detector:
                 else 0. for f in freqs]
         else:
             top_hat = None
-        # Scale and store the input band transmission
-        if band is not None:
+        # Use a band if "BAND" is called explicitly in "Band Center"
+        if self.param("bc") is "BAND":
+            if band is None:
+                self._log.err(
+                    "Band Center for channel '%s' defined as 'BAND' "
+                    "but no fand file found" % (self._ch.param("ch_name")))
+            # Scale and store the input band transmission
             if top_hat is not None:
                 # Scale the band transmission to the sampled det_eff value
                 scale_fact = (
@@ -124,6 +129,22 @@ class Detector:
             # Maximum allowed transmission is 1
             self.band = np.where(self.band < 1, self.band, 1.)
             self.band = np.where(self.band > 0, self.band, 0.)
+            # Treat the special case of band center shifting
+            bc_param = self._param_dict["bc"]
+            bc_std = bc_param.get_std()
+            if isinstance(bc_std, float) or isinstance(bc_std, np.float):
+                self._param_vals["bshift"] = bc_param.sample(
+                    max=np.inf, min=-np.inf, null=True)
+                delta_f = self._param_vals["bshift"]
+                delta_ind = np.round(delta_f / np.diff(freqs)[0])
+                if delta_ind != 0:
+                    self.band = np.roll(self.band, delta_ind)
+                    # Use the edge value to fill the edge of the array
+                    if delta_ind > 0:
+                        self.band[:delta_ind] = self.band[delta_ind]
+                    else:
+                        self.band[delta_ind:] = self.band[delta_ind]
+                
         # Or store a top-hat band
         else:
             if top_hat is None:
@@ -141,14 +162,9 @@ class Detector:
         freqs = self._ch.freqs
         if band is not None:
             # Define band edges to be -3 dB point
-            tran = band
-            max_tran = np.amax(tran)
-            lo_point = np.argmin(
-                abs(tran[:len(tran)//2] - 0.5 * max_tran))
-            hi_point = np.argmin(
-                abs(tran[len(tran)//2:] - 0.5 * max_tran)) + len(tran)//2
-            self._param_vals["flo"] = freqs[lo_point]
-            self._param_vals["fhi"] = freqs[hi_point]
+            flo, fhi = self._phys.band_edges(freqs, band)
+            self._param_vals["flo"] = flo
+            self._param_vals["fhi"] = fhi
         else:
             # Define band edges using band center and fractional BW
             self._param_vals["flo"] = (
@@ -157,9 +173,11 @@ class Detector:
                 self.param("bc") * (1. + 0.5 * self.param("fbw")))
 
         # Store bandwidth and band center
-        self._param_vals["bw"] = self.param("fhi") - self.param("flo")
-        self._param_vals["bc"] = (self.param("fhi") + self.param("flo")) / 2.
-        self.band_mask = [
-            1. if f >= self.param("flo") and f < self.param("fhi")
-            else 0. for f in freqs]
+        self._param_vals["bc"] = (
+            self._param_vals["fhi"] + self._param_vals["flo"]) / 2.
+        self._param_vals["bw"] = (
+            self._param_vals["fhi"] - self._param_vals["flo"])
+        # self.band_mask = [
+        #    1. if f >= self.param("flo") and f < self.param("fhi")
+        #    else 0. for f in freqs]
         return

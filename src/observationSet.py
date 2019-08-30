@@ -27,8 +27,8 @@ class ObservationSet:
 
         # Store the elevation values and probabilities
         self._log.log(
-            "Generating ObservationSet realization for channel '%s'"
-            % (self.ch.param("ch_name")))
+            "Generating ObservationSet realization for channel Band_ID='%s'"
+            % (self.ch.band_id))
         if self.ch.elev_dict is not None:
             self._elev_vals = np.fromiter(
                 self.ch.elev_dict.keys(), dtype=np.float)
@@ -40,8 +40,9 @@ class ObservationSet:
 
         # Store observation objects
         self._log.log(
-            "Generating observation objects in ObservationSet for channel '%s'"
-            % (self.ch.param("ch_name")))
+            "Generating observation objects in ObservationSet for "
+            "channel Band_ID='%s'"
+            % (self.ch.band_id))
         self.obs_arr = [ob.Observation(self) for n in range(self._nobs)]
 
     # ***** Pubic Methods *****

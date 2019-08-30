@@ -55,10 +55,10 @@ class Observation:
         else:
             self._pix_elev = self._obs_set.sample_pix_elev(self._ndet) + bore_elev
         # Maximum allowed elevation = 90 deg, minimum = 20 deg
-        self._pix_elev = np.array([e if e > self._sky.min_elev
+        self._pix_elev = np.array([e if e > self._scn.min_elev
                                    else self._scn.min_elev
                                    for e in self._pix_elev])
-        self._pix_elev = np.array([e if e < self._sky.max_elev
+        self._pix_elev = np.array([e if e < self._scn.max_elev
                                    else self._scn.max_elev
                                    for e in self._pix_elev])
         return

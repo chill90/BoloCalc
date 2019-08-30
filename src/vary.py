@@ -171,34 +171,34 @@ class Vary:
         # Store current values for detector number, aperture
         # efficiency, and pixel size
         curr_pix_sz = ch.get_param('Pixel Size')
-        curr_ndet = ch.get_param('Num Det per Wafer',
-                                 band_id=band_id)
-        curr_ap = ap.get_param('Absorption', band_id=band_id)
+        curr_ndet = ch.get_param('Num Det per Wafer')
+        curr_ap = ap.get_param(
+            'Absorption',band_id=ch.band_id)
         if curr_ap == 'NA':
             curr_ap = None
         # Calculate new values for detector number,
         # aperture efficiency, and pixel size
         new_pix_sz_mm = self._set_arr[i][j]
-        new_pix_sz = un.Unit('mm')._to_SI(new_pix_sz_mm)
+        new_pix_sz = un.Unit('mm').to_SI(new_pix_sz_mm)
         new_ndet = curr_ndet * np.power(
             (curr_pix_sz / new_pix_sz), 2.)
         if curr_ap is not None:
             curr_eff = self._ph.spillEff(
-                freq, curr_pix_sz, fnum, w0)
+                ch.freqs, curr_pix_sz, ch.param('fnum'), w0)
             new_eff = self._ph.spillEff(
-                freq, new_pix_sz, fnum, w0)
+                ch.freqs, new_pix_sz, ch.param('fnum'), w0)
             apAbs_new = 1. - (1. - curr_ap) * new_eff / curr_eff
         else:
-            apAbs_new = 1. - self.__ph.spillEff(
-                freq, new_pix_sz, fnum, w0)
+            apAbs_new = 1. - self._ph.spillEff(
+                ch.freqs, new_pix_sz, ch.param('fnum'), w0)
         # Define new values
         changed = []
         changed.append(
             ch.change_param('Pixel Size', new_pix_sz_mm))
         changed.append(ch.change_param(
-            'Num Det per Wafer', new_ndet, band_id=band_id))
+            'Num Det per Wafer', new_ndet))
         changed.append(ap.change_param(
-            'Absorption', new_ap, band_id=band_id))
+            'Absorption', apAbs_new, band_id=ch.band_id))
         return np.any(changed)
 
     def _set_new_param(self, exp, tup):
@@ -503,14 +503,14 @@ class Vary:
             if not np.any(np.isin(
                 self._params, ['Waist Factor', 'Aperture', 'Lyot',
                                'Stop', 'Num Det per Wafer'])):
-                self.pix_size_special = True
+                self._pix_size_special = True
             else:
                 self._log.err("Cannot pass 'Pixel Size**' as a parameter to "
                               "'%s' when 'Aperture', 'Lyot', 'Stop', or "
                               "'Num Det per Wafer' is also passed"
                               % (self._param_file))
         else:
-            self.pix_size_special = False
+            self._pix_size_special = False
         return
 
     def _vary_scope(self, ind):

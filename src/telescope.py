@@ -139,13 +139,13 @@ class Telescope:
                 "Telescope file '%s' does not exist" % (self._tel_file))
         # Load telescope file into a dictionary
         params = self._load.telescope(self._tel_file)
-
         # Dictionary of the telescope Parameter objects
         self._log.log(
                 "Storing telescope parameters for %s" % (self.dir))
         self._param_dict = {
             "site": pr.Parameter(
-                self._log, 'Site', params['Site']),
+                self._log, 'Site', params['Site'],
+                inp_type=str),
             "elev": pr.Parameter(
                 self._log, 'Elevation', params['Elevation'],
                 min=20., max=90.),

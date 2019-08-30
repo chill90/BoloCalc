@@ -46,10 +46,10 @@ class Camera:
         self._log.log(
             "Storing OpticalChain object for camera %s"
             % (self.dir))
-        # Generate optical chain
-        self.opt_chn = oc.OpticalChain(self)
         # Generate channels
         self._store_chs()
+        # Generate optical chain
+        self.opt_chn = oc.OpticalChain(self)
 
     # ***** Public Methods *****
     def evaluate(self):
@@ -212,13 +212,13 @@ class Camera:
         self._log.log(
             "Generating channel dictionaries from '%s'"
             % (chn_file))
-        chan_dicts = self._load.channel(chn_file)
+        chan_dicts = self._load.channels(chn_file)
         # Store channel objects
         self._log.log(
             "Generating channel objects for camera %s"
             % (self.dir))
         self.chs = {}
-        for chan_dict in chan_dicts:
+        for chan_dict in chan_dicts.values():
             # Check for duplicate band names
             if chan_dict["Band ID"] in self.chs.keys():
                 self._log.err(

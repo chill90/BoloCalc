@@ -95,7 +95,10 @@ class Simulation:
         Args:
         param (str): name or parameter, param_dict key
         """
-        return self._param_dict[param].get_val()
+        val = self._param_dict[param].get_val()
+        if val is None:
+            val = self._param_dict[param].get_avg()
+        return val
 
     # **** Helper Methods ****
     def _evaluate(self):

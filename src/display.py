@@ -78,42 +78,6 @@ class Display:
                 self._opt_f.close()
         return
 
-    def vary_output(self, vary):
-        """
-        varies should be [(ch, opt, param, [vals]),
-        (ch, opt, param, [vals]), ... ]
-        """
-        tel_names = vary.tels
-        # Loop over telescopes
-        for i in range(len(vary.tels)):
-            tel = self._exp.tels[vary.tels[i]]
-            cam = tel.cams[vary.cams[i]]
-            ch = cam.chs[vary_chs[i]]
-            # Loop over cameras
-            for j, cam_name in enumerate(vary.cams):
-                cam = tel.cams[cam_name]
-                fout_name = os.path.join(cam.dir, "vary_output.txt")
-                fout = open(fout_name, "a+")
-                fsns_name = os.path.joing(cam.dir, "vary_sensitivity.txt")
-                fsns = open(fsns_name, "a+")
-                # Write the parameter set definition
-                fname.write("# " + iter_name + "\n")
-                # Loop over channels
-                for k, ch_name in enumerate(vary.chs):
-                    ch = list(cam.chs.values())[k]
-                    ch_name = ch.param("ch_name")
-                    sns = self._sns[i][j][k]
-                    data = self._output_units(np.concatenate(
-                        (sns[:9], sns[10:11])))
-                    # Write channel data
-                    row = np.transpose(data)
-                    wrstr = ""
-                    for m in range(10):
-                        wrstr += ("%-9.4f " % (row[k]))
-                    wrstr += " | "
-                    fout.write(wrstr)
-                fout.write("\n")
-
     # ***** Helper Methods *****
     def _merge_exps(self):
         self._sns = np.concatenate(self._sim.senses, axis=-1)
@@ -218,42 +182,6 @@ class Display:
         self._cam_d = open(os.path.join(
             cam.dir, 'output.txt'), 'w+')
         return
-
-    def _cam_row(self, sns):
-        # tup (i,j,k) = (tel,cam,ch) tuple
-        sns = self._sns[tup[0]][tup[1]][tup[2]]
-        # Save the camera data
-        self._cam_data.append(
-            self._output_units(np.concatenate((sns[:9], sns[10:11]))))
-        # Values to be stored for combining later
-        ch_name = ch.param("ch_name")
-        ndet = ch.param("ndet")
-        net_arr = self._inv_var_spread(
-            sns[9], ch, un.Unit("uK"))
-        net_arr_rj = self._inv_var_spread(
-            sns[11], ch, un.Unit("uK"))
-        map_depth = self._map_depth(
-            net_arr, ch.cam.tel)
-        wstr = ("%-10s | %-7d | %-5.3f +/- (%-5.3f,%5.3f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-6.1f +/- (%-6.1f,%6.1f) | "
-                "%-6.1f +/- (%-6.2f,%6.2f) | %-5.2f +/- (%-5.2f,%5.2f) | "
-                "%-5.2f +/- (%-5.2f,%5.2f) | %-5.2f +/- (%-5.2f,%5.2f)\n"
-                % (ch_name, ndet, *self._spread(sns[0]),
-                   *self._spread(sns[1], un.Unit("pW")),
-                   *self._spread(sns[2], un.Unit("K")),
-                   *self._spread(sns[3], un.Unit("K")),
-                   *self._spread(sns[4], un.Unit("aW/rtHz")),
-                   *self._spread(sns[5], un.Unit("aW/rtHz")),
-                   *self._spread(sns[6], un.Unit("aW/rtHz")),
-                   *self._spread(sns[7], un.Unit("aW/rtHz")),
-                   *self._spread(sns[8], un.Unit("uK")),
-                   *self._spread(sns[10], un.Unit("uK")),
-                   *net_arr, *net_arr_rj, *map_depth))
-        self._cam_f.write(wstr)
-        self._cam_f.write(self._break_cam)
 
     def _write_cam_table_row(self, ch, tup):
         # tup (i,j,k) = (tel,cam,ch) tuple
@@ -387,7 +315,7 @@ class Display:
 
     def _write_output(self, fname, title_str, data_arr):
         # Write the title string
-        for i, data in enumerate(data_arr):
+        for i in range(len(data_arr)):
             fname.write(title_str)
         fname.write("\n")
         for i in range(len(data_arr[0][0])):  # outputs
@@ -482,20 +410,6 @@ class Display:
         lo, med, hi = unit.from_SI(np.percentile(
             inp, (float(pct_lo), 0.50, float(pct_hi))))
         return [med, abs(hi-med), abs(med-lo)]
-
-    def _inv_var_spread(self, inp, ch, unit=None):
-        if unit is None:
-            unit = un.Unit("NA")
-        lo, med, hi = unit.from_SI(np.percentile(
-            inp, (self._pct_lo, 0.50, self._pct_hi), axis=-1))
-        med_ret = self._noise.NET_arr(med, ch.param("ndet"), ch.param("yield"))
-        hi_ret = (
-            self._noise.NET_arr(
-                hi, ch.param("ndet"), ch.param("yield")) - med_ret)
-        lo_ret = (
-            med_ret - self._noise.NET_arr(
-                lo, ch.param("ndet"), ch.param("yield")))
-        return [med_ret, hi_ret, lo_ret]
 
     def _output_units(self):
         self._units = {
