@@ -273,6 +273,13 @@ class Display:
         self._opt_f.write(self._break_opt)
         for m in range(len(ch.elem[0][0])):  # nelem
             elem_name = ch.elem[0][0][m]
+            # Optic element names may be tuples
+            try:
+                elem_name = eval(elem_name)
+                if isinstance(elem_name, tuple):
+                    elem_name = elem_name[0]
+            except NameError:
+                pass
             wstr = ("| %-15s | %-6.3f +/- (%-6.3f,%6.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) |\n"

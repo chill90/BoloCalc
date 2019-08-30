@@ -1,10 +1,18 @@
 # Built-in modules
 import numpy as np
 import glob as gb
+import sys as sy
+try:
+    import h5py as hp
+except ImportError:
+    sy.stderr(
+        "BoloCalc Import Error: h5py not installed.\n"
+        "As of BoloCalc v0.10.0, h5py is used to load ATM profiles\n"
+        "Use pip to install via 'pip install h5py'\n"
+        "Or, if using an Anaconda environment, 'conda install h5py'\n")
 import os
 import io
-import h5py as hp
-import sys as sy
+
 
 # BoloCalc modules
 import src.foregrounds as fg
@@ -25,6 +33,7 @@ class Sky:
         # Store passed parameters
         self.tel = tel
         self._log = self.tel.exp.sim.log
+        self._phys = self.tel.exp.sim.phys
         self._load = self.tel.exp.sim.load
         self._infg = self.tel.exp.sim.param("infg")
 
@@ -39,8 +48,7 @@ class Sky:
         self._max_pwv = 8.0
         self._min_pwv = 0.0
         # Directory which holds the ATM files
-        self._atm_dir = os.path.join(
-            os.path.split(__file__)[0], 'atmFiles')
+        self._atm_dir = os.path.dirname(__file__)
 
     # ***** Public Methods ******
     def evaluate(self, pwv, elev, freqs):
@@ -54,6 +62,7 @@ class Sky:
         freqs (float): frequencies [Hz] at which to evlauate the sky
         """
         site = self.tel.param("site").upper()
+        # Can't see any sky through the concrete
         if site == 'ROOM':
             Nroom = ['ROOM' for f in freqs]
             Troom = [295. for f in freqs]
@@ -63,14 +72,19 @@ class Sky:
                     [Aroom],
                     [Eroom],
                     [Troom]]
-        Ncmb = ['CMB' for f in freqs]
-        Tcmb = [2.725 for f in freqs]
-        Ecmb = [1. for f in freqs]
-        Acmb = [1. for f in freqs]
-        if site != 'SPACE':
+        # Check that an atmosphere exists
+        elif site != 'SPACE':
             Natm = ['ATM' for f in freqs]
             Tatm, Eatm = self._atm_spectrum(pwv, elev, freqs)[1:]
             Aatm = [1. for f in freqs]
+        # Won't look at the atmosphere from space
+        else:  # site = 'SPACE'
+            pass  # no atmosphere
+
+        Ncmb = ['CMB' for f in freqs]
+        Tcmb = [self._phys.Tcmb for f in freqs]
+        Ecmb = [1. for f in freqs]
+        Acmb = [1. for f in freqs]
         if self._infg:
             Nsyn = ['SYNC' for f in freqs]
             Tsyn = self._syn_spectrum(freqs)
@@ -80,7 +94,7 @@ class Sky:
             Tdst = self._dst_spectrum(freqs)
             Edst = [1. for f in freqs]
             Adst = [1. for f in freqs]
-            if not site != 'SPACE':
+            if site != 'SPACE':
                 return [[Ncmb, Nsyn, Ndst, Natm],
                         [Acmb, Asyn, Adst, Aatm],
                         [Ecmb, Esyn, Edst, Eatm],
@@ -157,4 +171,3 @@ class Sky:
     def _dst_spectrum(self, freqs):
         """ Dust spectrum """
         return self._fg.dust_spec_rad(freqs)
-

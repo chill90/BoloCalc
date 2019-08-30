@@ -41,7 +41,7 @@ class ObservationSet:
         # Store observation objects
         self._log.log(
             "Generating observation objects in ObservationSet for "
-            "channel Band_ID='%s'"
+            "channel Band_ID '%s'"
             % (self.ch.band_id))
         self.obs_arr = [ob.Observation(self) for n in range(self._nobs)]
 

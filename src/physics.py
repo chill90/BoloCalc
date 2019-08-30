@@ -29,10 +29,6 @@ class Physics:
         self.ep0 = 8.854188e-12
         self.Z0 = np.sqrt(self.mu0/self.ep0)
         self.Tcmb = 2.725
-        self.co = {"J10": 115.e9,
-                   "J21": 230.e9,
-                   "J32": 345.e9,
-                   "J43": 460.e9}
 
     # ***** Public Methods *****
     def lamb(self, freq, ind=1.0):
@@ -56,7 +52,7 @@ class Physics:
         flo = freqs[lo_point]
         fhi = freqs[hi_point]
         return flo, fhi
-        
+
     def spill_eff(self, freq, pixd, fnum, wf=3.0):
         """
         Pixel beam coupling efficiency given a frequency [Hz],

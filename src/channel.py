@@ -48,7 +48,7 @@ class Channel:
         self._ndet = self.cam.tel.exp.sim.param("ndet")
 
         self._log.log(
-            "Generating realization for channel Band_ID='%s'"
+            "Generating realization for channel Band_ID '%s'"
             % (self.band_id))
         # Store the channel parameters in a dictionary
         self._store_param_dict()
@@ -69,7 +69,7 @@ class Channel:
     def evaluate(self):
         """ Evaluate channel """
         self._log.log(
-            "Evaluating channel Band_ID='%s'"
+            "Evaluating channel Band_ID '%s'"
             % (self.band_id))
         # Generate parameter values
         self._store_param_vals()
@@ -325,11 +325,11 @@ class Channel:
     def _store_band(self):
         """ Store detector band """
         self._log.log(
-            "Storing detector band for channel Band_ID='%s'"
+            "Storing detector band for channel Band_ID '%s'"
             % (self.band_id))
         if self._band_file is not None:
             self._log.log(
-                "Using custom band for channel Band_ID='%s'"
+                "** Using custom band for channel Band_ID '%s'"
                 % (self.band_id))
             # Use defined band
             self.det_band = bd.Band(self._log, self._load, self._band_file)
@@ -342,7 +342,7 @@ class Channel:
             self.det_band.interp_freqs(self.freqs)
             # Estimate and store band center
             # Define band "edges" as -3 dB points
-            tran = self.det_band.get_avg()[0] 
+            tran = self.det_band.get_avg()[0]
             flo, fhi = self._phys.band_edges(self.freqs, tran)
             self._bc = (fhi + flo) / 2.
         else:

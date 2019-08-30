@@ -205,10 +205,10 @@ class Telescope:
         # Store the atm file for use within the Sky object
         else:
             self._log.log(
-                "Using custom ATM file '%s' in telescope %s"
+                "** Using custom ATM file '%s' for telescope %s"
                 % (atm_files[0], self.dir))
             self._param_vals['atm_file'] = atm_files[0]
-            self._param_vals['site'] = None
+            self._param_vals['site'] = "CUST"
             self._param_vals['elev'] = None
             self._param_vals['pwv'] = None
         return
@@ -216,7 +216,7 @@ class Telescope:
     def _handle_atm(self):
         """ Handle the atmosphere for balloons and space """
         # Store custom atmosphere
-        if self.param('site') is 'CUST':
+        if 'CUST' in self.param('site').upper():
             self._custom_atm()
         else:
             self._param_vals['atm_file'] = None

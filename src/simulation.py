@@ -79,7 +79,7 @@ class Simulation:
     def vary_simulate(self, param_file, vary_name, vary_tog):
         """
         Run parameter vary simulation
-        
+
         Args:
         param_file (str): file that contains the parameters to be varied
         vary_name (str): name of the vary output directory
@@ -106,7 +106,7 @@ class Simulation:
         tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")
         self.log.out((
                 "Simulting %d experiment realizations each with "
-                "%d detector realizations and %d sky realizations.\n"
+                "%d detector realizations and %d sky realizations. "
                 "Total sims = %d"
                 % (self.param("nexp"), self.param("ndet"),
                    self.param("nobs"), tot_sims)))
@@ -114,12 +114,12 @@ class Simulation:
             self._evaluate_exp(n)
         self._done()
         return
-    
+
     def _display(self):
         """ Display sensitivity output """
         self.dsp.display()
         return
-    
+
     def _evaluate_exp(self, n):
         """ Evaluate and calculate sensitivity for a generated experiment """
         self._status(n)

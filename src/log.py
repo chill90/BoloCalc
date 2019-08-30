@@ -1,5 +1,6 @@
 # Built-in modules
 import datetime as dt
+import os
 
 
 class Log:
@@ -17,12 +18,17 @@ class Log:
     def __init__(self, log_file):
         # Open log file
         self._log_file = log_file
-        self._f = open(self._log_file, 'w')
-        self.log("Logging to file '%s,'"
-                 % (self._log_file))
+        if os.path.exists(self._log_file):
+            self._f = open(self._log_file, 'a+')
+        else:
+            self._f = open(self._log_file, 'w')
         # Error preamble
         self._err_preamble = "BoloCalc ERROR: "
         self._wrn_preamble = "BoloCalc WARNING: "
+
+        # Announce the beginning of logging
+        self._f.write(
+            "\n\n***** Starting BoloCalc Program 'calcBolos.py' *****\n")
         return
 
     def __del__(self):
