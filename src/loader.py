@@ -5,6 +5,7 @@ import os
 
 # BoloCalc modules
 import src.distribution as ds
+import src.unit as un
 
 
 class Loader:
@@ -269,13 +270,14 @@ class Loader:
                         "distribution directory %s not found"
                         % (str(key), dist_dir))
                 dist_files_found = 0
-                f_id = key.replace(" ", "").upper()
+                param_id = key.replace(" ", "").upper()
+                f_id = param_id
                 for i, fname in enumerate(self._dist_fnames(f_id)):
                     if fname in dist_files_upper:
                         ind = dist_files_upper.index(fname)
                         dfile = os.path.join(dist_dir, dist_files[ind])
                         data[key] = ds.Distribution(
-                            self._pdf(dfile))
+                            self._pdf(dfile), un.std_units[param_id])
                         dist_files_found += 1
                 if dist_files_found == 0:
                     self._log.err(
@@ -346,10 +348,10 @@ class Loader:
         dist_files_upper = [dist_file.upper() for dist_file in dist_files]
         # Accepted filenames need to have a specific structure
         # opticName_paramName_bandID.txt/csv
+        param_id = param_name.replace(" ", "")
         f_id = "%s_%s" % (
             optic_name.replace(" ", ""),
-            param_name.replace(" ", ""))
-        f_id_upper = f_id.upper()
+            param_id)
         files = []
         for fname in dist_files_upper:
             ftag = fname.split('.')[-1]
@@ -389,7 +391,8 @@ class Loader:
             # third file identifier, which should be the Band ID,
             # or keyed by 'ALL'
             ret_dict[key] = ds.Distribution(self._pdf(
-                os.path.join(dist_dir, f)))
+                os.path.join(dist_dir, f)),
+                un.std_units[param_id])
         return ret_dict
 
     def _dict_channels(self, keys, values, dist_dir=None):
@@ -421,8 +424,9 @@ class Loader:
                             "but no distribution directory %s not found"
                             % (param_name, band_id, dist_dir))
                     # Store dist when a PDF file is found
+                    param_id = param_name.replace(" ", "").upper()
                     f_id = "%s_%s" % (
-                        param_name.replace(" ", "").upper(),
+                        param_id,
                         str(band_id).replace(" ", "").upper())
                     # Load possible distribution file names
                     fnames = self._dist_fnames(f_id)
@@ -431,7 +435,7 @@ class Loader:
                         if fname in fnames:
                             dfile = os.path.join(dist_dir, dist_files[i])
                             param_dict[param_name] = ds.Distribution(
-                                self._pdf(dfile))
+                                self._pdf(dfile), un.std_units[param_id])
                             dist_files_found += 1
                     if dist_files_found == 0:
                         self._log.err(

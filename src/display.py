@@ -118,7 +118,7 @@ class Display:
                              "[uK_CMB-amin]", "[uK_RJ-amin]"))
         self._break_cam = "-"*416+"\n"
         # Camera output file
-        self._title_cam_d = (("%-9s "*15
+        self._title_cam_d = (("%-10s "*15
                               % ("Eff", "OptPow",
                                  "TelTemp", "SkyTemp",
                                  "PhNEP", "BoloNEP",
@@ -329,8 +329,8 @@ class Display:
             for j in range(len(data_arr)):  # chans
                 row = np.transpose(data_arr[j])[i]
                 wrstr = ""
-                for k in range(10):
-                    wrstr += ("%-9.4f " % (row[k]))
+                for r in row:
+                    wrstr += ("%-10.4f " % (r))
                 wrstr += " | "
                 fname.write(wrstr)
             fname.write("\n")

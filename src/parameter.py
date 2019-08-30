@@ -37,7 +37,7 @@ class Parameter:
         if unit is not None:
             self.unit = unit
         elif self.name in un.std_units.keys():
-            self.unit = un.std_units[self.name]
+            self.unit = un.std_units[self.name.strip().upper()]
         else:
             self.unit = un.Unit("NA")  # 1
         if min is not None:
@@ -192,32 +192,38 @@ class Parameter:
         min (float): the minimum allowed value to be returned
         max (float): the maximum allowed value to be returned
         """
+        # If this parameter is a distribution, just sample it
+        if isinstance(self._val, ds.Distribution):
+            return self._val.sample(nsample=nsample)
         # If min and max not explicitly passed, use constructor values
         if min is None:
             min = self._min
         if max is None:
             max = self._max
-        # If this parameter is 'NA' or 'BAND', return said string
-        if self._is_empty():
-            return str(self._avg).strip().upper()
-        # If this parameter is a distribution, sample it
-        elif isinstance(self._val, ds.Distribution):
-            return self._val.sample(nsample=nsample)
+        # Retrieve the mean, median, and std for this band
+        vals = self.fetch(band_id)
+        avg = vals[0]
+        std = vals[2]
+        # If avg is 'NA' or 'BAND', return said string
+        if str(avg).strip().upper() in self._float_str_vals:
+            return str(avg).strip().upper()
+        # If std is 'NA' or 'BAND', avg
+        elif str(std).strip().upper() in self._float_str_vals:
+            return avg
         # Otherwise, sample the Gaussian described by mean +/- std
         else:
-            vals = self.fetch(band_id)
-            avg = vals[0]
-            std = vals[2]
             # If std is zero (or less than), return the average value
             if np.any(std <= 0.):
                 return avg
             # If the user calls for a null sampling, set avg to zero
             if null:
-                avg = 0.
-            if nsample == 1:
-                samp = np.random.normal(avg, std, nsample)[0]
+                samp_avg = 0.
             else:
-                samp = np.random.normal(avg, std, nsample)
+                samp_avg = avg
+            if nsample == 1:
+                samp = np.random.normal(samp_avg, std, nsample)[0]
+            else:
+                samp = np.random.normal(samp_avg, std, nsample)
             # Check that the sampled value doesn't surpasse the max or min
             if min is not None and samp < min:
                 return min
@@ -533,7 +539,7 @@ class Parameter:
             return round(inp, sig-int(np.floor(np.log10(abs(inp))))-1)
 
     def _is_empty(self, band_id=1):
-        """ Check if a parameter is 'NA' """
+        """ Check if a parameter average is defined """
         if self._mult_bands:
             if str(self._avg[band_id - 1]).upper() in self._float_str_vals:
                 return True
@@ -541,6 +547,19 @@ class Parameter:
                 return False
         else:
             if str(self._avg).upper() in self._float_str_vals:
+                return True
+            else:
+                return False
+
+    def _no_std(self, band_id=1):
+        """ Check if a parameter std is 'NA' """
+        if self._mult_bands:
+            if str(self._std[band_id - 1]).upper() in self._float_str_vals:
+                return True
+            else:
+                return False
+        else:
+            if str(self._std).upper() in self._float_str_vals:
                 return True
             else:
                 return False

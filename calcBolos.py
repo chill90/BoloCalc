@@ -4,8 +4,14 @@ import datetime as dt
 import sys as sy
 import os
 
+# Verify the python version
+if sy.version_info.major == 2:
+    print("\n***** Python 2 is not longer supported for "
+          "BoloCalc v0.10 (Aug 2019) and beyond *****")
+    sy.exit()
+
 # BoloCalc modules
-import src.simulation as sm
+import src.simulation as sm  # noqa: E42
 
 
 def date_time_str():
@@ -24,12 +30,6 @@ def usage():
                  "Example: python3 mappingSpeed.py %s\n"
                  % (os.path.join("Experiments", "ExampleExperiment", "V0")))
     sy.exit(usage_str)
-
-# Verify the python version
-if sy.version_info.major == 2:
-    print("\n***** Python 2 is not longer supported for "
-          "BoloCalc v0.10 (Aug 2019) and beyond *****")
-    usage()
 
 # String defining when this code is being run
 dt_str, dt_tm_str = date_time_str()

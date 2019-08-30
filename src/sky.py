@@ -13,7 +13,6 @@ except ImportError:
 import os
 import io
 
-
 # BoloCalc modules
 import src.foregrounds as fg
 

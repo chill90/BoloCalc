@@ -148,7 +148,7 @@ class Camera:
                 "Camera file '%s' does not exist" % (cam_file))
         # Load camera file into a dictionary
         params = self._load.camera(cam_file)
-    
+
         # Dictionary of the camera Parameter objects
         self._param_dict = {
             "bore_elev": pr.Parameter(

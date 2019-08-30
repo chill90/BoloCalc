@@ -64,57 +64,57 @@ class Unit:
 # BoloCalc units identified by parameter name
 std_units = {
     "NA": Unit("NA"),
-    "Resolution": Unit("GHz"),
-    "Dust Temperature": Unit("K"),
-    "Dust Spec Index": Unit("NA"),
-    "Dust Amplitude": Unit("MJy"),
-    "Dust Scale Frequency": Unit("GHz"),
-    "Synchrotron Spec Index": Unit("NA"),
-    "Synchrotron Amplitude": Unit("K"),
-    "Sync Scale Frequency": Unit("GHz"),
-    "Elevation": Unit("deg"),
-    "PWV": Unit("mm"),
-    "Observation Time": Unit("yr"),
-    "Sky Fraction": Unit("NA"),
-    "Observation Efficiency": Unit("NA"),
-    "NET Margin": Unit("NA"),
-    "Boresight Elevation": Unit("deg"),
-    "Optical Coupling": Unit("NA"),
-    "F Number": Unit("NA"),
-    "Bath Temp": Unit("K"),
-    "Band Center": Unit("GHz"),
-    "Fractional BW": Unit("NA"),
-    "Pixel Size": Unit("mm"),
-    "Num Det per Wafer": Unit("NA"),
-    "Num Waf per OT": Unit("NA"),
-    "Num OT": Unit("NA"),
-    "Waist Factor": Unit("NA"),
-    "Det Eff": Unit("NA"),
-    "Psat": Unit("pW"),
-    "Psat Factor": Unit("NA"),
-    "Carrier Index": Unit("NA"),
-    "Tc": Unit("K"),
-    "Tc Fraction": Unit("NA"),
-    "Flink": Unit("NA"),
-    "G": Unit("pW"),
-    "Yield": Unit("NA"),
-    "SQUID NEI": Unit("pA/rtHz"),
-    "Bolo Resistance": Unit("Ohm"),
-    "Read Noise Frac": Unit("NA"),
-    "Temperature": Unit("K"),
-    "Absorption": Unit("NA"),
-    "Reflection": Unit("NA"),
-    "Thickness": Unit("mm"),
-    "Index": Unit("NA"),
-    "Loss Tangent": Unit("e-4"),
-    "Conductivity": Unit("e+6"),
-    "Surface Rough": Unit("um RMS"),
-    "Spillover": Unit("NA"),
-    "Spillover Temp": Unit("K"),
-    "Scatter Frac": Unit("NA"),
-    "Scatter Temp": Unit("K"),
-    "Popt": Unit("pW"),
-    "NEP": Unit("aW/rtHz"),
-    "NET": Unit("uK-rts"),
-    "Corr Fact": Unit("NA"),
-    "Map Depth": Unit("uK-amin")}
+    "RESOLUTION": Unit("GHz"),  # spec res
+    "DUSTTEMPERATURE": Unit("K"),  # dust temp
+    "DUSTSPECINDEX": Unit("NA"),  # dust spec index
+    "DUSTAMPLITUDE": Unit("MJy"),  # dust amp
+    "DUSTSCALEFREQUENCY": Unit("GHz"),  # dust scale freq
+    "SYNCHROTRONSPECINDEX": Unit("NA"),  # synch spec index
+    "SYNCHROTRONAMPLITUDE": Unit("K"),  # synch amp
+    "SYNCSCALEFREQUENCY": Unit("GHz"),  # sync scale freq
+    "ELEVATION": Unit("deg"),  # elevation
+    "PWV": Unit("mm"),  # pwv
+    "OBSERVATIONTIME": Unit("yr"),  # obs time
+    "SKYFRACTION": Unit("NA"),  # sky frac
+    "OBSERVATIONEFFICIENCY": Unit("NA"),  # obs eff
+    "NETMARGIN": Unit("NA"),  # NET margin
+    "BORESIGHTELEVATION": Unit("deg"),  # boresight elev
+    "OPTICALCOUPLING": Unit("NA"),  # optical coupling
+    "FNUMBER": Unit("NA"),  # f-number
+    "BATHTEMP": Unit("K"),  # bath temp
+    "BANDCENTER": Unit("GHz"),  # band center
+    "FRACTIONALBW": Unit("NA"),  # fractional bw
+    "PIXELSIZE": Unit("mm"),  # pixel size
+    "NUMDETPERWAFER": Unit("NA"),  # num det per waf
+    "NUMWAFPEROT": Unit("NA"),  # num waf per OT
+    "NUMOT": Unit("NA"),  # num OT
+    "WAISTFACTOR": Unit("NA"),  # waist factor
+    "DETEFF": Unit("NA"),  # det eff
+    "PSAT": Unit("pW"),  # psat
+    "PSATFACTOR": Unit("NA"),  # psat factor
+    "CARRIERINDEX": Unit("NA"),  # carrier index
+    "TC": Unit("K"),  # Tc
+    "TCFRACTION": Unit("NA"),  # Tc fraction
+    "FLINK": Unit("NA"),  # Flink
+    "G": Unit("pW"),  # G
+    "YIELD": Unit("NA"),  # yield
+    "SQUIDNEI": Unit("pA/rtHz"),  # SQUID NEI
+    "BOLORESISTANCE": Unit("Ohm"),  # bolo R
+    "READNOISEFACT": Unit("NA"),  # read noise fact
+    "TEMPERATURE": Unit("K"),  # temp
+    "ABSORPTION": Unit("NA"),  # absorption
+    "REFLECTION": Unit("NA"),  # reflection
+    "THICKNESS": Unit("mm"),  # thickness
+    "INDEX": Unit("NA"),  # index
+    "LOSSTANGENT": Unit("e-4"),  # loss tangent
+    "CONDUCTIVITY": Unit("e+6"),  # conductivity
+    "SURFACEROUGH": Unit("um RMS"),  # surface rough
+    "SPILLOVER": Unit("NA"),  # spillover
+    "SPILLOVERTEMP": Unit("K"),  # spill temp
+    "SCATTERFRAC": Unit("NA"),  # scatter frac
+    "SCATTERTEMP": Unit("K"),  # scatter temp
+    "POPT": Unit("pW"),  # popt
+    "NEP": Unit("aW/rtHz"),  # NEP
+    "NET": Unit("uK-rts"),  # NET
+    "CORRFACT": Unit("NA"),  # corr fact
+    "MAPDEPTH": Unit("uK-amin")}  # map depth

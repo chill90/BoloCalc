@@ -7,6 +7,7 @@
 
 # Atmosphere profile files
 *src/atmFiles/*
+*atm.hdf5
 
 # Latex temporary files
 *MANUAL/*

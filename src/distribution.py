@@ -1,6 +1,9 @@
 # Built-in modules
 import numpy as np
 
+# BoloCalc modules
+import src.unit as un
+
 
 class Distribution:
     """
@@ -14,17 +17,21 @@ class Distribution:
     prob (array): probabilities
     val (array): values
     """
-    def __init__(self, inp):
+    def __init__(self, inp, unit=None):
         # Store passed parameters
         self._inp = np.array(inp)
+        if unit is None:
+            self._unit = un.std_units['NA']
+        else:
+            self._unit = unit
 
         # Load PDF from file if 'finput' is a string
         if len(self._inp.shape) == 1:
-            self.val = inp
+            self.val = self._unit.to_SI(self._inp)
             self.prob = None
             self._cum = None
         elif len(self._inp.shape) == 2:
-            self.val = self._inp[0]
+            self.val = self._unit.to_SI(self._inp[0])
             self.prob = self._inp[1]
             # Rescale probabilities to 1 in case they are not already
             self.prob = self.prob / np.sum(self.prob)
