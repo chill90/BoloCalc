@@ -63,7 +63,7 @@ class Parameter:
         self._check_range()
 
     # ***** Public Methods *****
-    def fetch(self, band_id=1): 
+    def fetch(self, band_id=1):
         """
         Return (avg, med, std) given a band_id, or return (val)
 
@@ -170,7 +170,7 @@ class Parameter:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
         return self.fetch(band_id)[1]
-    
+
     def get_std(self, band_id=1):
         """
         Return standard deviation for band_id
@@ -260,7 +260,7 @@ class Parameter:
         self._med = None
         self._std = None
         return
-    
+
     def _store_int(self, inp):
         self._mult_bands = False
         try:
@@ -282,7 +282,7 @@ class Parameter:
         # If input distribution, then simply store it
         elif isinstance(inp, ds.Distribution):
             self._store_float_dist(inp)
-        # If input tuple, we are dealing with an optic, which 
+        # If input tuple, we are dealing with an optic, which
         # may have distributions for any frequency channel
         # (param_str, dist_dict)
         # param_str is assumed to be identical to what's handled for a string
@@ -324,9 +324,9 @@ class Parameter:
         self._med = self._float(inp.median())
         self._std = self._float(inp.std())
         return
-    
+
     def _store_float_tuple(self, inp):
-        # Presumed format (param_str, dict_dist), which only comes about for 
+        # Presumed format (param_str, dict_dist), which only comes about for
         # optics distributions
         if len(inp) != 2:
             self._log.err(
@@ -379,9 +379,9 @@ class Parameter:
                     sv = std_val[i]
                 else:
                     sv = 0.
-                # If mean value is 'PDF', find its distribution in the 
+                # If mean value is 'PDF', find its distribution in the
                 # passed distribution dictionary
-                if str(mv).upper().strip() == 'PDF':
+                if 'PDF' in str(mv).upper():
                     if self._band_ids is None:
                         self._log.err(
                             "'PDF' found in Parameter '%s' but no band_ids "
@@ -409,7 +409,7 @@ class Parameter:
             self._mult_bands = False
             # Check if the parameter is given by a PDF
             if 'PDF' in mean_val.upper:
-                # Single value named 'PDF' is assumed to define 
+                # Single value named 'PDF' is assumed to define
                 # a parameter distribution for all bands
                 try:
                     dist = dist_dict['ALL']
@@ -426,7 +426,7 @@ class Parameter:
                 self._log.err(
                     "Could not understand mean value '%s' for Parameter '%s'"
                     % (self.name))
-        # If the mean value is a float or an int, then simply store the 
+        # If the mean value is a float or an int, then simply store the
         # values straight away
         elif isinstance(mean_val, float) or isinstance(mean_val, int):
             self._val = None
@@ -456,7 +456,7 @@ class Parameter:
         if type(self._val) is not list:
             self._log.err(
                 "Parameter '%s' with value '%s' cannot be type "
-                    "casted to list" % (self.name, str(inp)))
+                "casted to list" % (self.name, str(inp)))
         return
 
     def _store_str(self, inp):
@@ -473,7 +473,7 @@ class Parameter:
         if val is None:
             self._mult_bands = False
             return None
-        # Try to convert the value to a float. If successful, 
+        # Try to convert the value to a float. If successful,
         # convert to SI units and return
         try:
             float_val = float(val)

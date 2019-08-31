@@ -55,7 +55,7 @@ ps.add_argument(
     help="Custom name for vary output")
 ps.add_argument(
     "--log_name", dest="log_name", nargs=1, type=str,
-    default=dt_str,
+    default=[dt_str],
     help="Custom name for logging file")
 args = ps.parse_args()
 

@@ -51,7 +51,7 @@ class Vary:
                     self._sim.param("nobs"))
         self._log.out((
                 "Simulting %d experiment realizations each with "
-                "%d detector realizations and %d sky realizations.\n"
+                "%d detector realizations and %d sky realizations. "
                 "Total sims = %d"
                 % (self._sim.param("nexp"), self._sim.param("ndet"),
                    self._sim.param("nobs"), tot_sims)))
@@ -70,7 +70,7 @@ class Vary:
         adj_sns = []
         tot_adjs = self._nexp * len(self._set_arr)
         self._log.out((
-                "Looping over %d parameter sets for %d realizations\n"
+                "Looping over %d parameter sets for %d realizations. "
                 "Total sims = %d"
                 % (len(self._set_arr), tot_sims, tot_adjs)))
         for n, (exp, sens) in enumerate(zip(self._exps, self._sens)):
@@ -173,7 +173,7 @@ class Vary:
         curr_pix_sz = ch.get_param('Pixel Size')
         curr_ndet = ch.get_param('Num Det per Wafer')
         curr_ap = ap.get_param(
-            'Absorption',band_id=ch.band_id)
+            'Absorption', band_id=ch.band_id)
         if curr_ap == 'NA':
             curr_ap = None
         # Calculate new values for detector number,

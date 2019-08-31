@@ -397,13 +397,17 @@ class Sensitivity:
                 eff_det_side]
 
     def _num_sky_elem(self, ch):
-        if ch.cam.tel.param("site").upper() == "SPACE":
-            if ch.cam.tel.exp.sim.param("infg"):
+        site = ch.cam.tel.param("site").upper()
+        infg = ch.cam.tel.exp.sim.param("infg")
+        if site == "ROOM":
+            nelem = 1
+        elif site == "SPACE":
+            if infg:
                 nelem = 3
             else:
                 nelem = 1
         else:
-            if ch.cam.tel.exp.sim.param("infg"):
+            if infg:
                 nelem = 4
             else:
                 nelem = 2

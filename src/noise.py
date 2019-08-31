@@ -65,7 +65,7 @@ class Noise:
         """
         return (psat * (n + 1) * (Tc**n) /
                 ((Tc**(n + 1)) - (Tb**(n + 1))))
-    
+
     def corr_facts(self, elems, det_pitch, flamb_max=3.):
         """
         Calculate the Bose white-noise correlation factor
@@ -96,14 +96,15 @@ class Noise:
         for i in range(len(elems)):
             if "CMB" in elems[i]:
                 factors.append(c_apert)
-            if elems[i].upper() in self._ap_names:
+            elif elems[i].upper() in self._ap_names:
                 factors.append(i_stop)
                 at_det = True
             elif not at_det:
                 factors.append(i_apert)
             else:
                 factors.append(1.)
-        return np.array(factors[:-1])
+        # return np.array(factors[:-1])
+        return np.array(factors)
 
     def photon_NEP(self, popts, freqs, elems=None, det_pitch=None):
         """
@@ -209,4 +210,3 @@ class Noise:
         return np.sqrt(
             (4. * self._phys.PI * fsky * 2. * np.power(net_arr, 2.)) /
             (tobs * obs_eff)) * (10800. / self._phys.PI)
-

@@ -23,7 +23,7 @@ class DetectorArray:
         # Store detector objects
         self._log.log(
             "Storing detector objects in DetectorArray for "
-            "channel Band_ID='%s'"
+            "channel Band_ID '%s'"
             % (self.ch.band_id))
         self.dets = [dt.Detector(self) for n in range(self._ndet)]
 

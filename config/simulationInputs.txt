@@ -11,7 +11,7 @@ Detectors    | 1            | Number of Detector MC realizations per observation
 #---------------------------------------------------------------------------------------------------------------------------
 Resolution   | 0.200        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
 #---------------------------------------------------------------------------------------------------------------------------
-Foregrounds  | True        | Include Foregrounds? True or False
+Foregrounds  | False        | Include Foregrounds? True or False
 #---------------------------------------------------------------------------------------------------------------------------
 Correlations | True         | Include white noise correlations? True or False
 #---------------------------------------------------------------------------------------------------------------------------

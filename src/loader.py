@@ -70,8 +70,8 @@ class Loader:
     def optics_bands(self, inp_dir):
         """
         Load all band files in a specified directory for an optical chain.
-        Bands assumed to cover all frequency channels. 
-        Returns a dictionary with key = optic name and value = list of 
+        Bands assumed to cover all frequency channels.
+        Returns a dictionary with key = optic name and value = list of
         valid band files, which will be sorted through at the optic level.
 
         Args:
@@ -252,8 +252,10 @@ class Loader:
         if dist_dir is not None:
             # Available distribution files
             dist_files = os.listdir(dist_dir)
+            # No temporary files allowed
             dist_files = [f for f in dist_files
                           if '~' not in f and '#' not in f]
+            # Capitalized file names for fname matching
             dist_files_upper = [dist_file.upper() for dist_file in dist_files]
         # Load data into a dictionary and modify as needed
         data = {params[i].strip(): vals[i].strip()
@@ -267,22 +269,28 @@ class Loader:
                         "distribution directory %s not found"
                         % (str(key), dist_dir))
                 dist_files_found = 0
-                f_id = key.upper()
+                f_id = key.replace(" ", "").upper()
                 for i, fname in enumerate(self._dist_fnames(f_id)):
                     if fname in dist_files_upper:
+                        ind = dist_files_upper.index(fname)
+                        dfile = os.path.join(dist_dir, dist_files[ind])
                         data[key] = ds.Distribution(
-                            self._pdf(os.path.join(dist_dir, dist_files[i])))
+                            self._pdf(dfile))
                         dist_files_found += 1
                 if dist_files_found == 0:
                     self._log.err(
                         "Parameter '%s' has "
                         "value 'PDF' but no distribution file found in %s"
                         % (key, dist_dir))
-                if dist_files_found > 1:
+                elif dist_files_found > 1:
                     self._log.err(
                         "Multiple distribution files found in %s for "
                         "parameter '%s'"
                         % (dist_dir, key))
+                else:
+                    self._log.log(
+                        "** Using PDF file %s for parameter '%s'"
+                        % (dfile, key))
             else:
                 continue
         return data
@@ -301,7 +309,7 @@ class Loader:
             param_dict = {}
             for j, param_name in enumerate(param_names):
                 # Check if the parameter calls for a PDF in either of its bands
-                if vals[i][j].upper().strip() == 'PDF':
+                if 'PDF' in vals[i][j].upper():
                     # Throw error if the dist directory doesn't exist
                     if dist_dir is None:
                         self._log.err(
@@ -339,12 +347,13 @@ class Loader:
         # Accepted filenames need to have a specific structure
         # opticName_paramName_bandID.txt/csv
         f_id = "%s_%s" % (
-            optic_name.replace(" ", "").upper(),
-            param_name.replace(" ", "").upper())
+            optic_name.replace(" ", ""),
+            param_name.replace(" ", ""))
+        f_id_upper = f_id.upper()
         files = []
         for fname in dist_files_upper:
             ftag = fname.split('.')[-1]
-            if f_id in fname and ftag in self._ftypes:
+            if f_id.upper() in fname and ftag in self._ftypes:
                 ind = dist_files_upper.index(fname)
                 files.append(dist_files[ind])
         if len(files) == 0:
@@ -352,6 +361,11 @@ class Loader:
                 "Parameter '%s' has "
                 "value 'PDF' but no distribution file found in %s"
                 % (f_id, dist_dir))
+        else:
+            self._log.log(
+                "** Using PDF files %s in %s for parameter '%s' "
+                "for optic '%s'"
+                % (str(files), dist_dir, f_id, optic_name))
         # Use the band ID as the key for the return dictionary
         for f in files:
             # Split the file name (minus .csv/txt) into its three
@@ -371,7 +385,7 @@ class Loader:
                 self._log.log(
                     "Illegal optic PDF file name '%s'. Ignoring...")
                 continue
-            # Return a dictionary of distributions, keyed by the 
+            # Return a dictionary of distributions, keyed by the
             # third file identifier, which should be the Band ID,
             # or keyed by 'ALL'
             ret_dict[key] = ds.Distribution(self._pdf(
@@ -383,7 +397,7 @@ class Loader:
             # Available distribution files
             dist_files = os.listdir(dist_dir)
             dist_files = [f for f in dist_files
-                        if '~' not in f and '#' not in f]
+                          if '~' not in f and '#' not in f]
             dist_files_upper = [dist_file.upper() for dist_file in dist_files]
         # Channel names stored in the first column
         band_ids = [value[0] for value in values]
@@ -400,7 +414,7 @@ class Loader:
             for j, param_name in enumerate(param_names):
                 param_name = param_names[j]
                 # Check if the parameter calls for a PDF
-                if vals[i][j].upper().strip() == 'PDF':
+                if 'PDF' in vals[i][j].upper():
                     if dist_dir is None:
                         self._log.err(
                             "Parameter '%s' for Band ID '%s' has value 'PDF' "
@@ -415,20 +429,25 @@ class Loader:
                     dist_files_found = 0  # keep track of fname matches
                     for i, fname in enumerate(dist_files_upper):
                         if fname in fnames:
+                            dfile = os.path.join(dist_dir, dist_files[i])
                             param_dict[param_name] = ds.Distribution(
-                                self._pdf(os.path.join(
-                                    dist_dir, dist_files[i])))
+                                self._pdf(dfile))
                             dist_files_found += 1
                     if dist_files_found == 0:
                         self._log.err(
                             "Channel parameter '%s' for Band ID '%s' has "
                             "value 'PDF' but no distribution file found in %s"
                             % (str(param_name), str(band_id), dist_dir))
-                    if dist_files_found > 1:
+                    elif dist_files_found > 1:
                         self._log.err(
                             "Multiple distribution files found in %s for "
                             "channel parameter '%s' for Band ID '%s'"
                             % (dist_dir, str(param_name), str(band_id)))
+                    else:
+                        self._log.log(
+                            "** Using distribution file %s for parameter '%s' "
+                            "in channel Band_ID '%s'"
+                            % (dfile, str(param_name), str(band_id)))
                 else:
                     # Otherwise, just store the paramter string
                     param_dict[param_name] = vals[i][j]
@@ -468,11 +487,11 @@ class Loader:
         in a given dist dir
         """
         if dist_dir is not None:
-            ret_arr =  [os.path.join(
+            ret_arr = [os.path.join(
                 dist_dir, "%s.%s" % (f_id, ftype.upper()))
                 for ftype in self._ftypes]
         else:
-            ret_arr =  [
+            ret_arr = [
                 "%s.%s" % (f_id, ftype.upper())
                 for ftype in self._ftypes]
         return ret_arr
