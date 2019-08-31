@@ -3,7 +3,6 @@ import numpy as np
 
 # BoloCalc modules
 import src.parameter as pr
-import src.unit as un
 import src.band as bd
 
 

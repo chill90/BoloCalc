@@ -43,13 +43,12 @@ class Simulation:
         # Store experiment input file
         self.exp_dir = exp_dir
         self._sim_file = sim_file
-
         # Build simulation-wide objects
+        self.std_units = un.std_units
         self.log = lg.Log(log_file)
-        self.load = ld.Loader(self.log)
+        self.load = ld.Loader(self.log, self.std_units)
         self.phys = ph.Physics()
         self.noise = ns.Noise(self.phys)
-
         self.log.log(
             "Generating Simulation object")
         # Store parameter values

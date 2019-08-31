@@ -5,7 +5,6 @@ import functools as ft
 import copy as cp
 
 # BoloCalc modules
-import src.unit as un
 import src.distribution as ds
 
 

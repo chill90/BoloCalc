@@ -8,7 +8,6 @@ import src.parameter as pr
 import src.camera as cm
 import src.sky as sk
 import src.scanStrategy as sc
-import src.unit as un
 import src.profile as pf
 
 

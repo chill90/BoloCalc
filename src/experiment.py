@@ -6,7 +6,6 @@ import os
 # BoloCalc modules
 import src.telescope as tp
 import src.parameter as pr
-import src.unit as un
 
 
 class Experiment:

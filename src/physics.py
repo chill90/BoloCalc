@@ -1,9 +1,6 @@
 # Built-in modules
 import numpy as np
 
-# BoloCalc modules
-import src.unit as un
-
 
 class Physics:
     """

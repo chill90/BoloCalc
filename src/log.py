@@ -27,9 +27,10 @@ class Log:
         self._wrn_preamble = "BoloCalc WARNING: "
 
         # Announce the beginning of logging
+        print("trying to do initial write...")
         self._f.write(
             "\n\n***** Starting BoloCalc Program 'calcBolos.py' *****\n")
-        return
+        print("finished initial write")
 
     def __del__(self):
         self._f.close()

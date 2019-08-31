@@ -9,7 +9,6 @@ import src.band as bd
 import src.detectorArray as da
 import src.observationSet as ob
 import src.parameter as pr
-import src.unit as un
 
 
 class Channel:

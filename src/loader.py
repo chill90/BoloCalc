@@ -5,8 +5,7 @@ import os
 
 # BoloCalc modules
 import src.distribution as ds
-import src.unit as un
-
+# import src.unit as un
 
 class Loader:
     """
@@ -15,14 +14,14 @@ class Loader:
     Args:
     log (src.Log): Log object
     """
-    def __init__(self, log):
+    def __init__(self, log, std_units):
         self._log = log
+        self._std_units = std_units
         self._ds_dir = "Dist"
         self._bd_dir = "Bands"
         self._opt_dir = "Optics"
         self._det_dir = "Detectors"
         self._ftypes = ["CSV", "TXT"]
-        return
 
     # ***** Public methods *****
     def sim(self, fname):
@@ -277,7 +276,7 @@ class Loader:
                         ind = dist_files_upper.index(fname)
                         dfile = os.path.join(dist_dir, dist_files[ind])
                         data[key] = ds.Distribution(
-                            self._pdf(dfile), un.std_units[param_id])
+                            self._pdf(dfile), self._std_units[param_id])
                         dist_files_found += 1
                 if dist_files_found == 0:
                     self._log.err(
@@ -392,7 +391,7 @@ class Loader:
             # or keyed by 'ALL'
             ret_dict[key] = ds.Distribution(self._pdf(
                 os.path.join(dist_dir, f)),
-                un.std_units[param_id])
+                self._std_units[param_id])
         return ret_dict
 
     def _dict_channels(self, keys, values, dist_dir=None):
@@ -435,7 +434,7 @@ class Loader:
                         if fname in fnames:
                             dfile = os.path.join(dist_dir, dist_files[i])
                             param_dict[param_name] = ds.Distribution(
-                                self._pdf(dfile), un.std_units[param_id])
+                                self._pdf(dfile), self._std_units[param_id])
                             dist_files_found += 1
                     if dist_files_found == 0:
                         self._log.err(

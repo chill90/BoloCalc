@@ -4,7 +4,6 @@ import numpy as np
 # BoloCalc modules
 import src.observation as ob
 import src.scanStrategy as sc
-import src.unit as un
 
 
 class ObservationSet:
