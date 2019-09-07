@@ -33,7 +33,7 @@ class Observation:
 
         # Store sky values
         elem, emis, tran, temp = self._get_sky_vals()
-        self.elem = np.squeeze(elem, axis=(0, 1)).T.tolist()
+        self.elem = np.squeeze(elem[0], axis=0).T.tolist()
         self.emis = np.squeeze(emis, axis=1).tolist()
         self.tran = np.squeeze(tran, axis=1).tolist()
         self.temp = np.squeeze(temp, axis=1).tolist()

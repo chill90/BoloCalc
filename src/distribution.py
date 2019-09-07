@@ -1,5 +1,6 @@
 # Built-in modules
 import numpy as np
+import src.unit as un
 
 
 class Distribution:
@@ -14,18 +15,29 @@ class Distribution:
     prob (array): probabilities
     val (array): values
     """
-    def __init__(self, inp):
+    def __init__(self, inp, std_param=None, name=None, unit=None,
+                 min=None, max=None):
         # Store passed parameters
         self._inp = np.array(inp)
+        if std_param is not None:
+            self.name = std_param.name
+            self._unit = std_param.unit
+            self._min = std_param.min
+            self._max = std_param.max
+        else:
+            self.name = name
+            self._unit = unit
+            self._min = min
+            self._max = max
 
         # Load PDF from file if 'finput' is a string
         if len(self._inp.shape) == 1:
-            self.val = inp
+            self.val = self._unit.to_SI(inp)
             self.prob = None
             self._cum = None
         elif len(self._inp.shape) == 2:
-            self.val = self._inp[0]
-            self.prob = self._inp[1]
+            self.val = self._unit.to_SI(self._inp[0])
+            self.prob = self._unit.to_SI(self._inp[1])
             # Rescale probabilities to 1 in case they are not already
             self.prob = self.prob / np.sum(self.prob)
             self._cum = np.cumsum(self.prob)
@@ -39,9 +51,12 @@ class Distribution:
         nsample (int): the number of times to sample the distribution
         """
         if nsample == 1:
-            return np.random.choice(self.val, size=nsample, p=self.prob)[0]
+            samps = np.random.choice(self.val, size=nsample, p=self.prob)[0]
         else:
-            return np.random.choice(self.val, size=nsample, p=self.prob)
+            samps = np.random.choice(self.val, size=nsample, p=self.prob)
+        samps = np.where(samps > self._max, self._max, samps)
+        samps = np.where(samps < self._min, self._min, samps)
+        return samps
 
     def mean(self):
         """ Return the mean of the distribution """

@@ -38,11 +38,12 @@ class Channel:
         # Store passed parameters
         self.cam = cam
         self._inp_dict = inp_dict
-        self.band_id = "%s" % (self._inp_dict["Band ID"])
+        self.band_id = "%s" % (self._inp_dict["BANDID"])
         self._band_file = band_file
         self._log = self.cam.tel.exp.sim.log
         self._load = self.cam.tel.exp.sim.load
         self._phys = self.cam.tel.exp.sim.phys
+        self._std_params = self.cam.tel.exp.sim.std_params
         self._nexp = self.cam.tel.exp.sim.param("nexp")
         self._fres = self.cam.tel.exp.sim.param("fres")
         self._ndet = self.cam.tel.exp.sim.param("ndet")
@@ -154,109 +155,60 @@ class Channel:
         else:
             return param.sample(band_id=band_id, nsample=1)
 
+    def _store_param(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._std_params.keys():
+            return pr.Parameter(
+                self._log, self._inp_dict[cap_name],
+                std_param=self._std_params[cap_name])
+        else:
+            self._log.err(
+                "Passed parameter in channel.txt '%s' not "
+                "recognized" % (name))
+
     def _store_param_dict(self):
         """ Store Parameter objects for channel """
         # Dictionary of the channel Parameter objects
         self._param_dict = {
-            "det_per_waf": pr.Parameter(
-                self._log, "Num Det per Wafer",
-                self._inp_dict["Num Det per Wafer"],
-                min=0.0, max=np.inf),
-            "waf_per_ot": pr.Parameter(
-                self._log, "Num Waf per OT",
-                self._inp_dict["Num Waf per OT"],
-                min=0.0, max=np.inf),
-            "ot": pr.Parameter(
-                self._log, "Num OT",
-                self._inp_dict["Num OT"],
-                min=0.0, max=np.inf),
-            "yield": pr.Parameter(
-                self._log, "Yield",
-                self._inp_dict["Yield"],
-                min=0.0, max=1.0),
-            "pix_sz": pr.Parameter(
-                self._log, "Pixel Size",
-                self._inp_dict["Pixel Size"],
-                min=0.0, max=np.inf),
-            "wf": pr.Parameter(
-                self._log, "Waist Factor",
-                self._inp_dict["Waist Factor"],
-                min=2.0, max=np.inf)}
+            "det_per_waf": self._store_param("Num Det per Wafer"),
+            "waf_per_ot": self._store_param("Num Waf per OT"),
+            "ot": self._store_param("Num OT"),
+            "yield": self._store_param("Yield"),
+            "pix_sz": self._store_param("Pixel Size"),
+            "wf": self._store_param("Waist Factor")}
 
         # Dictionary of the detector Parameter objects
         # These are evaluated at the detector object level
         self.det_dict = {
-            "bc": pr.Parameter(
-                self._log, "Band Center",
-                self._inp_dict["Band Center"],
-                min=0.0, max=np.inf),
-            "fbw": pr.Parameter(
-                self._log, "Fractional BW",
-                self._inp_dict["Fractional BW"],
-                min=0.0, max=2.0),
-            "det_eff": pr.Parameter(
-                self._log, "Det Eff",
-                self._inp_dict["Det Eff"],
-                min=0.0, max=1.0),
-            "psat": pr.Parameter(
-                self._log, "Psat",
-                self._inp_dict["Psat"],
-                min=0.0, max=np.inf),
-            "psat_fact": pr.Parameter(
-                self._log, "Psat Factor",
-                self._inp_dict["Psat Factor"],
-                min=0.0, max=np.inf),
-            "n": pr.Parameter(
-                self._log, "Carrier Index",
-                self._inp_dict["Carrier Index"],
-                min=0.0, max=np.inf),
-            "tc": pr.Parameter(
-                self._log, "Tc", self._inp_dict["Tc"],
-                min=0.0, max=np.inf),
-            "tc_frac": pr.Parameter(
-                self._log, "Tc Fraction",
-                self._inp_dict["Tc Fraction"],
-                min=0.0, max=np.inf),
-            "nei": pr.Parameter(
-                self._log, "SQUID NEI",
-                self._inp_dict["SQUID NEI"],
-                min=0.0, max=np.inf),
-            "bolo_r": pr.Parameter(
-                self._log, "Bolo Resistance",
-                self._inp_dict["Bolo Resistance"],
-                min=0.0, max=np.inf),
-            "read_frac": pr.Parameter(
-                self._log, "Read Noise Frac",
-                self._inp_dict["Read Noise Frac"],
-                min=0.0, max=1.0)}
+            "bc": self._store_param("Band Center"),
+            "fbw": self._store_param("Fractional BW"),
+            "det_eff": self._store_param("Det Eff"),
+            "psat": self._store_param("Psat"),
+            "psat_fact": self._store_param("Psat Factor"),
+            "n": self._store_param("Carrier Index"),
+            "tc": self._store_param("Tc"),
+            "tc_frac": self._store_param("Tc Fraction"),
+            "nei": self._store_param("SQUID NEI"),
+            "bolo_r": self._store_param("Bolo Resistance"),
+            "read_frac": self._store_param("Read Noise Frac")}
 
         # Newly added parameters to BoloCalc
         # checked separately for backwards compatibility
         if "Flink" in self._inp_dict.keys():
-            self.det_dict["flink"] = pr.Parameter(
-                self._log, "Flink", self._inp_dict["Flink"],
-                min=0.0, max=np.inf)
+            self.det_dict["flink"] = self._store_param("Flink")
         else:
             self.det_dict["flink"] = pr.Parameter(
-                self._log, "Flink", "NA",
-                min=0.0, max=np.inf)
+                self._log, "NA", name="Flink")
         if "G" in self._inp_dict.keys():
-            self.det_dict["g"] = pr.Parameter(
-                self._log, "G", self._inp_dict["G"],
-                min=0.0, max=np.inf)
+            self.det_dict["g"] = self._store_param("G")
         else:
             self.det_dict["g"] = pr.Parameter(
-                self._log, "G", "NA",
-                min=0.0, max=np.inf)
+                self._log, "NA", name="G")
         if "Responsivity Factor" in self._inp_dict.keys():
-            self.det_dict["sfact"] = pr.Parameter(
-                self._log, "Responsivity Factor",
-                self._inp_dict["Responsivity Factor"],
-                min=0.0, max=np.inf)
+            self.det_dict["sfact"] = self._store_param("Responsivity Factor")
         else:
             self.det_dict["sfact"] = pr.Parameter(
-                self._log, "Responsivity Factor", "NA",
-                min=0.0, max=np.inf)
+                self._log, "NA", name="Responsivity Factor")
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
             param.name: pid
@@ -273,8 +225,8 @@ class Channel:
             % (self.band_id))
         self._param_vals = {}
         # Store ID parameters first
-        self._param_vals["band_id"] = int(self._inp_dict["Band ID"])
-        self._param_vals["pix_id"] = int(self._inp_dict["Pixel ID"])
+        self._param_vals["band_id"] = int(self._inp_dict["BANDID"])
+        self._param_vals["pix_id"] = int(self._inp_dict["PIXELID"])
         self._param_vals["ch_name"] = (self.cam.param("cam_name") +
                                        str(self.param("band_id")))
         # Store channel parameters

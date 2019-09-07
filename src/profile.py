@@ -11,7 +11,8 @@ def profiler(func):
         retval = func(*args, **kwargs)
         pr.disable()
         s = io.StringIO()
-        sortby = 'cumulative'
+        #sortby = 'cumulative'
+        sortby = 'tottime'
         pstat = ps.Stats(pr, stream=s).sort_stats(sortby)
         pstat.print_stats()
         print(s.getvalue())
