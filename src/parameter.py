@@ -60,7 +60,7 @@ class Parameter:
 
         # Spread delimiter
         self._spread_delim = '+/-'
-        # Allowed parameter string values when input type is float
+        # Allowed parameter string values when input type is 'float'
         self._float_str_vals = ["NA", "BAND"]
 
         # Store the parameter value, mean, and standard deviation
@@ -420,7 +420,7 @@ class Parameter:
         elif isinstance(mean_val, str):
             self._mult_bands = False
             # Check if the parameter is given by a PDF
-            if 'PDF' in mean_val.upper():
+            if 'PDF' in str(mean_val).upper():
                 # Single value named 'PDF' is assumed to define
                 # a parameter distribution for all bands
                 try:
@@ -445,7 +445,7 @@ class Parameter:
             self._avg = mean_val
             self._med = mean_val
             if std_val is not None:
-                if not isinstance(std_val, float) or isinstance(std_val, int):
+                if not isinstance(std_val, float) or not isinstance(std_val, int):
                     self._log.err(
                         "Std value '%s' for Parameter '%s' is not a float "
                         "or int even though its mean value '%s' is"
@@ -462,18 +462,29 @@ class Parameter:
     def _store_list(self, inp):
         self._mult_bands = False
         self._val = eval(inp)
-        self._avg = None
-        self._med = None
-        self._std = None
         if type(self._val) is not list:
             self._log.err(
                 "Parameter '%s' with value '%s' cannot be type "
                 "casted to list" % (self.name, str(inp)))
+        self._avg = None
+        self._med = None
+        self._std = None
         return
 
     def _store_str(self, inp):
         self._mult_bands = False
-        self._val = str(inp)
+        # For optic params, the input is a tuple. However, if this is a string
+        # the tuple is presumed to be ('string', None)
+        val = eval(inp)
+        if isinstance(val, tuple):
+            self._val = str(val[0])
+        elif isinstance(val, str):
+            self._val = val
+        else:
+            self._log.err(
+                "Could not store string parameter '%s', which is of type '%s'"
+                "for parameter '%s'"
+                % (str(inp), type(eval(inp)), self.name))
         self._avg = None
         self._med = None
         self._std = None

@@ -61,7 +61,7 @@ class Optic:
         self._ch = ch
         self._store_param_vals(self._ch)
 
-        # Name
+        # Name, which comes from a tuple ('elem', None)
         self._elem = self._param_vals["elem"]
         self.name = self._elem
         self._nfreq = len(self._ch.freqs)
@@ -175,7 +175,7 @@ class Optic:
             self._log.log(
                 "** Using band files %s for optic '%s' parameters %s"
                 % (list(self._band_dict.values()),
-                   eval(self._param_dict['elem'].get_val())[0],
+                   self._param_dict['elem'].get_val(),
                    list(self._band_dict.keys())))
         return
 
@@ -305,7 +305,7 @@ class Optic:
         return band
 
     def _band_samp(self, key):
-        elem = eval(self._param_vals['elem'])[0]
+        elem = self._param_vals["elem"]
         if key in self._band_dict.keys():
             band_f = self._band_dict[key]
             load_band = bd.Band(self._log, self._load,
