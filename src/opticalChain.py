@@ -59,7 +59,7 @@ class OpticalChain:
         for param_dict in param_dicts.values():
             # Check for duplicate optic names
             upper_keys = [key.upper() for key in self.optics.keys()]
-            elem = param_dict["Element"][0]  # tuple = (param_str, dist)
+            elem = param_dict["ELEMENT"][0]  # tuple = (param_str, dist)
             elem_upper = elem.upper()
             if elem_upper in upper_keys:
                 self._log.err(

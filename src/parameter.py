@@ -28,27 +28,33 @@ class Parameter:
     type (type): where the 'type' arg is stored
     """
 
-    def __init__(self, log, name, inp, unit=None,
-                 min=None, max=None, inp_type=float,
-                 band_ids=None):
+    def __init__(self, log, inp, std_param=None, name=None, unit=None,
+                 min=None, max=None, inp_type=float, band_ids=None):
         # Store passed arguments
         self._log = log
-        self.name = name
-        if unit is not None:
-            self.unit = unit
-        elif self.name in un.std_units.keys():
-            self.unit = un.std_units[self.name.strip().upper()]
+        # If a StandardParam object is passed, use its attributes
+        if std_param is not None:
+            self.name = std_param.name
+            self.unit = std_param.unit
+            self._min = std_param.min
+            self._max = std_param.max
+            self._type = std_param.type
+        # Otherwise, store the passed attributes
         else:
-            self.unit = un.Unit("NA")  # 1
-        if min is not None:
-            self._min = float(min)
-        else:
-            self._min = None
-        if max is not None:
-            self._max = float(max)
-        else:
-            self._max = None
-        self._type = inp_type
+            self.name = name
+            if unit is not None:
+                self.unit = unit
+            else:
+                self.unit = un.Unit("NA")  # 1
+            if min is not None:
+                self._min = float(min)
+            else:
+                self._min = None
+            if max is not None:
+                self._max = float(max)
+            else:
+                self._max = None
+            self._type = inp_type
         # For storing parameters of type [m1, m2, ...] +/- [s1, s2, ...]
         self._band_ids = band_ids
 
@@ -213,7 +219,7 @@ class Parameter:
         # Otherwise, sample the Gaussian described by mean +/- std
         else:
             # If std is zero (or less than), return the average value
-            if np.any(std <= 0.):
+            if std is "NA" or np.any(std <= 0.):
                 return avg
             # If the user calls for a null sampling, set avg to zero
             if null:
@@ -414,7 +420,7 @@ class Parameter:
         elif isinstance(mean_val, str):
             self._mult_bands = False
             # Check if the parameter is given by a PDF
-            if 'PDF' in mean_val.upper:
+            if 'PDF' in mean_val.upper():
                 # Single value named 'PDF' is assumed to define
                 # a parameter distribution for all bands
                 try:
@@ -547,19 +553,6 @@ class Parameter:
                 return False
         else:
             if str(self._avg).upper() in self._float_str_vals:
-                return True
-            else:
-                return False
-
-    def _no_std(self, band_id=1):
-        """ Check if a parameter std is 'NA' """
-        if self._mult_bands:
-            if str(self._std[band_id - 1]).upper() in self._float_str_vals:
-                return True
-            else:
-                return False
-        else:
-            if str(self._std).upper() in self._float_str_vals:
                 return True
             else:
                 return False

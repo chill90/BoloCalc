@@ -27,6 +27,7 @@ class Experiment:
         self.sim = sim
         self._log = self.sim.log
         self._load = self.sim.load
+        self._std_params = self.sim.std_params
         # Experiment directory
         self.dir = self.sim.exp_dir
 
@@ -109,46 +110,36 @@ class Experiment:
         else:
             return param.sample(nsample=1)
 
+    def _store_param(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._std_params.keys():
+            return pr.Parameter(
+                self._log, self._inp_dict[cap_name],
+                std_param=self._std_params[cap_name])
+        else:
+            self._log.err(
+                "Passed parameter in foregrounds.txt '%s' not "
+                "recognized" % (name))
+
     def _store_param_dict(self):
         if self.sim.param("infg"):
             # Load foreground file into a dictionary
             fgnd_file = os.path.join(self._config_dir, 'foregrounds.txt')
             self._log.log(
                 "Loading foreground file '%s'" % (fgnd_file))
-            params = self._load.foregrounds(fgnd_file)
+            self._inp_dict = self._load.foregrounds(fgnd_file)
 
             # Dictionary of the foreground Parameter objects
             self._log.log(
                 "Storing foreground parameters for %s" % (self.dir))
             self._param_dict = {
-                "dust_temp": pr.Parameter(
-                    self._log, "Dust Temperature",
-                    params["Dust Temperature"],
-                    min=0.0, max=np.inf),
-                "dust_ind": pr.Parameter(
-                    self._log, "Dust Spec Index",
-                    params["Dust Spec Index"],
-                    min=-np.inf, max=np.inf),
-                "dust_amp": pr.Parameter(
-                    self._log, "Dust Amplitude",
-                    params["Dust Amplitude"],
-                    min=0.0, max=np.inf),
-                "dust_freq": pr.Parameter(
-                    self._log, "Dust Scale Frequency",
-                    params["Dust Scale Frequency"],
-                    min=0.0, max=np.inf),
-                'sync_ind': pr.Parameter(
-                    self._log, 'Synchrotron Spec Index',
-                    params['Synchrotron Spec Index'],
-                    min=-np.inf, max=np.inf),
-                "sync_amp": pr.Parameter(
-                    self._log, 'Synchrotron Amplitude',
-                    params['Synchrotron Amplitude'],
-                    min=0.0, max=np.inf),
-                "sync_freq": pr.Parameter(
-                    self._log, 'Sync Scale Frequency',
-                    params['Sync Scale Frequency'],
-                    min=0.0, max=np.inf)}
+                "dust_temp": self._store_param("Dust Temperature"),
+                "dust_ind": self._store_param("Dust Spec Index"),
+                "dust_amp": self._store_param("Dust Amplitude"),
+                "dust_freq": self._store_param("Dust Scale Frequency"),
+                'sync_ind': self._store_param("Synchrotron Spec Index"),
+                "sync_amp": self._store_param("Synchrotron Amplitude"),
+                "sync_freq": self._store_param("Sync Scale Frequency")}
             # Dictionary for ID-ing parameters for changing
             self._param_names = {
                 param.name: pid

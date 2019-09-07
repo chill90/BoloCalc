@@ -127,7 +127,7 @@ class Noise:
         # Consider correlations
         else:
             factors = self.corr_facts(elems, det_pitch)
-            popt2 = sum([popts[i]*popts[j]
+            popt2 = sum([popts[i] * popts[j]
                          for i in range(len(popts))
                          for j in range(len(popts))])
             popt2arr = sum([factors[i] * factors[j] * popts[i] * popts[j]

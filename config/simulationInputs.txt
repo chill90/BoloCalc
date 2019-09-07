@@ -9,9 +9,13 @@ Observations | 1           | Number of Observation MC realizations per experimen
 #---------------------------------------------------------------------------------------------------------------------------
 Detectors    | 1           | Number of Detector MC realizations per observation realization. Positive Integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Resolution   | 0.200        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
+Resolution   | 1.000        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
 #---------------------------------------------------------------------------------------------------------------------------
+<<<<<<< HEAD
 Foregrounds  | True         | Include Foregrounds? True or False
+=======
+Foregrounds  | False        | Include Foregrounds? True or False
+>>>>>>> orphan
 #---------------------------------------------------------------------------------------------------------------------------
 Correlations | True         | Include white noise correlations? True or False
 #---------------------------------------------------------------------------------------------------------------------------

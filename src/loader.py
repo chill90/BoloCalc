@@ -5,7 +5,7 @@ import os
 
 # BoloCalc modules
 import src.distribution as ds
-# import src.unit as un
+import src.unit as un
 
 class Loader:
     """
@@ -14,9 +14,9 @@ class Loader:
     Args:
     log (src.Log): Log object
     """
-    def __init__(self, log, std_units):
-        self._log = log
-        self._std_units = std_units
+    def __init__(self, sim):
+        self._log = sim.log
+        self._std_params = sim.std_params
         self._ds_dir = "Dist"
         self._bd_dir = "Bands"
         self._opt_dir = "Optics"
@@ -78,7 +78,7 @@ class Loader:
         inp_dir (str): optics band directory
         """
         # Gather band files
-        band_dir = os.path.join(inp_dir, self._bd_dir, self._det_dir)
+        band_dir = os.path.join(inp_dir, self._bd_dir, self._opt_dir)
         band_files = os.listdir(band_dir)
         # Ignore temporary files
         band_files = [f for f in band_files if "~" not in f]
@@ -101,6 +101,7 @@ class Loader:
                 args = np.argwhere(np.array(dist_ids) == u_id).flatten()
                 files = np.take(np.array(band_files), args)
                 ret_dict[u_id] = [os.path.join(band_dir, f) for f in files]
+            return ret_dict
         else:
             return None
 
@@ -258,7 +259,7 @@ class Loader:
             # Capitalized file names for fname matching
             dist_files_upper = [dist_file.upper() for dist_file in dist_files]
         # Load data into a dictionary and modify as needed
-        data = {params[i].strip(): vals[i].strip()
+        data = {params[i].replace(" ", "").strip().upper(): vals[i].strip()
                 for i in range(len(params))}
         # Check for PDFs
         for key, val in data.items():
@@ -269,14 +270,13 @@ class Loader:
                         "distribution directory %s not found"
                         % (str(key), dist_dir))
                 dist_files_found = 0
-                param_id = key.replace(" ", "").upper()
-                f_id = param_id
+                f_id = key.replace(" ", "").upper()
                 for i, fname in enumerate(self._dist_fnames(f_id)):
                     if fname in dist_files_upper:
                         ind = dist_files_upper.index(fname)
                         dfile = os.path.join(dist_dir, dist_files[ind])
-                        data[key] = ds.Distribution(
-                            self._pdf(dfile), self._std_units[param_id])
+                        data[f_id] = ds.Distribution(
+                            self._pdf(dfile), std_param=self._std_params[f_id])
                         dist_files_found += 1
                 if dist_files_found == 0:
                     self._log.err(
@@ -309,6 +309,7 @@ class Loader:
             # Loop over parameters for each optic
             param_dict = {}
             for j, param_name in enumerate(param_names):
+                param_name_upper = param_name.replace(" ", "").upper()
                 # Check if the parameter calls for a PDF in either of its bands
                 if 'PDF' in vals[i][j].upper():
                     # Throw error if the dist directory doesn't exist
@@ -331,10 +332,10 @@ class Loader:
                                param_name.replace(" ", ""),
                                dist_dir))
                     # Tuple = (param string, dict of dists)
-                    param_dict[param_name] = (vals[i][j], dist_dict)
+                    param_dict[param_name_upper] = (vals[i][j], dist_dict)
                 # Otherwise, just store the paramter string
                 else:
-                    param_dict[param_name] = (vals[i][j], None)
+                    param_dict[param_name_upper] = (vals[i][j], None)
             opt_dict[optic_name] = param_dict
         return opt_dict
 
@@ -347,14 +348,15 @@ class Loader:
         dist_files_upper = [dist_file.upper() for dist_file in dist_files]
         # Accepted filenames need to have a specific structure
         # opticName_paramName_bandID.txt/csv
-        param_id = param_name.replace(" ", "")
+        param_id = param_name.replace(" ", "").upper()
         f_id = "%s_%s" % (
             optic_name.replace(" ", ""),
-            param_id)
+            param_name.replace(" ", ""))
+        f_id_upper = f_id.upper()
         files = []
         for fname in dist_files_upper:
             ftag = fname.split('.')[-1]
-            if f_id.upper() in fname and ftag in self._ftypes:
+            if f_id_upper in fname and ftag in self._ftypes:
                 ind = dist_files_upper.index(fname)
                 files.append(dist_files[ind])
         if len(files) == 0:
@@ -390,8 +392,7 @@ class Loader:
             # third file identifier, which should be the Band ID,
             # or keyed by 'ALL'
             ret_dict[key] = ds.Distribution(self._pdf(
-                os.path.join(dist_dir, f)),
-                self._std_units[param_id])
+                os.path.join(dist_dir, f)), std_param=self._std_params[param_id])
         return ret_dict
 
     def _dict_channels(self, keys, values, dist_dir=None):
@@ -402,19 +403,18 @@ class Loader:
                           if '~' not in f and '#' not in f]
             dist_files_upper = [dist_file.upper() for dist_file in dist_files]
         # Channel names stored in the first column
-        band_ids = [value[0] for value in values]
+        band_ids = np.array([value[0] for value in values])
         # Parameter names stored in first row
         param_names = keys
         # Parameter values stored in subsequent rows
-        vals = [value for value in values]
+        vals = np.array([value for value in values])
         # Loop over channels
         chan_dict = {}
         for i, band_id in enumerate(band_ids):
-            band_id = band_ids[i]
             # Loop over parameters for each channel
             param_dict = {}
             for j, param_name in enumerate(param_names):
-                param_name = param_names[j]
+                param_name_upper = param_name.replace(" ", "").upper()
                 # Check if the parameter calls for a PDF
                 if 'PDF' in vals[i][j].upper():
                     if dist_dir is None:
@@ -430,11 +430,11 @@ class Loader:
                     # Load possible distribution file names
                     fnames = self._dist_fnames(f_id)
                     dist_files_found = 0  # keep track of fname matches
-                    for i, fname in enumerate(dist_files_upper):
+                    for k, fname in enumerate(dist_files_upper):
                         if fname in fnames:
-                            dfile = os.path.join(dist_dir, dist_files[i])
-                            param_dict[param_name] = ds.Distribution(
-                                self._pdf(dfile), self._std_units[param_id])
+                            dfile = os.path.join(dist_dir, dist_files[k])
+                            param_dict[param_name_upper] = ds.Distribution(
+                                self._pdf(dfile), self._std_params[param_id])
                             dist_files_found += 1
                     if dist_files_found == 0:
                         self._log.err(
@@ -453,7 +453,7 @@ class Loader:
                             % (dfile, str(param_name), str(band_id)))
                 else:
                     # Otherwise, just store the paramter string
-                    param_dict[param_name] = vals[i][j]
+                    param_dict[param_name_upper] = vals[i][j]
             chan_dict[band_id] = param_dict
         return chan_dict
 

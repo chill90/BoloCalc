@@ -12,12 +12,11 @@ class Display:
     def __init__(self, sim):
         # Store passed parameters
         self._sim = sim
+        self._std_params = self._sim.std_params
         self._exp = self._sim.exp
         self._phys = self._sim.phys
         self._noise = self._sim.noise
-
-        # Store the output units
-        self._output_units()
+        self._units = self._sim.output_units
 
     # ***** Public Methods *****
     def display(self):
@@ -196,10 +195,6 @@ class Display:
         # Values to be stored for combining at higher levels
         ch_name = ch.param("ch_name")
         ndet = ch.param("ndet")
-        # net_arr = self._spread(sns[10], un.std_units["NET"])
-        # net_arr_rj = self._spread(sns[11], un.std_units["NET"])
-        # map_depth = self._spread(sns[13], un.std_units["Map Depth"])
-        # map_depth_rj = self._spread(sns[14], un.std_units["Map Depth"])
         stored_vals = [
             [ndet]*3, spreads[10], spreads[11], spreads[12], spreads[13]]
 
@@ -221,23 +216,6 @@ class Display:
                 "%-5.2f +/- (%-5.2f,%5.2f) | "
                 "%-5.2f +/- (%-5.2f,%5.2f)\n"
                 % (ch_name, ndet, *np.array(spreads).flatten()))
-        '''
-                   *self._spread(sns[0]),
-                   *self._spread(sns[1], un.std_units["Popt"]),
-                   *self._spread(sns[2], un.std_units["Temperature"]),
-                   *self._spread(sns[3], un.std_units["Temperature"]),
-                   *self._spread(sns[4], un.std_units["NEP"]),
-                   *self._spread(sns[5], un.std_units["NEP"]),
-                   *self._spread(sns[6], un.std_units["NEP"]),
-                   *self._spread(sns[7], un.std_units["NEP"]),
-                   *self._spread(sns[8], un.std_units["NET"]),
-                   *self._spread(sns[9], un.std_units["NET"]),
-                   *self._spread(sns[10], un.std_units["NET"]),
-                   *self._spread(sns[11], un.std_units["NET"]),
-                   *self._spread(sns[12], un.std_units["Corr Fact"]),
-                   *self._spread(sns[13], un.std_units["Map Depth"]),
-                   *self._spread(sns[14], un.std_units["Map Depth"])))
-        '''
         self._cam_f.write(wstr)
         self._cam_f.write(self._break_cam)
 
@@ -418,20 +396,3 @@ class Display:
             inp, (float(pct_lo), 0.50, float(pct_hi))))
         return [med, abs(hi-med), abs(med-lo)]
 
-    def _output_units(self):
-        self._units = {
-            "ndet": un.std_units["NA"],
-            "popt": un.std_units["Popt"],
-            "Trcvr": un.std_units["Temperature"],
-            "Tsky": un.std_units["Temperature"],
-            "NEPph": un.std_units["NEP"],
-            "NEPg": un.std_units["NEP"],
-            "NEPrd": un.std_units["NEP"],
-            "NEPtot": un.std_units["NEP"],
-            "NETdet": un.std_units["NET"],
-            "NETrj": un.std_units["NET"],
-            "NETarr": un.std_units["NET"],
-            "NETarrRj": un.std_units["NET"],
-            "CorrFact": un.std_units["Corr Fact"],
-            "Depth": un.std_units["Map Depth"],
-            "DepthRj": un.std_units["Map Depth"]}

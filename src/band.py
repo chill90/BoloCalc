@@ -57,7 +57,7 @@ class Band:
                 return np.array([np.random.normal(self._band, self._err)])
             else:
                 return np.random.normal(self._band, self._err,
-                                        (nsample, len(self._band)))
+                                       (nsample, len(self._band)))
 
     def interp_freqs(self, freq_inp):
         """

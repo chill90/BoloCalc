@@ -21,6 +21,7 @@ class Vary:
         self._param_file = param_file
         self._vary_name = vary_name
         self._vary_tog = vary_tog
+        self._units = self._sim.output_units
         self._nexp = self._sim.param("nexp")
 
         # Load parameters to vary
@@ -329,8 +330,14 @@ class Vary:
                     ch_dir = self._check_dir(
                         os.path.join(vary_dir, ch.param("ch_name")))
                     fout = os.path.join(ch_dir, "output_%03d.txt" % (it))
-                    self._write_output(sns[i][j][k], fout)
-                    self._write_vary_row(it, sns[i][j][k], fch)
+                    # Convert from SI
+                    sns_in = [list(
+                        self._units.values())[m].from_SI(
+                        np.array(sns[i][j][k][m]))
+                        for m in range(len(sns[i][j][k]))]
+                    # Write to files
+                    self._write_output(sns_in, fout)
+                    self._write_vary_row(it, sns_in, fch)
         return
 
     def _init_vary_file(self, fvary):
@@ -352,9 +359,10 @@ class Vary:
             f.write(ind_str + (fmt_str % (*self._opts,) + "\n"))
             f.write(ind_str + (fmt_str % (*self._params,)))
             self._write_vary_header_params(f)
-            f.write(("Index | " + (fmt_unit % (*self._units,))))
+            f.write(("Index | " + (fmt_unit % (*self._unit_strs,))))
             self._write_vary_header_units(f)
             self._horiz_line(f)
+        return
 
     def _write_vary_header_params(self, f):
         title = ("%-23s | %-23s | %-23s | %-23s | "
@@ -402,6 +410,7 @@ class Vary:
         with open(fch, 'a') as f:
             f.write(self._fmt_ind % (int(it)))
             f.write(self._fmt_str % (*self._set_arr[it],))
+            spreads = [self._spread(dat) for dat in data]
             wstr = ("%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
@@ -417,21 +426,7 @@ class Vary:
                     "%-5.2f +/- (%-5.3f,%5.3f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f) | "
                     "%-5.2f +/- (%-5.2f,%5.2f)\n"
-                    % (*self._spread(data[0]),
-                       *self._spread(data[1], un.std_units["Popt"]),
-                       *self._spread(data[2], un.std_units["Temperature"]),
-                       *self._spread(data[3], un.std_units["Temperature"]),
-                       *self._spread(data[4], un.std_units["NEP"]),
-                       *self._spread(data[5], un.std_units["NEP"]),
-                       *self._spread(data[6], un.std_units["NEP"]),
-                       *self._spread(data[7], un.std_units["NEP"]),
-                       *self._spread(data[8], un.std_units["NET"]),
-                       *self._spread(data[9], un.std_units["NET"]),
-                       *self._spread(data[10], un.std_units["NET"]),
-                       *self._spread(data[11], un.std_units["NET"]),
-                       *self._spread(data[12], un.std_units["Corr Fact"]),
-                       *self._spread(data[13], un.std_units["Map Depth"]),
-                       *self._spread(data[14], un.std_units["Map Depth"])))
+                    % (*np.array(spreads).flatten(),))
             f.write(wstr)
         return
 
@@ -464,8 +459,9 @@ class Vary:
                           unpack=True, ndmin=2, converters=convs)
         self._tels, self._cams, self._chs, self._opts = data[:4]
         self._params, mins, maxs, stps = data[4:]
-        self._units = ["[" + un.std_units[param].name + "]"
-                       for param in self._params]
+        self._unit_strs = ["[" + self._sim.std_params[
+            param.replace(" ","").upper()].unit.name + "]"
+            for param in self._params]
         # Array to manage table spacing - don't waste space!
         param_widths = [len(max(
             [self._tels[i], self._cams[i], self._chs[i],

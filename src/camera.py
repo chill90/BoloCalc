@@ -33,6 +33,7 @@ class Camera:
         self.dir = inp_dir
         self._log = self.tel.exp.sim.log
         self._load = self.tel.exp.sim.load
+        self._std_params = self.tel.exp.sim.std_params
         self._nexp = self.tel.exp.sim.param("nexp")
 
         self._log.log(
@@ -139,6 +140,17 @@ class Camera:
         else:
             return param.sample(nsample=1)
 
+    def _store_param(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._std_params.keys():
+            return pr.Parameter(
+                self._log, self._inp_dict[cap_name],
+                std_param=self._std_params[cap_name])
+        else:
+            self._log.err(
+                "Passed parameter in camera.txt '%s' not "
+                "recognized" % (name))
+
     def _store_param_dict(self):
         """ Store Parameter objects for camera """
         # Check that the camera parameter file exists
@@ -147,22 +159,14 @@ class Camera:
             self._log.err(
                 "Camera file '%s' does not exist" % (cam_file))
         # Load camera file into a dictionary
-        params = self._load.camera(cam_file)
-
+        self._inp_dict = self._load.camera(cam_file)
+    
         # Dictionary of the camera Parameter objects
         self._param_dict = {
-            "bore_elev": pr.Parameter(
-                self._log, "Boresight Elevation",
-                params["Boresight Elevation"], min=-40.0, max=40.0),
-            "opt_coup": pr.Parameter(
-                self._log, "Optical Coupling",
-                params["Optical Coupling"], min=0.0, max=1.0),
-            "fnum": pr.Parameter(
-                self._log, "F Number",
-                params["F Number"], min=0.0, max=np.inf),
-            "tb": pr.Parameter(
-                self._log, "Bath Temp",
-                params["Bath Temp"], min=0.0, max=np.inf)}
+            "bore_elev": self._store_param("Boresight Elevation"),
+            "opt_coup": self._store_param("Optical Coupling"),
+            "fnum": self._store_param("F Number"),
+            "tb": self._store_param("Bath Temp")}
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
             param.name: pid
@@ -220,13 +224,13 @@ class Camera:
         self.chs = {}
         for chan_dict in chan_dicts.values():
             # Check for duplicate band names
-            if chan_dict["Band ID"] in self.chs.keys():
+            if chan_dict["BANDID"] in self.chs.keys():
                 self._log.err(
                     "Multiple bands named '%s' in camera '%s'"
                     % (chan_dict["Band ID"], self.dir))
             # Check for band file for this channel
             cam_name = str(self.dir.rstrip(os.sep).split(os.sep)[-1])
-            band_name = (cam_name + str(chan_dict["Band ID"]))
+            band_name = (cam_name + str(chan_dict["BANDID"]))
             if (self._band_dict is not None and
                band_name in self._band_dict.keys()):
                 band_file = self._band_dict[band_name]
@@ -234,6 +238,6 @@ class Camera:
                 band_file = None
             # Store the channel object
             self.chs.update(
-                {chan_dict["Band ID"].strip():
+                {chan_dict["BANDID"].strip():
                  ch.Channel(self, chan_dict, band_file)})
         return

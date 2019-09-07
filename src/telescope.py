@@ -33,6 +33,7 @@ class Telescope:
         self.dir = inp_dir
         self._log = self.exp.sim.log
         self._load = self.exp.sim.load
+        self._std_params = self.exp.sim.std_params
 
         self._log.log(
             "Generating telescope realization from %s"
@@ -129,6 +130,17 @@ class Telescope:
         else:
             return param.sample(nsample=1)
 
+    def _store_param(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._std_params.keys():
+            return pr.Parameter(
+                self._log, self._inp_dict[cap_name],
+                std_param=self._std_params[cap_name])
+        else:
+            self._log.err(
+                "Passed parameter in telescope.txt '%s' not "
+                "recognized" % (name))
+
     def _store_param_dict(self):
         """ Store Parameter objects for telescope """
         # Check that the telescope parameter file exists
@@ -137,33 +149,18 @@ class Telescope:
             self._log.err(
                 "Telescope file '%s' does not exist" % (self._tel_file))
         # Load telescope file into a dictionary
-        params = self._load.telescope(self._tel_file)
+        self._inp_dict = self._load.telescope(self._tel_file)
         # Dictionary of the telescope Parameter objects
         self._log.log(
                 "Storing telescope parameters for %s" % (self.dir))
         self._param_dict = {
-            "site": pr.Parameter(
-                self._log, 'Site', params['Site'],
-                inp_type=str),
-            "elev": pr.Parameter(
-                self._log, 'Elevation', params['Elevation'],
-                min=20., max=90.),
-            "pwv": pr.Parameter(
-                self._log, 'PWV', params['PWV'],
-                min=0.0, max=8.0),
-            "tobs": pr.Parameter(
-                self._log, 'Observation Time', params['Observation Time'],
-                min=0.0, max=np.inf),
-            "fsky": pr.Parameter(
-                self._log, 'Sky Fraction', params['Sky Fraction'],
-                min=0.0, max=1.0),
-            "obs_eff": pr.Parameter(
-                self._log, 'Observation Efficiency',
-                params['Observation Efficiency'],
-                min=0.0, max=1.0),
-            "net_mgn": pr.Parameter(
-                self._log, 'NET Margin', params['NET Margin'],
-                min=0.0, max=np.inf)}
+            "site": self._store_param("Site"),
+            "elev": self._store_param("Elevation"),
+            "pwv": self._store_param("PWV"),
+            "tobs": self._store_param("Observation Time"),
+            "fsky": self._store_param("Sky Fraction"),
+            "obs_eff": self._store_param("Observation Efficiency"),
+            "net_mgn": self._store_param("NET Margin")}
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
             param.name: pid
