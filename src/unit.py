@@ -65,62 +65,6 @@ class Unit:
 # BoloCalc units identified by parameter name
 std_units = {
     "NA": Unit("NA"),
-<<<<<<< HEAD
-    "RESOLUTION": Unit("GHz"),  # spec res
-    "DUSTTEMPERATURE": Unit("K"),  # dust temp
-    "DUSTSPECINDEX": Unit("NA"),  # dust spec index
-    "DUSTAMPLITUDE": Unit("MJy"),  # dust amp
-    "DUSTSCALEFREQUENCY": Unit("GHz"),  # dust scale freq
-    "SYNCHROTRONSPECINDEX": Unit("NA"),  # synch spec index
-    "SYNCHROTRONAMPLITUDE": Unit("K"),  # synch amp
-    "SYNCSCALEFREQUENCY": Unit("GHz"),  # sync scale freq
-    "ELEVATION": Unit("deg"),  # elevation
-    "PWV": Unit("mm"),  # pwv
-    "OBSERVATIONTIME": Unit("yr"),  # obs time
-    "SKYFRACTION": Unit("NA"),  # sky frac
-    "OBSERVATIONEFFICIENCY": Unit("NA"),  # obs eff
-    "NETMARGIN": Unit("NA"),  # NET margin
-    "BORESIGHTELEVATION": Unit("deg"),  # boresight elev
-    "OPTICALCOUPLING": Unit("NA"),  # optical coupling
-    "FNUMBER": Unit("NA"),  # f-number
-    "BATHTEMP": Unit("K"),  # bath temp
-    "BANDCENTER": Unit("GHz"),  # band center
-    "FRACTIONALBW": Unit("NA"),  # fractional bw
-    "PIXELSIZE": Unit("mm"),  # pixel size
-    "NUMDETPERWAFER": Unit("NA"),  # num det per waf
-    "NUMWAFPEROT": Unit("NA"),  # num waf per OT
-    "NUMOT": Unit("NA"),  # num OT
-    "WAISTFACTOR": Unit("NA"),  # waist factor
-    "DETEFF": Unit("NA"),  # det eff
-    "PSAT": Unit("pW"),  # psat
-    "PSATFACTOR": Unit("NA"),  # psat factor
-    "CARRIERINDEX": Unit("NA"),  # carrier index
-    "TC": Unit("K"),  # Tc
-    "TCFRACTION": Unit("NA"),  # Tc fraction
-    "FLINK": Unit("NA"),  # Flink
-    "G": Unit("pW"),  # G
-    "YIELD": Unit("NA"),  # yield
-    "SQUIDNEI": Unit("pA/rtHz"),  # SQUID NEI
-    "BOLORESISTANCE": Unit("Ohm"),  # bolo R
-    "READNOISEFACT": Unit("NA"),  # read noise fact
-    "TEMPERATURE": Unit("K"),  # temp
-    "ABSORPTION": Unit("NA"),  # absorption
-    "REFLECTION": Unit("NA"),  # reflection
-    "THICKNESS": Unit("mm"),  # thickness
-    "INDEX": Unit("NA"),  # index
-    "LOSSTANGENT": Unit("e-4"),  # loss tangent
-    "CONDUCTIVITY": Unit("e+6"),  # conductivity
-    "SURFACEROUGH": Unit("um RMS"),  # surface rough
-    "SPILLOVER": Unit("NA"),  # spillover
-    "SPILLOVERTEMP": Unit("K"),  # spill temp
-    "SCATTERFRAC": Unit("NA"),  # scatter frac
-    "SCATTERTEMP": Unit("K"),  # scatter temp
-    "POPT": Unit("pW"),  # popt
-    "NEP": Unit("aW/rtHz"),  # NEP
-    "NET": Unit("uK-rts"),  # NET
-    "CORRFACT": Unit("NA"),  # corr fact
-    "MAPDEPTH": Unit("uK-amin")}  # map depth
-=======
     "RESOLUTION": Unit("GHz"),
     "DUSTTEMPERATURE": Unit("K"),
     "DUSTSPECINDEX": Unit("NA"),
@@ -176,4 +120,3 @@ std_units = {
     "CORRFACT": Unit("NA"),
     "MAPDEPTH": Unit("uK-amin")}
 '''
->>>>>>> orphan

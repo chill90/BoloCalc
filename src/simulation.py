@@ -50,7 +50,6 @@ class Simulation:
         self._store_output_units()
 
         # Build simulation-wide objects
-        self.std_units = un.std_units
         self.log = lg.Log(log_file)
         self.load = ld.Loader(self)
         self.phys = ph.Physics()
