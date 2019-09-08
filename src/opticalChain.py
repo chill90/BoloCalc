@@ -1,7 +1,5 @@
 # Built-in methods
-import numpy as np
 import os
-import glob as gb
 
 # BoloCalc methods
 import src.optic as op
@@ -73,7 +71,7 @@ class OpticalChain:
                 if elem_upper in upper_keys:
                     band_files = opt_band_dict[elem_upper]
                     self._log.log("Using user-input spectra for optic '%s'"
-                                % (elem))
+                                  % (elem))
                 else:
                     band_files = None
             # Store optic

@@ -1,11 +1,9 @@
 # Built-in modules
 import numpy as np
-import collections as cl
 import os
 
 # BoloCalc modules
 import src.unit as un
-import src.distribution as ds
 
 
 class Display:
@@ -240,10 +238,9 @@ class Display:
     def _write_opt_table(self, ch, tup):
         # tup (i,j,k) = (tel,cam,ch) tuple
         opt = self._opts[tup[0]][tup[1]][tup[2]]
-        band_name = ch.param("band_id")
-        band_title = ("%s %11s %-12s %s\n"
+        band_title = ("%s %11s_%-12s %s\n"
                       % ("*"*37, ch.cam.param("cam_name"),
-                         band_name, "*"*37))
+                         ch.param("band_id"), "*"*37))
         self._opt_f.write(band_title)
         self._opt_f.write(self._title_opt)
         self._opt_f.write(self._break_opt)
@@ -251,20 +248,16 @@ class Display:
         self._opt_f.write(self._break_opt)
         for m in range(len(ch.elem[0][0])):  # nelem
             elem_name = ch.elem[0][0][m]
-            # Optic element names may be tuples
-            # try:
-            #    elem_name = eval(elem_name)
-            #    if isinstance(elem_name, tuple):
-            #        elem_name = elem_name[0]
-            # except NameError:
-            #    pass
             wstr = ("| %-15s | %-6.3f +/- (%-6.3f,%6.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) |\n"
                     % (elem_name,
-                       *self._spread(opt[0][m], un.Unit("pW")),
-                       *self._spread(opt[1][m], un.Unit("pW")),
-                       *self._spread(opt[2][m])))
+                       *self._spread(
+                           opt[0][m], self._sim.std_params["POPT"].unit),
+                       *self._spread(
+                           opt[1][m], self._sim.std_params["POPT"].unit),
+                       *self._spread(
+                           opt[2][m])))
             self._opt_f.write(wstr)
             self._opt_f.write(self._break_opt)
         self._opt_f.write("\n\n")
@@ -395,4 +388,3 @@ class Display:
         lo, med, hi = unit.from_SI(np.percentile(
             inp, (float(pct_lo), 0.50, float(pct_hi))))
         return [med, abs(hi-med), abs(med-lo)]
-

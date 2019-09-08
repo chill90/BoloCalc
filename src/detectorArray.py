@@ -1,6 +1,5 @@
 # BoloCalc modules
 import src.detector as dt
-import src.band as bd
 
 
 class DetectorArray:

@@ -1,14 +1,16 @@
 # Built-in modules
-import argparse as ap
-import datetime as dt
 import sys as sy
-import os
 
 # Verify the python version
 if sy.version_info.major == 2:
-    print("\n***** Python 2 is not longer supported for "
-          "BoloCalc v0.10 (Aug 2019) and beyond *****")
+    sy.stdout.write("\n***** Python 2 is not longer supported for "
+                    "BoloCalc v0.10 (Aug 2019) and beyond *****")
     sy.exit()
+
+# More built-in modules
+import argparse as ap  # noqa: E42
+import datetime as dt  # noqa: E42
+import os  # noqa: E42
 
 # BoloCalc modules
 import src.simulation as sm  # noqa: E42
@@ -23,13 +25,6 @@ def date_time_str():
     date_str = "%02d%02d%02d" % (now.year, now.month, now.day)
     return date_str, date_time_str
 
-
-def usage():
-    usage_str = ("\nUsage: python3 mappingSpeed.py Experiment"
-                 "[--vary] [--vary_tog] [--vary_name vary_name]\n"
-                 "Example: python3 mappingSpeed.py %s\n"
-                 % (os.path.join("Experiments", "ExampleExperiment", "V0")))
-    sy.exit(usage_str)
 
 # String defining when this code is being run
 dt_str, dt_tm_str = date_time_str()

@@ -78,6 +78,10 @@ class Optic:
 
         return (self._elem, self._emiss, self._effic, self._temp)
 
+    def get_param(self, param, band_ind=None):
+        """ Return parameter median value """
+        return self._param_dict[param].get_med(band_ind=band_ind)
+
     def change_param(self, param, new_val, band_ind=None, num_bands=None):
         if param not in self._param_dict.keys():
             if param in self._param_names.keys():
@@ -100,11 +104,11 @@ class Optic:
         return (self._phys.bb_pow_spec(freqs, T1) /
                 self._phys.bb_pow_spec(freqs, T2))
 
-    def _param_samp(self, param, band_id):
+    def _param_samp(self, param, band_ind):
         if self._nexp == 1:
-            return param.get_avg(band_id)
+            return param.get_med(band_ind=band_ind)
         else:
-            return param.sample(band_id=band_id, nsample=1)
+            return param.sample(band_ind=band_ind, nsample=1)
 
     def _store_param(self, name):
         cap_name = name.replace(" ", "").strip().upper()
@@ -115,7 +119,7 @@ class Optic:
                 band_ids=self._band_ids)
             # Check that the number of bands is either equal
             # to the number of channels or a single value
-            data = param.fetch(band_id=None)
+            data = param.fetch(band_ind=None)
             for dat in data:
                 corr_len = self._check_param_len(dat)
                 if not corr_len:
@@ -155,7 +159,7 @@ class Optic:
         self._param_vals = {}
         for k in self._param_dict.keys():
             self._param_vals[k] = self._param_samp(
-                self._param_dict[k], ch.param("band_id"))
+                self._param_dict[k], ch.band_ind)
         return
 
     def _store_bands(self):
@@ -208,7 +212,7 @@ class Optic:
         else:
             self._refl = np.zeros(self._nfreq)
         return
-    
+
     def _store_spill(self):
         # Spillover from a band file?
         if str(self._param_dict["spill"].get_avg()).upper() == "BAND":
@@ -223,11 +227,12 @@ class Optic:
 
     def _store_spill_temp(self):
         if not self._param_vals["spillt"] == "NA":
-            self._spill_temp = np.ones(self._nfreq) * self._param_vals["spillt"]
+            self._spill_temp = (np.ones(self._nfreq) *
+                                self._param_vals["spillt"])
         else:
             self._spill_temp = np.ones(self._nfreq) * self._temp
         return
-    
+
     def _store_scatt(self):
         # Scattering from a band file?
         if str(self._param_dict["scatf"].get_avg()).upper() == "BAND":
@@ -242,7 +247,7 @@ class Optic:
         else:
             self._scatt = np.zeros(self._nfreq)
         return
-    
+
     def _store_scatt_temp(self):
         if not self._param_vals["scatt"] == 'NA':
             self._scatt_temp = np.ones(self._nfreq) * self._param_vals["scatt"]
@@ -251,7 +256,7 @@ class Optic:
         return
 
     def _store_abso(self):
-        elem = str(self._elem).replace(" ","").upper()
+        elem = str(self._elem).replace(" ", "").upper()
         # Absorption from a band file?
         if str(self._param_dict["abs"].get_avg()).upper() == "BAND":
             self._abso = self._band_samp("ABSORPTION")
@@ -259,8 +264,9 @@ class Optic:
         # Treat the case of the aperture stop
         elif elem in self._ap_names:
             # Flat spectrum using input
-            if not self._param_vals["abs"] == 'NA':
-                self._abso = np.ones(self._nfreq) * self._param_vals["abs"]
+            if not str(self._param_vals["abs"]) == 'NA':
+                self._abso = (
+                    np.ones(self._nfreq) * self._param_vals["abs"])
             else:
                 # Analytic spill efficiency
                 self._abso = 1. - self._phys.spill_eff(
@@ -296,7 +302,7 @@ class Optic:
                 self._spill_temp, self._temp, self._ch.freqs) +
             self._scatt * self._pow_frac(
                 self._scatt_temp, self._temp, self._ch.freqs))
-        
+
         # Efficiency array
         self._effic = (
             1. - self._refl - self._abso - self._spill - self._scatt)

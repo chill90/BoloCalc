@@ -38,8 +38,6 @@ class Detector:
 
     # ***** Public Methods *****
     def evaluate(self, band=None):
-        # Band ID
-        self._band_id = self._ch.param("band_id")
         # Re-store dictionary to reflect ch and cam changes
         self._store_param_dict()
         # Evaluate detector parameters
@@ -60,7 +58,7 @@ class Detector:
     def _param_samp(self, param):
         """ Sample detector parameter """
         if self._ndet == 1:
-            return param.get_avg()
+            return param.get_med()
         else:
             return param.sample(nsample=1)
 
@@ -105,7 +103,7 @@ class Detector:
         """ Store the detector band """
         freqs = self._ch.freqs
         # Define top-hat band
-        if self.param("det_eff") is not "NA":
+        if str(self.param("det_eff")) != "NA":
             top_hat = [
                 self.param("det_eff")
                 if (f >= self.param("flo") and f < self.param("fhi"))
@@ -113,7 +111,7 @@ class Detector:
         else:
             top_hat = None
         # Use a band if "BAND" is called explicitly in "Band Center"
-        if self.param("bc") is "BAND":
+        if str(self.param("bc")) == "BAND":
             if band is None:
                 self._log.err(
                     "Band Center for channel '%s' defined as 'BAND' "
@@ -144,7 +142,7 @@ class Detector:
                         self.band[:delta_ind] = self.band[delta_ind]
                     else:
                         self.band[delta_ind:] = self.band[delta_ind]
-                
+
         # Or store a top-hat band
         else:
             if top_hat is None:

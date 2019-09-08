@@ -1,7 +1,6 @@
 # Built-in modules
 import numpy as np
 import glob as gb
-import collections as cl
 import os
 
 # BoloCalc modules
@@ -149,11 +148,10 @@ class Channel:
         return self.cam.param(param)
 
     def _param_samp(self, param):
-        band_id = self.param("band_id")
         if self._nexp == 1:
-            return param.get_avg(band_id)
+            return param.get_med()
         else:
-            return param.sample(band_id=band_id, nsample=1)
+            return param.sample(nsample=1)
 
     def _store_param(self, name):
         cap_name = name.replace(" ", "").strip().upper()
@@ -241,7 +239,7 @@ class Channel:
         self._param_vals["ndet"] = int(self.param("det_per_waf") *
                                        self.param("waf_per_ot") *
                                        self.param("ot"))
-        if self.cam.tel.exp.sim.param("ndet") is "NA":
+        if str(self.cam.tel.exp.sim.param("ndet")) == "NA":
             self._param_vals["cdet"] = self._param_vals["ndet"]
         else:
             self._param_vals["cdet"] = self.cam.tel.exp.sim.param("ndet")
@@ -279,8 +277,8 @@ class Channel:
         self._log.log(
             "Storing detector band for channel Band_ID '%s'"
             % (self.band_id))
-        bc = self.det_dict["bc"].get_avg()
-        fbw = self.det_dict["fbw"].get_avg()
+        bc = self.det_dict["bc"].get_med()
+        fbw = self.det_dict["fbw"].get_med()
         if str(bc).strip().upper() == "BAND" and self._band_file is not None:
             self._log.log(
                 "** Using custom band for channel Band_ID '%s'"
@@ -338,5 +336,5 @@ class Channel:
         return
 
     def _store_band_index(self):
-        self.band_ind = len(self.cam.chs.keys()) + 1
+        self.band_ind = len(self.cam.chs.keys())
         return

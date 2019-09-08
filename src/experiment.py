@@ -1,5 +1,4 @@
 # Built-in modules
-import numpy as np
 import glob as gb
 import os
 
@@ -11,7 +10,7 @@ import src.parameter as pr
 class Experiment:
     """
     Experiment object gathers foreground parameters and contains
-    a dictionary of telescope objects. It inherits the a Simulation
+    a dictionary of telescope objects. It inherits a Simulation
     object.
 
     Args:

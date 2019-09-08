@@ -1,3 +1,4 @@
+import sys as sy
 import cProfile as cp
 import io
 import pstats as ps
@@ -11,10 +12,10 @@ def profiler(func):
         retval = func(*args, **kwargs)
         pr.disable()
         s = io.StringIO()
-        #sortby = 'cumulative'
+        # sortby = 'cumulative'
         sortby = 'tottime'
         pstat = ps.Stats(pr, stream=s).sort_stats(sortby)
         pstat.print_stats()
-        print(s.getvalue())
+        sy.stdout.write(s.getvalue())
         return retval
     return inner

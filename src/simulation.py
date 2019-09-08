@@ -1,10 +1,6 @@
 # Built-in modules
 import numpy as np
-import glob as gb
-import multiprocessing as mp
-import time as tm
 import sys as sy
-import collections as co
 import os
 
 # BoloCalc modules
@@ -17,7 +13,7 @@ import src.standardParam as sp
 import src.unit as un
 import src.physics as ph
 import src.noise as ns
-import src.profile as pf
+# import src.profile as pf
 import src.sensitivity as sn
 import src.vary as vr
 
@@ -33,12 +29,16 @@ class Simulation:
     exp_dir (str): experiment directory
 
     Attributes:
-    exp_dir (str): experiment directory
+    exp_dir (str): input experiment directory
     log (src.Log): Log object
     load (src.Load): Load object
     phys (src.Physics): Physics object
     noise (src.Noise): Noise object
-    self.exps (list): list of src.Experiment objects
+    exp (src.Experiment): Experiment object
+    sns (src.Sensitivity): Sensitivity object
+    dsp (src.Display): Display object
+    senses (list): array of output sensitivities
+    opt_pos (list): array of output optical power arrays
     """
     def __init__(self, log_file, sim_file, exp_dir):
         # Store experiment input file
@@ -87,102 +87,27 @@ class Simulation:
         Args:
         param_file (str): file that contains the parameters to be varied
         vary_name (str): name of the vary output directory
-        vary_tog(bool): whether or not to vary the parameter arrays together
+        vary_tog (bool): whether or not to vary the parameter arrays together
         """
         vary = vr.Vary(self, param_file, vary_name, vary_tog)
         vary.vary()
         return
 
     def param(self, param):
-        """ Return parameter from param_dict
+        """
+        Return parameter from param_dict
 
         Args:
-        param (str): name or parameter, param_dict key
+        param (str): name of parameter, param_dict key
         """
         val = self._param_dict[param].get_val()
         if val is None:
-            val = self._param_dict[param].get_avg()
+            val = self._param_dict[param].get_med()
         return val
 
     # **** Helper Methods ****
-    def _evaluate(self):
-        """ Evaluate experiment """
-        tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")
-        self.log.out((
-                "Simulting %d experiment realizations each with "
-                "%d detector realizations and %d sky realizations. "
-                "Total sims = %d"
-                % (self.param("nexp"), self.param("ndet"),
-                   self.param("nobs"), tot_sims)))
-        for n in range(self.param("nexp")):
-            self._evaluate_exp(n)
-        self._done()
-        return
-
-    def _display(self):
-        """ Display sensitivity output """
-        self.dsp.display()
-        return
-
-    def _evaluate_exp(self, n):
-        """ Evaluate and calculate sensitivity for a generated experiment """
-        self._status(n)
-        self.exp.evaluate()
-        self.senses.append(self.sns.sensitivity())
-        self.opt_pows.append(self.sns.opt_pow())
-        return
-
-    def _status(self, rel):
-        """ Print status bar for realization 'rel' """
-        frac = float(rel) / float(self.param("nexp"))
-        sy.stdout.write('\r')
-        sy.stdout.write(
-            "[%-*s] %02.1f%%" % (int(self._bar_len), '=' * int(
-                self._bar_len * frac), frac * 100.))
-        sy.stdout.flush()
-        return
-
-    def _done(self):
-        """ Print filled status bar """
-        sy.stdout.write('\r')
-        sy.stdout.write(
-            "[%-*s] %.1f%%" % (self._bar_len, '='*self._bar_len, 100.))
-        sy.stdout.write('\n')
-        sy.stdout.flush()
-        return
-
-    def _store_param(self, name):
-        cap_name = name.replace(" ", "").strip().upper()
-        if cap_name in self.std_params.keys():
-            return pr.Parameter(
-                self.log, self._inp_dict[cap_name],
-                std_param=self.std_params[cap_name])
-        else:
-            self.log.err(
-                "Passed parameter in simulationInputs.txt '%s' not "
-                "recognized" % (name))
-
-    def _store_param_dict(self):
-        """ Store input parameters in dictionary """
-        # Check whether the simulation file exists
-        if not os.path.isfile(self._sim_file):
-            self.log.err(
-                "Simulation file '%s' does not exist" % (self._sim_file))
-        # Load the simulation file to a parameter dictionary
-        self._inp_dict = self.load.sim(self._sim_file)
-        # Store dictionary of Parameter objects
-        self._param_dict = {
-            "nexp": self._store_param("Experiments"),
-            "nobs": self._store_param("Observations"),
-            "ndet": self._store_param("Detectors"),
-            "fres": self._store_param("Resolution"),
-            "infg": self._store_param("Foregrounds"),
-            "corr": self._store_param("Correlations"),
-            "pct": self._store_param("Percentile")}
-        return
-
     def _store_standard_params(self):
-        # Dictionary of standard parameter objects
+        """ Store dictionary of StandardParameter objects """
         self.std_params = {
             "EXPERIMENTS": sp.StandardParam(
                 "Experiments", un.Unit("NA"),
@@ -363,7 +288,7 @@ class Simulation:
                 0, np.inf, int),
             "OPTICALTHROUGHPUT": sp.StandardParam(
                 "Optical Throughput", un.Unit("NA"),
-                0.0, 1.0, float), 
+                0.0, 1.0, float),
             "POPT": sp.StandardParam(
                 "Popt", un.Unit("pW"),
                 0.0, np.inf, float),
@@ -380,8 +305,9 @@ class Simulation:
                 "Map Depth", un.Unit("uK-amin"),
                 0.0, np.inf, float)
         }
-    
+
     def _store_output_units(self):
+        """ Store units for output parameters """
         self.output_units = {
             "eff": self.std_params["OPTICALTHROUGHPUT"].unit,
             "popt": self.std_params["POPT"].unit,
@@ -398,3 +324,81 @@ class Simulation:
             "CorrFact": self.std_params["CORRFACT"].unit,
             "Depth": self.std_params["MAPDEPTH"].unit,
             "DepthRj": self.std_params["MAPDEPTH"].unit}
+        return
+
+    def _store_param_dict(self):
+        """ Store input parameters in dictionary """
+        # Check whether the simulation file exists
+        if not os.path.isfile(self._sim_file):
+            self.log.err(
+                "Simulation file '%s' does not exist" % (self._sim_file))
+        # Load the simulation file to a parameter dictionary
+        self._inp_dict = self.load.sim(self._sim_file)
+        # Store dictionary of Parameter objects
+        self._param_dict = {
+            "nexp": self._store_param("Experiments"),
+            "nobs": self._store_param("Observations"),
+            "ndet": self._store_param("Detectors"),
+            "fres": self._store_param("Resolution"),
+            "infg": self._store_param("Foregrounds"),
+            "corr": self._store_param("Correlations"),
+            "pct": self._store_param("Percentile")}
+        return
+
+    def _store_param(self, name):
+        """ Helper method to store param dict """
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self.std_params.keys():
+            return pr.Parameter(
+                self.log, self._inp_dict[cap_name],
+                std_param=self.std_params[cap_name])
+        else:
+            self.log.err(
+                "Passed parameter in simulationInputs.txt '%s' not "
+                "recognized" % (name))
+
+    def _evaluate(self):
+        """ Evaluate experiment """
+        tot_sims = self.param("nexp") * self.param("ndet") * self.param("nobs")
+        self.log.out((
+                "Simulting %d experiment realizations each with "
+                "%d detector realizations and %d sky realizations. "
+                "Total sims = %d"
+                % (self.param("nexp"), self.param("ndet"),
+                   self.param("nobs"), tot_sims)))
+        for n in range(self.param("nexp")):
+            self._evaluate_exp(n)
+        self._done()
+        return
+
+    def _evaluate_exp(self, n):
+        """ Evaluate and calculate sensitivity for a generated experiment """
+        self._status(n)
+        self.exp.evaluate()
+        self.senses.append(self.sns.sensitivity())
+        self.opt_pows.append(self.sns.opt_pow())
+        return
+
+    def _display(self):
+        """ Display sensitivity output """
+        self.dsp.display()
+        return
+
+    def _status(self, rel):
+        """ Print status bar for realization 'rel' """
+        frac = float(rel) / float(self.param("nexp"))
+        sy.stdout.write('\r')
+        sy.stdout.write(
+            "[%-*s] %02.1f%%" % (int(self._bar_len), '=' * int(
+                self._bar_len * frac), frac * 100.))
+        sy.stdout.flush()
+        return
+
+    def _done(self):
+        """ Print filled status bar """
+        sy.stdout.write('\r')
+        sy.stdout.write(
+            "[%-*s] %.1f%%" % (self._bar_len, '='*self._bar_len, 100.))
+        sy.stdout.write('\n')
+        sy.stdout.flush()
+        return

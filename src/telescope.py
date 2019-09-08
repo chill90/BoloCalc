@@ -1,5 +1,4 @@
 # Built-in modules
-import numpy as np
 import glob as gb
 import os
 
@@ -8,7 +7,6 @@ import src.parameter as pr
 import src.camera as cm
 import src.sky as sk
 import src.scanStrategy as sc
-import src.profile as pf
 
 
 class Telescope:
@@ -111,14 +109,14 @@ class Telescope:
     def pwv_sample(self):
         """ Sample PWV for this telescope """
         if self.exp.sim.param("nobs") == 1:
-            return self._param_dict["pwv"].get_avg()
+            return self._param_dict["pwv"].get_med()
         else:
             return self._param_dict["pwv"].sample(nsample=1)
 
     def elev_sample(self):
         """ Sample elevation for this telescope """
         if self.exp.sim.param("nobs") == 1:
-            return self._param_dict["elev"].get_avg()
+            return self._param_dict["elev"].get_med()
         else:
             return self._param_dict["elev"].sample(nsample=1)
 

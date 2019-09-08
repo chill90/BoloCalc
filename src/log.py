@@ -1,5 +1,6 @@
 # Built-in modules
 import datetime as dt
+import sys as sy
 import os
 
 
@@ -54,7 +55,7 @@ class Log:
         msg (str): message to log
         """
         self._write(msg)
-        print(msg),
+        sy.stdout.write(msg+"\n"),
         return
 
     def err(self, msg):
@@ -77,7 +78,7 @@ class Log:
         """
         wrn_msg = self._wrn_preamble + msg
         self._write(wrn_msg)
-        print(wrn_msg),
+        sy.stderr.write(wrn_msg+"\n"),
         return
 
     # ***** Private methods *****
