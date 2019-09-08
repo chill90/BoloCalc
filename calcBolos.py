@@ -51,7 +51,7 @@ ps.add_argument(
     help="Vary parameter sets defined in config/paramsToVary.txt together")
 ps.add_argument(
     "--vary_name", dest="vary_name", nargs=1, type=str,
-    default=dt_tm_str,
+    default=[dt_tm_str],
     help="Custom name for vary output")
 ps.add_argument(
     "--log_name", dest="log_name", nargs=1, type=str,

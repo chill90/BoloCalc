@@ -71,7 +71,7 @@ class Distribution:
             mean = self.mean()
             return np.sqrt(np.sum(self.prob * ((self.val - mean) ** 2)))
         else:
-            return np.mean(self.val)
+            return np.std(self.val)
 
     def median(self):
         """ Return the median of the distribution """

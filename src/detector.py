@@ -60,9 +60,9 @@ class Detector:
     def _param_samp(self, param):
         """ Sample detector parameter """
         if self._ndet == 1:
-            return param.get_avg(band_id=self._band_id)
+            return param.get_avg()
         else:
-            return param.sample(band_id=self._band_id, nsample=1)
+            return param.sample(nsample=1)
 
     def _store_param_dict(self):
         """ Store the paramter dictionary, which is defined at the channel """

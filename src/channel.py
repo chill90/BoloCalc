@@ -38,6 +38,7 @@ class Channel:
         self.cam = cam
         self._inp_dict = inp_dict
         self.band_id = "%s" % (self._inp_dict["BANDID"])
+        self._store_band_index()
         self._band_file = band_file
         self._log = self.cam.tel.exp.sim.log
         self._load = self.cam.tel.exp.sim.load
@@ -220,13 +221,13 @@ class Channel:
     def _store_param_vals(self):
         """ Evaluate channel parameters """
         self._log.log(
-            "Evaluating parameters for channel Band_ID='%s'"
+            "Evaluating parameters for channel Band_ID = '%s'"
             % (self.band_id))
         self._param_vals = {}
         # Store ID parameters first
-        self._param_vals["band_id"] = int(self._inp_dict["BANDID"])
-        self._param_vals["pix_id"] = int(self._inp_dict["PIXELID"])
-        self._param_vals["ch_name"] = (self.cam.param("cam_name") +
+        self._param_vals["band_id"] = self._inp_dict["BANDID"]
+        self._param_vals["pix_id"] = self._inp_dict["PIXELID"]
+        self._param_vals["ch_name"] = (self.cam.param("cam_name") + "_" +
                                        str(self.param("band_id")))
         # Store channel parameters
         for k in self._param_dict:
@@ -278,7 +279,9 @@ class Channel:
         self._log.log(
             "Storing detector band for channel Band_ID '%s'"
             % (self.band_id))
-        if self._band_file is not None:
+        bc = self.det_dict["bc"].get_avg()
+        fbw = self.det_dict["fbw"].get_avg()
+        if str(bc).strip().upper() == "BAND" and self._band_file is not None:
             self._log.log(
                 "** Using custom band for channel Band_ID '%s'"
                 % (self.band_id))
@@ -296,18 +299,19 @@ class Channel:
             tran = self.det_band.get_avg()[0]
             flo, fhi = self._phys.band_edges(self.freqs, tran)
             self._bc = (fhi + flo) / 2.
-        else:
+        elif isinstance(bc, float) and isinstance(fbw, float):
             self.det_band = None
             # Define edges of frequencies to integrate over
             # Use wider than nominal band by 30% to cover tolerances/errors
-            lo_freq = (
-                self.det_dict["bc"].get_avg() *
-                (1. - 0.65 * self.det_dict["fbw"].get_avg()))
-            hi_freq = (
-                self.det_dict["bc"].get_avg() *
-                (1. + 0.65 * self.det_dict["fbw"].get_avg()))
+            lo_freq = (bc * (1. - 0.65 * fbw))
+            hi_freq = (bc * (1. + 0.65 * fbw))
             self.freqs = np.arange(
                 lo_freq, hi_freq + self._fres, self._fres)
+        else:
+            self._log.err(
+                "Problem constructing detector band for channel "
+                "Band ID = '%s' using Band Center '%s' and FBW '%s'"
+                % (str(self.band_id), str(bc), str(fbw)))
         return
 
     def _calculate(self):
@@ -331,4 +335,8 @@ class Channel:
             [[obs.temp[i] + temp + self.det_arr.dets[i].temp
              for i in range(self._ndet)]
              for obs in self._obs_set.obs_arr]).astype(np.float)
+        return
+
+    def _store_band_index(self):
+        self.band_ind = len(self.cam.chs.keys()) + 1
         return

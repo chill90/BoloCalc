@@ -69,7 +69,7 @@ class Parameter:
         self._check_range()
 
     # ***** Public Methods *****
-    def fetch(self, band_id=1):
+    def fetch(self, band_id=None, band_ind=None):
         """
         Return (avg, med, std) given a band_id, or return (val)
 
@@ -79,15 +79,25 @@ class Parameter:
         if self._val is not None and self._avg is None:
             return (self._val, self._val, 'NA')
         if self._mult_bands:
-            return (self._avg[band_id - 1],
-                    self._med[band_id - 1],
-                    self._std[band_id - 1])
+            if band_id is not None:
+                band_ind = self._band_ids.index(band_id)
+                return (self._avg[band_ind],
+                        self._med[band_ind],
+                        self._std[band_ind])
+            elif band_ind is not None:
+                return (self._avg[band_ind],
+                        self._med[band_ind],
+                        self._std[band_ind])
+            else:
+                return (self._avg,
+                        self._med,
+                        self._std)
         else:
             return (self._avg,
                     self._med,
                     self._std)
 
-    def change(self, new_avg, new_std=None, band_id=1):
+    def change(self, new_avg, band_ind=None, num_bands=None):
         """
         Change self._avg to new_avg and self._std to new_std
 
@@ -96,59 +106,21 @@ class Parameter:
 
         Return 'True' if avg or std value was altered, 'False' if not
         """
+        # Check that multiple bands are defined if a band_id is passed
+        if band_ind is not None and num_bands is not None:
+            if band_ind > num_bands:
+                self._log.err(
+                    "Passed band index '%s' for changing parameter "
+                    "'%s' not compatible with total number of bands '%s'"
+                    % (str(band_ind), self.name, str(num_bands)))
         # Bool to return indicating whether or not parameter changed
         ret_bool = False
         # Set parameter to a new string
         if isinstance(new_avg, str) or isinstance(new_avg, np.string_):
-            avg_new = new_avg
-            if self._mult_bands:
-                if self._avg[band_id - 1].upper() != avg_new.upper():
-                    self._avg[band_id - 1] = avg_new
-                    ret_bool = True
-                else:
-                    ret_bool = False
-            else:
-                if self._avg.upper() != avg_new.upper():
-                    self._avg = avg_new
-                    ret_bool = True
-                else:
-                    ret_bool = False
+            ret_bool = self._change_str(new_avg, band_ind, num_bands)
         # Set parameter to a new float
         elif isinstance(new_avg, float) or isinstance(new_avg, np.float_):
-            # Convert to SI units
-            avg_new = self.unit.to_SI(new_avg)
-            # Change the parameter if it currently has no value
-            if self._is_empty(band_id):
-                if self._mult_bands:
-                    self._avg[band_id - 1] = avg_new
-                else:
-                    self._avg = avg_new
-                ret_bool = True
-                return ret_bool
-            if self._mult_bands:
-                # Change the parameter if it's different to within 5 sig figs
-                if (self._sig_figs(avg_new, 5) !=
-                   self._sig_figs(self._avg[band_id - 1], 5)):
-                    self._avg[band_id - 1] = avg_new
-                    ret_bool = True
-                if new_std is not None:
-                    std_new = self.unit.to_SI(new_std)
-                    if (self._sig_figs(std_new, 5) !=
-                       self._sig_figs(self._std[band_id - 1], 5)):
-                        self._std[band_id - 1] = std_new
-                        ret_bool = True
-            else:
-                # Change the parameter if it's different to within 5 sig figs
-                if (self._sig_figs(avg_new, 5) !=
-                   self._sig_figs(self._avg, 5)):
-                    self._avg = avg_new
-                    ret_bool = True
-                if new_std is not None:
-                    std_new = self.unit.to_SI(new_std)
-                    if (self._sig_figs(std_new, 5) !=
-                       self._sig_figs(self._std, 5)):
-                        self._std = std_new
-                        ret_bool = True
+            ret_bool = self._change_float(new_avg, band_ind, num_bands)
         else:
             self._log.err(
                 "Could not change parameter '%s' to value '%s' of type '%s'"
@@ -159,34 +131,35 @@ class Parameter:
         """ Return the input value """
         return self._val
 
-    def get_avg(self, band_id=1):
+    def get_avg(self, band_id=None, band_ind=None):
         """
         Return average value for band_id
 
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
-        return self.fetch(band_id)[0]
+        return self.fetch(band_id, band_ind)[0]
 
-    def get_med(self, band_id=1):
+    def get_med(self, band_id=None, band_ind=None):
         """
         Return average value for band_id
 
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
-        return self.fetch(band_id)[1]
+        return self.fetch(band_id, band_ind)[1]
 
-    def get_std(self, band_id=1):
+    def get_std(self, band_id=None, band_ind=None):
         """
         Return standard deviation for band_id
 
         Args:
         band_id (int): band ID indexed from 1. Defaults to 1.
         """
-        return self.fetch(band_id)[2]
+        return self.fetch(band_id, band_ind)[2]
 
-    def sample(self, band_id=1, nsample=1, min=None, max=None, null=False):
+    def sample(self, band_id=None, band_ind=None, nsample=1,
+               min=None, max=None, null=False):
         """
         Sample parameter distribution for band_id nsample times
         and return the sampled values in an array if nsample > 1
@@ -207,13 +180,13 @@ class Parameter:
         if max is None:
             max = self._max
         # Retrieve the mean, median, and std for this band
-        vals = self.fetch(band_id)
+        vals = self.fetch(band_id, band_ind)
         avg = vals[0]
         std = vals[2]
         # If avg is 'NA' or 'BAND', return said string
         if str(avg).strip().upper() in self._float_str_vals:
             return str(avg).strip().upper()
-        # If std is 'NA' or 'BAND', avg
+        # If std is 'NA' or 'BAND', return avg
         elif str(std).strip().upper() in self._float_str_vals:
             return avg
         # Otherwise, sample the Gaussian described by mean +/- std
@@ -326,7 +299,11 @@ class Parameter:
             self._val = None
             self._avg = self._float(inp)
             self._med = self._avg
-            self._std = self._zero(self._avg)
+            if (isinstance(self._avg, str) or
+               isinstance(self._avg, np.str_)):
+                self._std = 0.
+            else:
+                self._std = self._zero(self._avg)
         return
 
     def _store_float_dist(self, inp):
@@ -473,18 +450,18 @@ class Parameter:
 
     def _store_str(self, inp):
         self._mult_bands = False
+        if isinstance(inp, str):
+            self._val = inp
         # For optic params, the input is a tuple. However, if this is a string
         # the tuple is presumed to be ('string', None)
-        val = eval(inp)
-        if isinstance(val, tuple):
-            self._val = str(val[0])
-        elif isinstance(val, str):
-            self._val = val
         else:
-            self._log.err(
-                "Could not store string parameter '%s', which is of type '%s'"
-                "for parameter '%s'"
-                % (str(inp), type(eval(inp)), self.name))
+            try:
+                self._val = str(inp).split(',')[0].strip(" ()''")
+            except:
+                self._log.err(
+                    "Could not store string parameter '%s' "
+                    "for parameter '%s'"
+                    % (str(inp), self.name))
         self._avg = None
         self._med = None
         self._std = None
@@ -526,10 +503,14 @@ class Parameter:
 
     def _zero(self, val):
         """Convert val to an array of or single zero(s)"""
-        try:
-            return np.zeros(len(val))
-        except:
+        if (isinstance(self._avg, str) or
+           isinstance(self._avg, np.str_)):
             return 0.
+        else:
+            try:
+                return np.zeros(len(val))
+            except:
+                return 0.
 
     def _check_range(self):
         if self._avg is None or isinstance(self._avg, str):
@@ -555,10 +536,12 @@ class Parameter:
         else:
             return round(inp, sig-int(np.floor(np.log10(abs(inp))))-1)
 
-    def _is_empty(self, band_id=1):
+    def _is_empty(self, band_id=None, band_ind=None):
         """ Check if a parameter average is defined """
         if self._mult_bands:
-            if str(self._avg[band_id - 1]).upper() in self._float_str_vals:
+            if band_id is not None:
+                band_ind = self._band_ids.index(str(band_id))
+            if str(self._avg[band_ind]).upper() in self._float_str_vals:
                 return True
             else:
                 return False
@@ -567,3 +550,70 @@ class Parameter:
                 return True
             else:
                 return False
+
+    def _change_str(self, new_avg, band_ind=None, num_bands=None):
+        avg_new = new_avg
+        # If multiple bands are already set, just change the value
+        if band_ind is not None and self._mult_bands:
+            if self._avg[band_ind - 1].upper() != avg_new.upper():
+                self._avg[band_ind - 1] = avg_new
+                ret_bool = True
+            else:
+                ret_bool = False
+        # If multiple bands aren't defined, we can define them now
+        elif band_ind is not None and not self._mult_bands:
+            avg_old = self._avg
+            self._avg = [avg_new if (i == band_ind - 1) else avg_old
+                            for i in range(int(num_bands))]
+            self._std = [self._std for i in range(int(num_bands))]
+            self._mult_bands = True
+            if avg_new.upper() == avg_old.upper():
+                ret_bool = False
+            else:
+                ret_bool = True
+        # Otherwise handle the scenario of a single value
+        else:
+            if self._avg.upper() != avg_new.upper():
+                self._avg = avg_new
+                ret_bool = True
+            else:
+                ret_bool = False
+        return ret_bool
+ 
+    def _change_float(self, new_avg, band_ind=None, num_bands=None):
+        # Convert to SI units
+        avg_new = self.unit.to_SI(new_avg)
+        # If multiple bands are already set, just change the value
+        if band_ind is not None and self._mult_bands:
+            if self._is_empty(band_ind):
+                self._avg[band_ind - 1] = avg_new
+                ret_bool = True
+            elif (self._sig_figs(avg_new, 5) !=
+                self._sig_figs(self._avg[band_ind - 1], 5)):
+                self._avg[band_ind - 1] = avg_new
+                ret_bool = True
+            else:
+                ret_bool = False
+        # If multiple bands aren't defined, we can define them now
+        elif band_ind is not None and not self._mult_bands:
+            avg_old = self._avg
+            self._avg = [avg_new if i == band_ind - 1 else avg_old
+                            for i in range(int(num_bands))]
+            self._std = [self._std for i in range(int(num_bands))]
+            self._mult_bands = True
+            if str(avg_old).upper() in self._float_str_vals:
+                ret_bool = True
+            elif (self._sig_figs(avg_new, 5) !=
+                self._sig_figs(avg_old, 5)):
+                ret_bool = True
+            else:
+                ret_bool = False
+        # Otherwise handle the scenario of a single value
+        else:
+            if (self._sig_figs(avg_new, 5) !=
+                self._sig_figs(self._avg, 5)):
+                self._avg = avg_new
+                ret_bool = True
+            else:
+                ret_bool = False
+        return ret_bool

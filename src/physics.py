@@ -196,13 +196,7 @@ class Physics:
         freq, temp = self._check_inputs(freq, [temp])
         temp = np.where(temp <= 0, 1.e-3, temp)  # 1 mK is minimum allowed temp
         with np.errstate(divide='raise'):
-            try:
-                return 1. / (np.exp((self.h * freq)/(self.kB * temp)) - 1.)
-            except:
-                print("problem dividing!")
-                print(temp[0])
-                print(freq)
-                raise Exception()
+            return 1. / (np.exp((self.h * freq)/(self.kB * temp)) - 1.)
 
     def a_omega(self, freq):
         """

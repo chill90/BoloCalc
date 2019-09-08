@@ -31,6 +31,7 @@ class Optic:
         self._phys = self._cam.tel.exp.sim.phys
         self._std_params = self._cam.tel.exp.sim.std_params
         self._nexp = self._cam.tel.exp.sim.param("nexp")
+        self._nchs = len(self._cam.chs)
 
         # Names for the special optical elements
         self._ap_names = ["APERTURE", "STOP", "LYOT"]
@@ -77,17 +78,18 @@ class Optic:
 
         return (self._elem, self._emiss, self._effic, self._temp)
 
-    def change_param(self, param, new_val, band_id=None):
+    def change_param(self, param, new_val, band_ind=None, num_bands=None):
         if param not in self._param_dict.keys():
             if param in self._param_names.keys():
                 return (self._param_dict[self._param_names[param]].change(
-                        new_val, band_id=band_id))
+                        new_val, band_ind=band_ind, num_bands=num_bands))
             else:
                 self._log.err(
                     "Parameter '%s' not understood by Optic.change_param()"
                     % (str(param)))
         elif param in self._param_dict.keys():
-            return self._param_dict[param].change(new_val, band_id=band_id)
+            return (self._param_dict[param].change(
+                    new_val, band_ind=band_ind, num_bands=num_bands))
         else:
             self._log.err(
                 "Parameter '%s' not understood by Optic.change_param()"
@@ -107,10 +109,22 @@ class Optic:
     def _store_param(self, name):
         cap_name = name.replace(" ", "").strip().upper()
         if cap_name in self._std_params.keys():
-            return pr.Parameter(
+            param = pr.Parameter(
                 self._log, self._inp_dict[cap_name],
                 std_param=self._std_params[cap_name],
                 band_ids=self._band_ids)
+            # Check that the number of bands is either equal
+            # to the number of channels or a single value
+            data = param.fetch(band_id=None)
+            for dat in data:
+                corr_len = self._check_param_len(dat)
+                if not corr_len:
+                    self._log.err(
+                        "Wrong parameter list length for input '%s' "
+                        "for optic parameter '%s'" % (str(dat), param.name))
+                else:
+                    continue
+            return param
         else:
             self._log.err(
                 "Passed parameter in optics.txt '%s' not "
@@ -185,7 +199,7 @@ class Optic:
 
     def _store_refl(self):
         # Reflection from a band file?
-        if self._param_dict["refl"].get_avg() == "BAND":
+        if str(self._param_dict["refl"].get_avg()).upper() == "BAND":
             self._refl = self._band_samp("REFLECTION")
         # Store reflection as a flat spectrum
         elif not self._param_vals["refl"] == "NA":
@@ -197,7 +211,7 @@ class Optic:
     
     def _store_spill(self):
         # Spillover from a band file?
-        if self._param_dict["spill"].get_avg() == "BAND":
+        if str(self._param_dict["spill"].get_avg()).upper() == "BAND":
             self._spill = self._band_samp("SPILLOVER")
         # Store flat spill vs frequency
         elif not self._param_vals["spill"] == 'NA':
@@ -216,11 +230,12 @@ class Optic:
     
     def _store_scatt(self):
         # Scattering from a band file?
-        if self._param_dict["scatf"].get_avg() == "BAND":
+        if str(self._param_dict["scatf"].get_avg()).upper() == "BAND":
             self._scatt = self._band_samp("SCATTERFRAC")
         # Otherwise calculate using other input parameters
         elif not self._param_vals["scatf"] == "NA":
             self._scatt = np.ones(self._nfreq) * self._param_vals["scatf"]
+        # Try using Ruze efficiency
         elif not self._param_vals["surfr"] == "NA":
             self._scatt = 1. - self._phys.ruze_eff(
                 self._ch.freqs, self._param_vals["surfr"])
@@ -236,14 +251,13 @@ class Optic:
         return
 
     def _store_abso(self):
-        print(self._param_dict["abs"].get_avg())
+        elem = str(self._elem).replace(" ","").upper()
         # Absorption from a band file?
-        if self._param_dict["abs"].get_avg() == "BAND":
-            print("actually using band!")
+        if str(self._param_dict["abs"].get_avg()).upper() == "BAND":
             self._abso = self._band_samp("ABSORPTION")
         # Otherwise calculate from other parameters
         # Treat the case of the aperture stop
-        elif self._elem.replace(" ","").strip().upper() in self._ap_names:
+        elif elem in self._ap_names:
             # Flat spectrum using input
             if not self._param_vals["abs"] == 'NA':
                 self._abso = np.ones(self._nfreq) * self._param_vals["abs"]
@@ -271,7 +285,6 @@ class Optic:
                         self._param_vals["ind"], self._param_vals["ltan"])
                 # Otherwise store zeros if absorption is 'NA'
                 else:
-                    print("zeros on absorption for", self._elem)
                     self._abso = np.zeros(self._nfreq)
         return
 
@@ -296,10 +309,9 @@ class Optic:
             self._ch.set_param("ap_eff", ch_eff)
             self._ch.set_param("edge_tap", ch_taper)
         return
-    
+
     def _phys_lims(self, band):
         if band is not None:
-            print("checking limits")
             band = np.array([x if x > 0. else 0. for x in band])
             band = np.array([x if x < 1. else 1. for x in band])
         return band
@@ -323,3 +335,12 @@ class Optic:
                 "'BAND' defined for parameter '%s' for optic '%s' but "
                 "band file found" % (key, elem))
         return samp_band
+
+    def _check_param_len(self, param):
+        if isinstance(param, list) or isinstance(param, np.ndarray):
+            if not len(param) == self._nchs:
+                return False
+            else:
+                return True
+        else:
+            return True

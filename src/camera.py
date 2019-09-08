@@ -122,7 +122,7 @@ class Camera:
                         for nm in band_files if "~" not in nm]
             # Create a dictionary of band files, if there are any
             if len(name_arr):
-                self._band_dict = {name_arr[i].strip(): band_files[i]
+                self._band_dict = {name_arr[i].strip().upper(): band_files[i]
                                    for i in range(len(name_arr))}
             # Otherwise, set the dict variable to None
             else:
@@ -230,7 +230,7 @@ class Camera:
                     % (chan_dict["Band ID"], self.dir))
             # Check for band file for this channel
             cam_name = str(self.dir.rstrip(os.sep).split(os.sep)[-1])
-            band_name = (cam_name + str(chan_dict["BANDID"]))
+            band_name = (cam_name + "_" + str(chan_dict["BANDID"])).upper()
             if (self._band_dict is not None and
                band_name in self._band_dict.keys()):
                 band_file = self._band_dict[band_name]

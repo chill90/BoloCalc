@@ -234,9 +234,10 @@ class Vary:
             cam = tel.cams[self._cams[j]]
             ch = cam.chs[self._chs[j]]
             opt = cam.opt_chn.optics[self._opts[j]]
-            band_id = ch.param("band_id")
             changed = opt.change_param(
-                self._params[j], self._set_arr[i][j], band_id=band_id)
+                self._params[j], self._set_arr[i][j],
+                band_ind=ch.band_ind,
+                num_bands=len(ch.cam.chs))
         # Change the pixel size,
         # varying detector number also
         elif scope is 'pix':
@@ -454,11 +455,14 @@ class Vary:
     def _load_params(self):
         self._log.log(
             "Loading parameters to vary from %s" % (self._param_file))
+        # Converted loaded paraemters to strings with whitespace stripped
         convs = {i: lambda s: s.strip() for i in range(8)}
+        # Load data from vary file
         data = np.loadtxt(self._param_file, delimiter='|', dtype=str,
                           unpack=True, ndmin=2, converters=convs)
         self._tels, self._cams, self._chs, self._opts = data[:4]
         self._params, mins, maxs, stps = data[4:]
+        # Store the units associated with the loaded parameters
         self._unit_strs = ["[" + self._sim.std_params[
             param.replace(" ","").upper()].unit.name + "]"
             for param in self._params]
@@ -469,19 +473,28 @@ class Vary:
             for i in range(len(self._params))]
         self._param_widths = [width if width > 10 else 10
                               for width in param_widths]
-
         # Check for consistency of number of parameters varied
         if len(set([len(d) for d in data])) == 1:
             self._num_params = len(self._params)
         else:
             self._log.err("Number of telescopes, parameters, mins, maxes, and "
                           "steps must match for parameters to be varied "
-                          " in %s" % (self._param_file))
+                          "in %s" % (self._param_file))
+        # Check that none of the step sizes are larger than max - min
+        max_min = (np.array(stps).astype(float) - (
+            np.array(maxs).astype(float) - np.array(mins).astype(float)))
+        if np.any(max_min > 0):
+            self._log.err(
+                "Step value cannot be larger than max value minus min value "
+                "for parameters to be varied in %s" % (self._param_file))
+        # Store the parameter arrays
         set_arr = [np.arange(
             float(mins[i]), float(maxs[i])+float(stps[i]),
             float(stps[i])).tolist()
             for i in range(self._num_params)]
 
+        # If vary together flag is set, move the parameters together
+        # Transpose parameter arrays from wide-form to long-form
         if self._vary_tog:
             # Check that the parameter arrays are the same length
             arr_lens = [len(arr) for arr in set_arr]

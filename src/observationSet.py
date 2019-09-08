@@ -26,7 +26,8 @@ class ObservationSet:
 
         # Store the elevation values and probabilities
         self._log.log(
-            "Generating ObservationSet realization for channel Band_ID='%s'"
+            "Generating ObservationSet realization for "
+            "channel Band_ID = '%s'"
             % (self.ch.band_id))
         if self.ch.elev_dict is not None:
             self._elev_vals = np.fromiter(
