@@ -193,6 +193,9 @@ class Simulation:
             "PIXELSIZE": sp.StandardParam(
                 "Pixel Size", un.Unit("mm"),
                 0.0, np.inf, float),
+            "PIXELSIZE**": sp.StandardParam(
+                "Pixel Size", un.Unit("mm"),
+                0.0, np.inf, float),
             "NUMDETPERWAFER": sp.StandardParam(
                 "Num Det per Wafer", un.Unit("NA"),
                 0.0, np.inf, float),

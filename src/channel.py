@@ -118,12 +118,13 @@ class Channel:
         # Check if the parameter label is by name
         if (param not in self._param_dict.keys() and
            param not in self.det_dict.keys()):
-            if param in self._param_names.keys():
+            caps_param = param.replace(" ", "").strip().upper()
+            if caps_param in self._param_names.keys():
                 return (self._param_dict[
-                        self._param_names[param]].change(new_val))
-            elif param in self._det_param_names.keys():
+                        self._param_names[caps_param]].change(new_val))
+            elif caps_param in self._det_param_names.keys():
                 return (self.det_dict[
-                        self._det_param_names[param]].change(new_val))
+                        self._det_param_names[caps_param]].change(new_val))
             else:
                 self._log.err(
                     "Parameter '%s' not understood by Channel.change_param()"
@@ -141,7 +142,14 @@ class Channel:
 
     def get_param(self, param):
         """ Return parameter median value """
-        return self._param_dict[param].get_med()
+        if param in self._param_dict.keys():
+            return self._param_dict[param].get_med()
+        elif param in self.det_dict.keys():
+            return self.det_dict[param].get_med()
+        else:
+            self._log.err(
+                "Unable to retrieve median value for parameter '%s' "
+                "in channel Band ID = %s" % (str(param), str(self.band_id)))
 
     # ***** Helper Methods *****
     def _cam_param(self, param):
@@ -209,10 +217,10 @@ class Channel:
                 self._log, "NA", name="Responsivity Factor")
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
-            param.name: pid
+            param.caps_name: pid
             for pid, param in self._param_dict.items()}
         self._det_param_names = {
-            param.name: pid
+            param.caps_name: pid
             for pid, param in self.det_dict.items()}
         return
 

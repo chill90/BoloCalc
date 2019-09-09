@@ -1,6 +1,5 @@
 # Built-in modules
 import numpy as np
-import sys as sy
 import pickle as pk
 import os
 import io

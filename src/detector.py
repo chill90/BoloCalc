@@ -89,10 +89,10 @@ class Detector:
             tc_tb_diff = self._param_vals["tc"] - self._param_vals["tb"]
             if tc_tb_diff < self._min_tc_tb_diff:
                 self._log.wrn(
-                    "Tc - Tb < %d mK for a sampled detector in channel "
+                    "Tc - Tb < %d mK for a sampled detector in Band ID "
                     "'%s' in camera '%s'. Setting Tc = Tb + %d mK for this "
                     "detector sample"
-                    % (self._min_tc_tb_diff, self._ch.name, self._ch.cam.dir,
+                    % (self._min_tc_tb_diff, self._ch.band_id, self._ch.cam.dir,
                        self._min_tc_tb_diff))
                 self._param_vals["tc"] = (
                     self._param_vals["tb"] + self._min_tc_tb_diff)

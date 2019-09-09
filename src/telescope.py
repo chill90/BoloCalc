@@ -90,9 +90,10 @@ class Telescope:
             % (str(param), str(new_val)))
         # Check if the parameter label is by name
         if param not in self._param_dict.keys():
-            if param in self._param_names.keys():
+            caps_param = param.replace(" ", "").strip().upper()
+            if caps_param in self._param_names.keys():
                 return (self._param_dict[
-                        self._param_names[param]].change(new_val))
+                        self._param_names[caps_param]].change(new_val))
             else:
                 self._log.err(
                     "Parameter '%s' not understood by Telescope.change_param()"
@@ -121,23 +122,16 @@ class Telescope:
             return self._param_dict["elev"].sample(nsample=1)
 
     # ***** Helper Methods *****
-    def _param_samp(self, param):
-        """ Sample telescope parameter """
-        if self.exp.sim.param("nexp") == 1:
-            return param.get_med()
-        else:
-            return param.sample(nsample=1)
-
-    def _store_param(self, name):
-        cap_name = name.replace(" ", "").strip().upper()
-        if cap_name in self._std_params.keys():
-            return pr.Parameter(
-                self._log, self._inp_dict[cap_name],
-                std_param=self._std_params[cap_name])
-        else:
+    def _check_dirs(self):
+        """ Check that passed telescope directory exists with a config dir """
+        if not os.path.isdir(self.dir):
+            self._log.err("Telescope '%s' does not exist" % (self.dir))
+        self._config_dir = os.path.join(self.dir, 'config')
+        if not os.path.isdir(self._config_dir):
             self._log.err(
-                "Passed parameter in telescope.txt '%s' not "
-                "recognized" % (name))
+                "Telescope config dir '%s' does not exist"
+                % (self._config_dir))
+        return
 
     def _store_param_dict(self):
         """ Store Parameter objects for telescope """
@@ -161,9 +155,20 @@ class Telescope:
             "net_mgn": self._store_param("NET Margin")}
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
-            param.name: pid
+            param.caps_name: pid
             for pid, param in self._param_dict.items()}
         return
+
+    def _store_param(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._std_params.keys():
+            return pr.Parameter(
+                self._log, self._inp_dict[cap_name],
+                std_param=self._std_params[cap_name])
+        else:
+            self._log.err(
+                "Passed parameter in telescope.txt '%s' not "
+                "recognized" % (name))
 
     def _store_param_vals(self):
         """ Evaluate telescope parameters """
@@ -177,6 +182,52 @@ class Telescope:
         # Store telescope name
         self._param_vals["tel_name"] = (
             self.dir.rstrip(os.sep).split(os.sep)[-1])
+        return
+
+    def _store_cams(self):
+        """ Store cameras """
+        self._log.log(
+            "Storing cameras in telescope %s"
+            % (self.dir))
+        # Gather directories in telescope, ignoring 'config' and 'paramVary'
+        cam_dirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))
+        cam_dirs = [x for x in cam_dirs
+                    if 'config' not in x and 'paramVary' not in x]
+        # Check that at least one camera is present
+        if len(cam_dirs) == 0:
+            self._log.err("Zero cameras in '%s'" % (self.dir))
+        cam_names = [cam_dir.split(os.sep)[-2] for cam_dir in cam_dirs]
+        # Check for duplicate camera names
+        if len(cam_names) != len(set(cam_names)):
+            self._log.err("Duplicate camera name in '%s'" % (self.dir))
+        # Store camera objects
+        self.cams = {}
+        for i in range(len(cam_names)):
+            cam_name_upper = cam_names[i].replace(" ", "").strip().upper()
+            self.cams.update({cam_name_upper:
+                              cm.Camera(self, cam_dirs[i])})
+        return
+
+    def _param_samp(self, param):
+        """ Sample telescope parameter """
+        if self.exp.sim.param("nexp") == 1:
+            return param.get_med()
+        else:
+            return param.sample(nsample=1)
+
+    def _handle_atm(self):
+        """ Handle the atmosphere for balloons and space """
+        # Store custom atmosphere
+        if 'CUST' in self.param('site').upper():
+            self._custom_atm()
+        else:
+            self._param_vals['atm_file'] = None
+            # Force PWV and elevation for balloon and space missions
+            if self.param('site').upper() == 'MCMURDO':
+                self._param_vals['pwv'] = 0
+            elif self.param('site').upper() == 'SPACE':
+                self._param_vals['pwv'] = None
+                self._param_vals['elev'] = None
         return
 
     def _custom_atm(self):
@@ -206,51 +257,3 @@ class Telescope:
             self._param_vals['elev'] = None
             self._param_vals['pwv'] = None
         return
-
-    def _handle_atm(self):
-        """ Handle the atmosphere for balloons and space """
-        # Store custom atmosphere
-        if 'CUST' in self.param('site').upper():
-            self._custom_atm()
-        else:
-            self._param_vals['atm_file'] = None
-            # Force PWV and elevation for balloon and space missions
-            if self.param('site').upper() == 'MCMURDO':
-                self._param_vals['pwv'] = 0
-            elif self.param('site').upper() == 'SPACE':
-                self._param_vals['pwv'] = None
-                self._param_vals['elev'] = None
-        return
-
-    def _store_cams(self):
-        """ Store cameras """
-        self._log.log(
-            "Storing cameras in telescope %s"
-            % (self.dir))
-        # Gather directories in telescope, ignoring 'config' and 'paramVary'
-        cam_dirs = sorted(gb.glob(os.path.join(self.dir, '*'+os.sep)))
-        cam_dirs = [x for x in cam_dirs
-                    if 'config' not in x and 'paramVary' not in x]
-        # Check that at least one camera is present
-        if len(cam_dirs) == 0:
-            self._log.err("Zero cameras in '%s'" % (self.dir))
-        cam_names = [cam_dir.split(os.sep)[-2] for cam_dir in cam_dirs]
-        # Check for duplicate camera names
-        if len(cam_names) != len(set(cam_names)):
-            self._log.err("Duplicate camera name in '%s'" % (self.dir))
-        # Store camera objects
-        self.cams = {}
-        for i in range(len(cam_names)):
-            self.cams.update({cam_names[i].strip():
-                              cm.Camera(self, cam_dirs[i])})
-        return
-
-    def _check_dirs(self):
-        """ Check that passed telescope directory exists with a config dir """
-        if not os.path.isdir(self.dir):
-            self._log.err("Telescope '%s' does not exist" % (self.dir))
-        self._config_dir = os.path.join(self.dir, 'config')
-        if not os.path.isdir(self._config_dir):
-            self._log.err(
-                "Telescope config dir '%s' does not exist"
-                % (self._config_dir))

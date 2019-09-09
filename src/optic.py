@@ -84,8 +84,9 @@ class Optic:
 
     def change_param(self, param, new_val, band_ind=None, num_bands=None):
         if param not in self._param_dict.keys():
-            if param in self._param_names.keys():
-                return (self._param_dict[self._param_names[param]].change(
+            caps_param = param.replace(" ", "").strip().upper()
+            if caps_param in self._param_names.keys():
+                return (self._param_dict[self._param_names[caps_param]].change(
                         new_val, band_ind=band_ind, num_bands=num_bands))
             else:
                 self._log.err(
@@ -152,7 +153,7 @@ class Optic:
             "scatf": self._store_param("Scatter Frac"),
             "scatt": self._store_param("Scatter Temp")}
         self._param_names = {
-            param.name: pid for pid, param in self._param_dict.items()}
+            param.caps_name: pid for pid, param in self._param_dict.items()}
         return
 
     def _store_param_vals(self, ch):

@@ -75,6 +75,6 @@ class OpticalChain:
                 else:
                     band_files = None
             # Store optic
-            self.optics.update({elem: op.Optic(
+            self.optics.update({elem_upper: op.Optic(
                 self, param_dict, band_files=band_files)})
         return

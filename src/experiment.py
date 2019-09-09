@@ -83,9 +83,10 @@ class Experiment:
                 "are disabled" % (self.dir))
         # Check if the parameter label is by name
         if param not in self._param_dict.keys():
-            if param in self._param_names.keys():
+            caps_param = param.replace(" ", "").strip().upper()
+            if caps_param in self._param_names.keys():
                 return (self._param_dict[
-                        self._param_names[param]].change(new_val))
+                        self._param_names[caps_param]].change(new_val))
             else:
                 self._log.err(
                     "Parameter '%s' not understood by "
@@ -141,7 +142,7 @@ class Experiment:
                 "sync_freq": self._store_param("Sync Scale Frequency")}
             # Dictionary for ID-ing parameters for changing
             self._param_names = {
-                param.name: pid
+                param.caps_name: pid
                 for pid, param in self._param_dict.items()}
         else:
             self._param_dict = None
@@ -183,7 +184,8 @@ class Experiment:
         # Store telescope objects
         self.tels = {}
         for i in range(len(tel_names)):
-            self.tels.update({tel_names[i].strip():
+            tel_name_upper = tel_names[i].replace(" ", "").strip().upper()
+            self.tels.update({tel_name_upper:
                               tp.Telescope(self, tel_dirs[i])})
         return
 

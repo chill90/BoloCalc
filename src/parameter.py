@@ -35,6 +35,7 @@ class Parameter:
         # If a StandardParam object is passed, use its attributes
         if std_param is not None:
             self.name = std_param.name
+            self.caps_name = std_param.caps_name
             self.unit = std_param.unit
             self._min = std_param.min
             self._max = std_param.max
@@ -42,6 +43,7 @@ class Parameter:
         # Otherwise, store the passed attributes
         else:
             self.name = name
+            self.caps_name = self.name.replace(" ", "").strip().upper()
             if unit is not None:
                 self.unit = unit
             else:
@@ -586,10 +588,12 @@ class Parameter:
         if band_ind is not None and self._mult_bands:
             if self._is_empty(band_ind=band_ind):
                 self._avg[band_ind] = avg_new
+                self._med = self._avg
                 ret_bool = True
             elif (self._sig_figs(avg_new, 5) !=
                   self._sig_figs(self._avg[band_ind], 5)):
                 self._avg[band_ind] = avg_new
+                self._med = self._avg
                 ret_bool = True
             else:
                 ret_bool = False
@@ -613,6 +617,7 @@ class Parameter:
             if (self._sig_figs(avg_new, 5) !=
                self._sig_figs(self._avg, 5)):
                 self._avg = avg_new
+                self._med = self._avg
                 ret_bool = True
             else:
                 ret_bool = False
