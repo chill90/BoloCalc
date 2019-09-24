@@ -3,8 +3,8 @@ import sys as sy
 
 # Verify the python version
 if sy.version_info.major == 2:
-    sy.stdout.write("\n***** Python 2 is not longer supported for "
-                    "BoloCalc v0.10 (Aug 2019) and beyond *****")
+    sy.stdout.write("\n***** Python 2 is no longer supported for "
+                    "BoloCalc v0.10 (Sep 2019) and beyond *****\n\n")
     sy.exit()
 
 # More built-in modules
