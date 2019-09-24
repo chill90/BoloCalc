@@ -5,6 +5,22 @@ import copy as cp
 
 
 class Sensitivity:
+    """
+    Sensitivity object takes a simulation object, which has information about
+    the experiment, and calculates the sensitivity
+
+    Args:
+    sim (src.Simulation): parent Simulation object
+
+    Attributes:
+    exp_dir (str): input experiment directory
+    senses (list): array of output sensitivities
+    opt_pos (list): array of output optical power arrays
+
+    Parents:
+    sim (src.Simulation): parent Simulation object
+    exp (src.Experiment): parent Experiment object
+    """
     def __init__(self, sim):
         # Store passed parameters
         self.exp = sim.exp
@@ -17,18 +33,32 @@ class Sensitivity:
 
     # ***** Public methods *****
     def sensitivity(self, exp=None):
+        """
+        Calculate sensitivity for a given experiment
+
+        Args:
+        exp (src.Experiment): Experiment to evaluate. Defaults to None,
+        which triggers evaluating the parent Experiment object
+        """
         if exp is None:
             exp = self.exp
         return [[[self.ch_sensitivity(ch) for ch in cam.chs.values()]
                 for cam in tp.cams.values()]
                 for tp in exp.tels.values()]
 
-    def opt_pow(self, spec=None):
+    def opt_pow(self):
+        """ Calculate optical power tables for parent Experiment object """
         return [[[self._opt_pow(ch) for ch in cm.chs.values()]
                 for cm in tp.cams.values()]
                 for tp in self.exp.tels.values()]
 
     def ch_sensitivity(self, ch):
+        """
+        Calculate channel sensitivity of a specific Channel object
+
+        Args:
+        ch (src.Channel): Channel object
+        """
         # Calculate optical power
         self._calc_popt(ch)
         self._calc_rj_temp(ch)
@@ -68,6 +98,7 @@ class Sensitivity:
 
     # *** Helper methods ***
     def _opt_pow(self, ch):
+        """ Calculate optical power table for a specific channel """
         # Store passed parameters
         self._pow_sky_side = []
         self._pow_det_side = []
@@ -134,6 +165,7 @@ class Sensitivity:
         return self._opt_table()
 
     def _calc_popt(self, ch):
+        """ Calculate optical power for a specific channel """
         self._popt_arr = np.array([[self._popt(
             ch.elem[i][j], ch.emis[i][j], ch.tran[i][j],
             ch.temp[i][j], ch.freqs)
@@ -142,6 +174,7 @@ class Sensitivity:
         return
 
     def _calc_rj_temp(self, ch):
+        """ Calculate telescope RJ temp for a specific temperature """
         n_sky_elem = self._num_sky_elem(ch)
         # Telescope efficiency
         self._tel_eff_arr = np.array([[self._eff(
@@ -172,6 +205,7 @@ class Sensitivity:
         return
 
     def _calc_photon_NEP(self, ch):
+        """ Calculate photon NEP for a specific channel """
         if self._corr:
             pass_ch = ch
         else:
@@ -190,6 +224,7 @@ class Sensitivity:
         return
 
     def _calc_bolo_NEP(self, ch):
+        """ Calculate bolometer NEP for a specific channel """
         self._NEP_bolo_arr = np.array([[self._bolo_NEP(
             self._popt_arr[i][j], ch.det_arr.dets[j])
             for j in range(self._ndet)]
@@ -197,6 +232,7 @@ class Sensitivity:
         return
 
     def _calc_read_NEP(self, ch):
+        """ Calculate readout NEP for a specific channel """
         NEP_read_arr = np.array([[self._read_NEP(
             self._popt_arr[i][j], ch.det_arr.dets[j])
             for j in range(self._ndet)]
@@ -214,6 +250,7 @@ class Sensitivity:
         return
 
     def _calc_tot_NEP(self, ch):
+        """ Calculate total NEP for a specific channel """
         self._NEP = np.sqrt(self._NEP_ph_arr**2 +
                             self._NEP_bolo_arr**2 +
                             self._NEP_read_arr**2)
@@ -224,6 +261,7 @@ class Sensitivity:
         return
 
     def _calc_NET(self, ch):
+        """ Calculate NET for a specific channel """
         # Total NET
         self._NET = np.array([[self._noise.NET_from_NEP(
             self._NEP[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
@@ -241,6 +279,7 @@ class Sensitivity:
         return
 
     def _calc_NET_RJ(self, ch):
+        """ Calculate RJ NET for a specific channel """
         self._NET_RJ = np.array([[self._Trj_over_Tcmb(
             ch.freqs)*self._NET[i][j]
             for j in range(self._ndet)]
@@ -252,6 +291,7 @@ class Sensitivity:
         return
 
     def _calc_NET_arr(self, ch):
+        """ Calcualte array NET for a specific channel """
         self._NET_arr = np.array([[self._noise.NET_arr(
             self._NET_corr[i][j], ch.param("ndet"), ch.param("yield"))
             for j in range(self._ndet)]
@@ -259,6 +299,7 @@ class Sensitivity:
         return
 
     def _calc_NET_arr_RJ(self, ch):
+        """ Calculate array NET RJ for a specific channel """
         self._NET_arr_RJ = np.array([[self._noise.NET_arr(
             self._NET_corr_RJ[i][j], ch.param("ndet"), ch.param("yield"))
             for j in range(self._ndet)]
@@ -266,12 +307,14 @@ class Sensitivity:
         return
 
     def _calc_corr_deg(self, ch):
+        """ Calculate correlation factor for a specific channel """
         self._corr_deg = np.array([[self._NET_corr[i][j] / self._NET[i][i]
                                   for j in range(self._ndet)]
                                   for i in range(self._nobs)])
         return
 
     def _calc_map_depth(self, ch):
+        """ Calculate map depth for a specific channel """
         tel = ch.cam.tel
         self._map_depth = np.array([[self._noise.map_depth(
             self._NET_arr[i][j], tel.param("fsky"),
@@ -281,6 +324,7 @@ class Sensitivity:
         return
 
     def _calc_map_depth_RJ(self, ch):
+        """ Calculate RJ map depth for a specific channel """
         tel = ch.cam.tel
         self._map_depth_RJ = np.array([[self._noise.map_depth(
             self._NET_arr_RJ[i][j], tel.param("fsky"),
@@ -290,10 +334,12 @@ class Sensitivity:
         return
 
     def _eff(self, tran, freqs, bw):
+        """ Calculate cumulative efficiency """
         tot_eff = np.trapz(np.prod(tran, axis=0), freqs) / bw
         return tot_eff
 
     def _popt(self, elem, emis, tran, temp, freqs):
+        """ Calculate optical power """
         buf_tran = self._buffer_tran(tran, freqs)
         tot_pow = np.sum([np.trapz(
             self._phys.bb_pow_spec(
@@ -303,11 +349,13 @@ class Sensitivity:
         return tot_pow
 
     def _rj_temp(self, elem, emis, tran, temp, freqs, eff, bw):
+        """ Calculate RJ temperature """
         opt_pow = self._popt(elem, emis, tran, temp, freqs)
         rj_temp = self._phys.rj_temp(opt_pow, bw, eff)
         return rj_temp
 
     def _photon_NEP(self, elem, emis, tran, temp, freqs, ch=None):
+        """ Calculate photon NEP """
         tran = self._buffer_tran(tran, freqs)
         if ch:
             corrs = True
@@ -329,6 +377,7 @@ class Sensitivity:
         return NEP_ph, NEP_ph_arr
 
     def _bolo_NEP(self, opt_pow, det):
+        """ Calculate bolometer NEP """
         if 'NA' in str(det.param("g")):
             if 'NA' in str(det.param("psat")):
                 g = self._noise.G(
@@ -350,6 +399,7 @@ class Sensitivity:
                 det.param("flink"), g, det.param("tc"))
 
     def _read_NEP(self, opt_pow, det):
+        """ Calculate readout NEP """
         if 'NA' in str(det.param("nei")):
             return 'NA'
         elif 'NA' in str(det.param("bolo_r")):
@@ -371,17 +421,20 @@ class Sensitivity:
             det.param("nei"), sfact)
 
     def _Trj_over_Tcmb(self, freqs):
+        """ Convert to RJ temperature from CMB temperature """
         factor_spec = self._phys.Trj_over_Tb(freqs, self._phys.Tcmb)
         bw = freqs[-1] - freqs[0]
         factor = np.trapz(factor_spec, freqs)/bw
         return factor
 
     def _buffer_tran(self, tran, freqs):
+        """ Function to buffer the transmission array with ones """
         out_tran = cp.copy(np.insert(
             tran, len(tran), [1. for f in freqs], axis=0))
         return np.array(out_tran).astype(np.float)
 
     def _opt_table(self):
+        """ Calculate optial power table """
         shape = np.shape(self._pow_sky_side)
         new_shape = (shape[0] * shape[1], shape[2])
         pow_sky_side = np.transpose(np.reshape(self._pow_sky_side, new_shape))
@@ -392,6 +445,7 @@ class Sensitivity:
                 eff_det_side]
 
     def _num_sky_elem(self, ch):
+        """ Discern the number of sky optical elements """
         site = ch.cam.tel.param("site").upper()
         infg = ch.cam.tel.exp.sim.param("infg")
         if site == "ROOM":

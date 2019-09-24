@@ -9,13 +9,16 @@ class Observation:
     elevation for the detector pixel being calculated
 
     Args:
-    obs_set (src.ObservationSet): ObservationSet object
+    obs_set (src.ObservationSet): parent ObservationSet object
 
     Attributes:
     elem (list): sky element names
     emis (list): sky element absorbtivities
     tran (list): sky element transmissions
     temp (list): sky element temperatures
+
+    Parents:
+    obs_set (src.ObservationSet): ObservationSet object
     """
     def __init__(self, obs_set):
         # Store passed parameters
@@ -53,8 +56,8 @@ class Observation:
         if self._ndet == 1:
             self._pix_elev = [bore_elev]
         else:
-            self._pix_elev = (
-                self._obs_set.sample_pix_elev(self._ndet) + bore_elev)
+            pix_elev = self._obs_set.sample_pix_elev(self._ndet)
+            self._pix_elev = pix_elev + bore_elev
         # Maximum allowed elevation = 90 deg, minimum = 20 deg
         self._pix_elev = np.array([e if e > self._scn.min_elev
                                    else self._scn.min_elev

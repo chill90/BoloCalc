@@ -15,17 +15,20 @@ class Camera:
     camera
 
     Args:
-    tel (src.Telescope): Telescope object
+    tel (src.Telescope): parent Telescope object
     inp_dir (str): camera directory
 
     Attributes:
-    tel (src.Telescope): where arg 'tel' is stored
     dir (str): where arg 'inp_dir' is stored
-    name (str): camera name
-    opt_chn (src.OpticalChain): OpticalChain object
-    chs (dict): dictionary of Channel objects
-    pixs (dict): dictionary of Channel objects grouped by pixel
     config_dir (str): configuration directory for this camera
+    name (str): camera name
+
+    Parents:
+    tel (src.Telescope): Telescope object
+
+    Children:
+    chs (dict): dictionary of Channel objects
+    opt_chn (src.OpticalChain): OpticalChain object
     """
     def __init__(self, tel, inp_dir):
         # Store passed parameters
@@ -36,17 +39,14 @@ class Camera:
         self._std_params = self.tel.exp.sim.std_params
         self._nexp = self.tel.exp.sim.param("nexp")
 
-        self._log.log(
-            "Generating camera realization from %s"
-            % (self.dir))
+        self._log.log("Generating camera realization from %s" % (self.dir))
         # Check whether camera and config dir exists
         self._check_dirs()
         # Store camera parameters into a dictionary
         self._store_param_dict()
 
-        self._log.log(
-            "Storing OpticalChain object for camera %s"
-            % (self.dir))
+        self._log.log("Generating OpticalChain object for camera %s"
+                      % (self.dir))
         # Generate channels
         self._store_chs()
         # Generate optical chain
@@ -55,14 +55,11 @@ class Camera:
     # ***** Public Methods *****
     def evaluate(self):
         """ Evaluate camera """
-        self._log.log(
-            "Evaluating camera %s" % (self.dir))
+        self._log.log("Evaluating camera %s" % (self.dir))
         # Evaluate camera parameters
         self._store_param_vals()
         # Evaluate channels
-        self._log.log(
-            "Evaluating cameras in camera %s"
-            % (self.dir))
+        self._log.log("Evaluating channels in camera %s" % (self.dir))
         for chan in self.chs.values():
             chan.evaluate()
         return
@@ -78,7 +75,7 @@ class Camera:
 
     def change_param(self, param, new_val):
         """
-        Change telescope parameter values
+        Change camera parameter values
 
         Args:
         param (str): name of parameter or param dict key
@@ -148,6 +145,7 @@ class Camera:
         return
 
     def _store_param(self, name):
+        """ Store src.Parameter objects for this camera """
         cap_name = name.replace(" ", "").strip().upper()
         if cap_name in self._std_params.keys():
             return pr.Parameter(

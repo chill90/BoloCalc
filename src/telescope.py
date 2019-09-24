@@ -15,15 +15,19 @@ class Telescope:
     and a dictionary of Camera objects
 
     Args:
-    exp (src.Experiment): Experiment object
+    exp (src.Experiment): parent Experiment object
     inp_dir (str): directory for this telescope
 
     Attributes:
-    exp (src.Experiment): where arg 'exp' is stored
     dir (str): where arg 'inp_dir' is stored
+
+    Parents:
+    exp (src.Experiment): Experiment object
+
+    Children:
+    cams (dict): dictionary of Camera objects
     sky (src.Sky): Sky object
     scn (src.ScanStrategy): ScanStrategy object
-    cams (dict): dictionary of Camera objects
     """
     def __init__(self, exp, inp_dir):
         # Passed parameters
@@ -33,22 +37,22 @@ class Telescope:
         self._load = self.exp.sim.load
         self._std_params = self.exp.sim.std_params
 
-        self._log.log(
-            "Generating telescope realization from %s"
-            % (self.dir))
+        self._log.log("Generating telescope realization from %s" % (self.dir))
         # Check whether telescope and config dir exists
         self._check_dirs()
         # Store the telescope parameters
         self._store_param_dict()
 
-        self._log.log(
-            "Storing Sky and ScanStrategy objects for telescope %s"
-            % (self.dir))
+        self._log.log("Generating Sky object for Telescope %s" % (self.dir))
         # Store sky object
         self.sky = sk.Sky(self)
         # Store scan strategy object
+        self._log.log("Generating ScanStrategy object for Telescope %s"
+                      % (self.dir))
         self.scn = sc.ScanStrategy(self)
         # Store cameras
+        self._log.log("Generating Camera objects for Telescope %s"
+                      % (self.dir))
         self._store_cams()
 
     # ***** Public Methods *****
@@ -70,7 +74,7 @@ class Telescope:
 
     def param(self, param):
         """
-        Fetch telescope parameter values
+        Return telescope parameter value
 
         Args:
         param (str): name of parameter, param dict key
@@ -79,7 +83,7 @@ class Telescope:
 
     def change_param(self, param, new_val):
         """
-        Change telescope parameter values
+        Change telescope parameter value
 
         Args:
         param (str): name of parameter or param dict key
@@ -160,6 +164,7 @@ class Telescope:
         return
 
     def _store_param(self, name):
+        """ Store src.Parameter objects for this telescope """
         cap_name = name.replace(" ", "").strip().upper()
         if cap_name in self._std_params.keys():
             return pr.Parameter(

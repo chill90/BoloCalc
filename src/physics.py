@@ -121,32 +121,35 @@ class Physics:
         freq, sigma = self._check_inputs(freq, [sigma])
         return 1. - 4. * np.sqrt(np.pi * freq * self.mu0 / sigma) / self.Z0
 
-    def brightness_spec_rad(self, freq, bright_temp):
+    def brightness_temp(self, freq, spec_rad):
         """
-        Spectral radiance [W/(m^2 sr Hz)] given a frequency [Hz] and
-        brightness temperature [K_RJ]
+        Brightness temperature [K_RJ] given a frequency [Hz] and
+        spectral radiance [W Hz^-1 sr^-1 m^-2]
 
         Args:
-        freq (float): frequencies [Hz]
-        intensity (float): brightness temp [K_RJ]
+        freq (float): frequency [Hz]
+        spec_rad (float): spectral radiance [W Hz^-1 sr^-1 m^-2]
         """
-        freq, bright_temp = self._check_inputs(freq, [bright_temp])
-        return bright_temp * 2 * self.kB * (freq / self.c)**2
+        return spec_rad / (2 * self.kB * (freq / self.c)**2)
 
-    def Trj_over_Tb(self, freq, thermo_temp):
+    def Trj_over_Tb(self, freq, Tb):
         """
-        CMB temperature [K_CMB] given an antenna temperature [K_RJ]
+        Brightness temperature [K_RJ] given a physical temperature [K]
         and frequency [Hz]
 
         Args:
         freq (float): frequencies [Hz]
-        ant_temp (float): antenna temperature [K_RJ]
+        Tb (float): physical temperature. Default to Tcmb
         """
-        freq, thermo_temp = self._check_inputs(freq, [thermo_temp])
-        x = (self.h * freq)/(thermo_temp * self.kB)
+        freq, Tb = self._check_inputs(freq, [Tb])
+        x = (self.h * freq)/(Tb * self.kB)
         thermo_fact = np.power(
             (np.exp(x) - 1.), 2.) / (np.power(x, 2.) * np.exp(x))
         return 1. / thermo_fact
+
+    def Tb_from_Trj(self, freq, Trj):
+        alpha = (self.h * freq) / self.kB
+        return alpha / np.log((alpha / Trj) + 1)
 
     def inv_var(self, err):
         """

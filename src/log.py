@@ -10,11 +10,6 @@ class Log:
 
     Args:
     log_file (str): logging file
-    log_level (int): how much logging info to print to stdout.
-    0 - 2, with 0 being the most info and 2 being the least
-
-    Attributes:
-    level (dict): possible logging levels -- 'CRUCIAL', 'MODERATE', 'NOTIFY'
     """
     def __init__(self, log_file):
         # Open log file

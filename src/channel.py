@@ -21,16 +21,20 @@ class Channel:
     band_file (str): band file for this channel. Defaults to 'None'
 
     Attributes:
-    cam (src.Camera): where the 'cam' arg is stored
-    det_arr (src.DetectorArray): the DetectorArray object for this channel
-    det_band (src.Band): detector band for this channel
     band_mask (list): frequencies for which the band is defined
     elev_dict (dict): pixel elevation distribution for ObservationSet object
     det_dict (dict): detector-specific parameters for DetectorArray object
     elem (list): sky, optics, and detector element names
     emis (list): sky, optics, and detector element absorbtivities
-    tran (list): sky, optics, and detector element tranmissions
+    tran (list): sky, optics, and detector element transmissions
     temp (list): sky, optics, and detector element temperatures
+
+    Parents:
+    cam (src.Camera): Camera object
+
+    Children:
+    det_arr (src.DetectorArray): the DetectorArray object for this channel
+    det_band (src.Band): detector band for this channel
     """
     def __init__(self, cam, inp_dict, band_file=None):
         # Store passed parameters
@@ -47,9 +51,8 @@ class Channel:
         self._fres = self.cam.tel.exp.sim.param("fres")
         self._ndet = self.cam.tel.exp.sim.param("ndet")
 
-        self._log.log(
-            "Generating realization for channel Band_ID '%s'"
-            % (self.band_id))
+        self._log.log("Generating realization for channel Band_ID '%s'"
+                      % (self.band_id))
         # Store the channel parameters in a dictionary
         self._store_param_dict()
         # Elevation distribution for pixels in the camera
@@ -57,27 +60,25 @@ class Channel:
         # Store frequencies to integrate over and detector band
         self._store_band()
 
-        self._log.log(
-            "Generating DetectorArray and ObservationSet objects "
-            "in channel %s" % (self.band_id))
         # Store the detector array object
+        self._log.log("Generating DetectorArray object in channel %s"
+                      % (self.band_id))
         self.det_arr = da.DetectorArray(self)
         # Store the observation set object
+        self._log.log("Generating ObservationSet object in channel %s"
+                      % (self.band_id))
         self._obs_set = ob.ObservationSet(self)
 
     # ***** Public Methods *****
     def evaluate(self):
         """ Evaluate channel """
-        self._log.log(
-            "Evaluating channel Band_ID '%s'"
-            % (self.band_id))
+        self._log.log("Evaluating channel Band_ID '%s'" % (self.band_id))
         # Generate parameter values
         self._store_param_vals()
         # Evaluate focal plane
         self.det_arr.evaluate()
         # Evaluate observations
         self._obs_set.evaluate()
-
         # Build the elem, emis, tran, and temp arrays
         self._calculate()
 
@@ -106,7 +107,7 @@ class Channel:
 
     def change_param(self, param, new_val):
         """
-        Change telescope parameter values
+        Change channel parameter values
 
         Args:
         param (str): name of parameter or param dict key
@@ -149,19 +150,22 @@ class Channel:
         else:
             self._log.err(
                 "Unable to retrieve median value for parameter '%s' "
-                "in channel Band ID = %s" % (str(param), str(self.band_id)))
+                "in channel Band_ID = %s" % (str(param), str(self.band_id)))
 
     # ***** Helper Methods *****
     def _cam_param(self, param):
+        """ Return parent camera parameter value """
         return self.cam.param(param)
 
     def _param_samp(self, param):
+        """ Sample channel parameter """
         if self._nexp == 1:
             return param.get_med()
         else:
             return param.sample(nsample=1)
 
     def _store_param(self, name):
+        """ Store src.Parameter objects for this channel """
         cap_name = name.replace(" ", "").strip().upper()
         if cap_name in self._std_params.keys():
             return pr.Parameter(
@@ -200,7 +204,7 @@ class Channel:
 
         # Newly added parameters to BoloCalc
         # checked separately for backwards compatibility
-        if "Flink" in self._inp_dict.keys():
+        if "FLINK" in self._inp_dict.keys():
             self.det_dict["flink"] = self._store_param("Flink")
         else:
             self.det_dict["flink"] = pr.Parameter(
@@ -210,11 +214,11 @@ class Channel:
         else:
             self.det_dict["g"] = pr.Parameter(
                 self._log, "NA", name="G")
-        if "Responsivity Factor" in self._inp_dict.keys():
-            self.det_dict["sfact"] = self._store_param("Responsivity Factor")
+        if "RESPFACTOR" in self._inp_dict.keys():
+            self.det_dict["sfact"] = self._store_param("Resp Factor")
         else:
             self.det_dict["sfact"] = pr.Parameter(
-                self._log, "NA", name="Responsivity Factor")
+                self._log, "NA", name="Resp Factor")
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
             param.caps_name: pid
@@ -276,8 +280,8 @@ class Channel:
         else:
             self.elev_dict = self._load.elevation(elev_files[0])
             self._log.log(
-                "Using pixel elevation distribution '%s' in camera '%s"
-                % (elev_files[0], self.cam.param("cam_name")))
+                "** Using pixel elevation distribution '%s'"
+                % (elev_files[0]))
         return
 
     def _store_band(self):
@@ -344,5 +348,6 @@ class Channel:
         return
 
     def _store_band_index(self):
+        """ Store band index for this channel """
         self.band_ind = len(self.cam.chs.keys())
         return

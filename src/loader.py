@@ -5,7 +5,7 @@ import os
 
 # BoloCalc modules
 import src.distribution as ds
-import src.unit as un
+
 
 class Loader:
     """
@@ -35,7 +35,7 @@ class Loader:
             params, vals = np.loadtxt(
                 fname, unpack=True, skiprows=1, usecols=[0, 1],
                 dtype=bytes, delimiter='|').astype(str)
-        except:
+        except IndexError:
             self._log.err("Failed to load simulation file '%s'" % (fname))
         return self._dict(params, vals)
 
@@ -49,7 +49,7 @@ class Loader:
         try:
             freq, temp, tran = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2, 3], dtype=np.float)
-        except:
+        except IndexError:
             self._log.err("Failed to load atm file '%s'" % (fname))
         return (freq, temp, tran)
 
@@ -141,7 +141,7 @@ class Loader:
             keys, values = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2],
                 dtype=np.str, delimiter='|')
-        except:
+        except IndexError:
             self._log.err(
                 "Failed to load foreground file '%s'" % (fname))
         fgnd_dict = self._dict(keys, values, self._dist_dir(fname))
@@ -157,7 +157,7 @@ class Loader:
             keys, values = np.loadtxt(
                 fname, unpack=True, usecols=[0, 2],
                 dtype=bytes, delimiter='|').astype(str)
-        except:
+        except IndexError:
             self._log.err(
                 "Failed to load telescope file '%s'" % (fname))
         tel_dict = self._dict(keys, values, self._dist_dir(fname))
@@ -174,7 +174,7 @@ class Loader:
             keys, values = np.loadtxt(
                 fname, dtype=bytes, unpack=True,
                 usecols=[0, 2], delimiter='|').astype(str)
-        except:
+        except IndexError:
             self._log.err(
                 "Failed to load camera file '%s'" % (fname))
         cam_dict = self._dict(keys, values, self._dist_dir(fname))
@@ -212,14 +212,12 @@ class Loader:
         fname (str): elevation file name
         """
         try:
-            params, vals = np.loadtxt(
-                fname, unpack=True, usecols=[0, 1],
-                dtype=bytes, delimiter="|").astype(str)
-        except:
+            params, vals = self._txt(fname)
+        except IndexError:
             self._log.err(
                 "Failed to load elevation file '%s'" % (fname))
-        return {params[i].strip(): vals[i].strip()
-                for i in range(2, len(params))}
+        return {params[i]: vals[i]
+                for i in range(len(params))}
 
     # ***** Helper methods *****
     def _csv(self, fname):
@@ -392,7 +390,8 @@ class Loader:
             # third file identifier, which should be the Band ID,
             # or keyed by 'ALL'
             ret_dict[key] = ds.Distribution(self._pdf(
-                os.path.join(dist_dir, f)), std_param=self._std_params[param_id])
+                os.path.join(dist_dir, f)),
+                std_param=self._std_params[param_id])
         return ret_dict
 
     def _dict_channels(self, keys, values, dist_dir=None):

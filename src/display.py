@@ -97,7 +97,7 @@ class Display:
                               "Telescope Temp", "Sky Temp",
                               "Photon NEP", "Bolometer NEP",
                               "Readout NEP", "Detector NEP",
-                              "Detector NET", "Detector NET_RJ",
+                              "Detector NET_CMB", "Detector NET_RJ",
                               "Array NET_CMB", "Array NET_RJ",
                               "Correlation Factor",
                               "CMB Map Depth", "RJ Map Depth"))

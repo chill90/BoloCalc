@@ -3,6 +3,9 @@ class ScanStrategy:
     ScanStrategy object is used to sample the elevation distribution
 
     Args:
+    tel (src.Telescope): parent Telescope object
+
+    Parents:
     tel (src.Telescope): Telescope object
     """
     def __init__(self, tel):

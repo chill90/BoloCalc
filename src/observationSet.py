@@ -10,12 +10,14 @@ class ObservationSet:
     ObservationSet object holds a set of observations for a given channel
 
     Args:
-    ch (src.Channel): Channel object
+    ch (src.Channel): parent Channel object
 
     Attributes:
-    ch (src.Channel): Channel object
     temps (np.array): sky temperatures for each observation
     effs (np.array): sky efficiencies for each observation
+
+    Parents:
+    ch (src.Channel): Channel object
     """
     def __init__(self, ch):
         # Store passed parameters
@@ -26,8 +28,7 @@ class ObservationSet:
         # Store the elevation values and probabilities
         self._log.log(
             "Generating ObservationSet realization for "
-            "channel Band_ID = '%s'"
-            % (self.ch.band_id))
+            "channel Band_ID = '%s'" % (self.ch.band_id))
         if self.ch.elev_dict is not None:
             self._elev_vals = np.fromiter(
                 self.ch.elev_dict.keys(), dtype=np.float)
@@ -40,8 +41,7 @@ class ObservationSet:
         # Store observation objects
         self._log.log(
             "Generating observation objects in ObservationSet for "
-            "channel Band_ID '%s'"
-            % (self.ch.band_id))
+            "channel Band_ID '%s'" % (self.ch.band_id))
         self.obs_arr = [ob.Observation(self) for n in range(self._nobs)]
 
     # ***** Pubic Methods *****

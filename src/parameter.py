@@ -13,10 +13,10 @@ class Parameter:
     It can take either a StandardParam input or 'raw' inputs.
 
     Args:
-    log (src.Logging): logging object
+    log (src.Log): parent Log object
     inp (str or src.Distribution): parameter value(s)
-    std_param (src.StandardParam): StandardParameter object, whose attributes
-    override all following parameters, except for 'band_ids'
+    std_param (src.StandardParam): parent StandardParameter object,
+    whose attributes override all following parameters, except for 'band_ids'
     name (str): parameter name
     unit (src.Unit): parameter unit. Defaults to src.Unit('NA')
     min (float): minimum allowed value. Defaults to None
@@ -26,6 +26,10 @@ class Parameter:
     Attributes
     name (str): where the 'name' arg is stored
     unit (src.Unit): where the 'unit' arg is stored
+
+    Parents:
+    log (src.Log): Logging object
+    std_param (src.StandardParam): StandardParameter object
     """
 
     def __init__(self, log, inp, std_param=None, name=None, unit=None,
@@ -138,7 +142,6 @@ class Parameter:
         Return average value for band_id or band_ind
 
         Args:
-        band_id (str): band ID for multi-band parameters
         band_ind (int): band index for indexing over arrays
         of multi-band parameters
         """
@@ -149,7 +152,6 @@ class Parameter:
         Return average value for band_id
 
         Args:
-        band_id (str): band ID for multi-band parameters
         band_ind (int): band index for indexing over arrays
         of multi-band parameters
         """
@@ -160,7 +162,8 @@ class Parameter:
         Return standard deviation for band_id
 
         Args:
-        band_id (int): band ID indexed from 1. Defaults to 1.
+        band_ind (int): band index for indexing over arrays
+        of multi-band parameters
         """
         return self.fetch(band_ind)[2]
 
@@ -172,7 +175,8 @@ class Parameter:
         or as a float if nsample = 1.
 
         Args:
-        band_id (int): band ID indexes from 1. Defaults to 1.
+        band_ind (int): band index for indexing over arrays
+        of multi-band parameters
         nsample (int): number of samples to draw from distribution
         min (float): the minimum allowed value to be returned
         max (float): the maximum allowed value to be returned
@@ -219,6 +223,7 @@ class Parameter:
 
     # ***** Helper Methods *****
     def _store_param(self, inp):
+        """ Store input parameter """
         # Bools only passed from simulationInputs.txt
         if self._type is bool:
             self._store_bool(inp)
@@ -242,6 +247,7 @@ class Parameter:
         return True
 
     def _store_bool(self, inp):
+        """ Store input boolean parameter """
         self._mult_bands = False
         val = inp.lower().capitalize().strip()
         if val != "True" and val != "False":
@@ -254,6 +260,7 @@ class Parameter:
         return
 
     def _store_int(self, inp):
+        """ Store input integer parameter """
         self._mult_bands = False
         try:
             self._val = None
@@ -267,6 +274,7 @@ class Parameter:
         return
 
     def _store_float(self, inp):
+        """ Store input float parameter """
         # If input is a string, then one of the following
         # '[m1, m2, ...] +/- [s1, s2, ...]' or 'm +/- s' or 'm'
         if isinstance(inp, str):
@@ -292,6 +300,7 @@ class Parameter:
         return
 
     def _store_float_str(self, inp):
+        """ Store input float parameter that is a string """
         # Check for the spread format
         # [m1, m2, ...] +/- [s1, s2, ...]
         # m +/- s
@@ -314,6 +323,7 @@ class Parameter:
         return
 
     def _store_float_dist(self, inp):
+        """ Store an input float parameter that is a Distribution object """
         self._mult_bands = False
         self._val = inp
         self._avg = self._float(inp.mean())
@@ -322,6 +332,7 @@ class Parameter:
         return
 
     def _store_float_tuple(self, inp):
+        """ Store an input float parameter that is a tuple """
         # Presumed format (param_str, dict_dist), which only comes about for
         # optics distributions
         if len(inp) != 2:
@@ -445,6 +456,7 @@ class Parameter:
         return
 
     def _store_list(self, inp):
+        """ Store an input list parameter """
         self._mult_bands = False
         self._val = eval(inp)
         if type(self._val) is not list:
@@ -457,6 +469,7 @@ class Parameter:
         return
 
     def _store_str(self, inp):
+        """ Store an input string parameter """
         self._mult_bands = False
         if isinstance(inp, str):
             self._val = inp
@@ -513,6 +526,7 @@ class Parameter:
             return 0.
 
     def _check_range(self):
+        """ Check that the parameter value is within the min-max range """
         if self._avg is None or isinstance(self._avg, str):
             return True
         else:
@@ -531,6 +545,7 @@ class Parameter:
                 return True
 
     def _sig_figs(self, inp, sig):
+        """ Return an input with a specified number of sig figs """
         if inp == 0:
             return inp
         else:
@@ -552,6 +567,7 @@ class Parameter:
                 return False
 
     def _change_str(self, new_avg, band_ind=None, num_bands=None):
+        """ Change string parameter to a new value """
         avg_new = new_avg
         # If multiple bands are already set, just change the value
         if band_ind is not None and self._mult_bands:
@@ -582,6 +598,7 @@ class Parameter:
         return ret_bool
 
     def _change_float(self, new_avg, band_ind=None, num_bands=None):
+        """ Change a float parmaeter to a new value """
         # Convert to SI units
         avg_new = self.unit.to_SI(new_avg)
         # If multiple bands are already set, just change the value

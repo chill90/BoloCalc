@@ -1,10 +1,14 @@
-# BoloCalc standard units and parameter values stored in 
-# convenient dictionaries for use throughout the source code
-
 class StandardParam:
     """
     StandardParam object is used to define the parameter characteristics
     of standard BoloCalc input and output parameters
+
+    Args:
+    name (str): parameter name
+    unit (src.Unit): parameter unit. Defaults to src.Unit('NA')
+    inp_min (float): minimum allowed value. Defaults to None
+    inp_max (float): maximum allowe value. Defaults to None
+    inp_type (type): cast parameter data type. Defaults to numpy.float
     """
     def __init__(self, name, unit, inp_min, inp_max, inp_type):
         # Store passed values

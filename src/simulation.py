@@ -30,6 +30,10 @@ class Simulation:
 
     Attributes:
     exp_dir (str): input experiment directory
+    senses (list): array of output sensitivities
+    opt_pos (list): array of output optical power arrays
+
+    Children:
     log (src.Log): Log object
     load (src.Load): Load object
     phys (src.Physics): Physics object
@@ -37,8 +41,6 @@ class Simulation:
     exp (src.Experiment): Experiment object
     sns (src.Sensitivity): Sensitivity object
     dsp (src.Display): Display object
-    senses (list): array of output sensitivities
-    opt_pos (list): array of output optical power arrays
     """
     def __init__(self, log_file, sim_file, exp_dir):
         # Store experiment input file
@@ -51,21 +53,21 @@ class Simulation:
 
         # Build simulation-wide objects
         self.log = lg.Log(log_file)
+        self.log.log("Generating Simulation object")
         self.load = ld.Loader(self)
         self.phys = ph.Physics()
         self.noise = ns.Noise(self.phys)
-        self.log.log(
-            "Generating Simulation object")
         # Store parameter values
         self._store_param_dict()
         # Length of status bar
         self._bar_len = 100
 
-        self.log.log(
-            "Generating Experiment, Sensitivity, and Display objects")
         # Generate simulation objects
+        self.log.log("Generating Experiment object")
         self.exp = ex.Experiment(self)
+        self.log.log("Generating Sensitivity object")
         self.sns = sn.Sensitivity(self)
+        self.log.log("Generating Display object")
         self.dsp = dp.Display(self)
 
         # Output arrays
@@ -139,7 +141,7 @@ class Simulation:
             "DUSTAMPLITUDE": sp.StandardParam(
                 "Dust Amplitude", un.Unit("MJy"),
                 0.0, np.inf, float),
-            "DUSTSSCALEFREQUENCY": sp.StandardParam(
+            "DUSTSCALEFREQUENCY": sp.StandardParam(
                 "Dust Scale Frequency", un.Unit("GHz"),
                 0.0, np.inf, float),
             "SYNCHROTRONSPECINDEX": sp.StandardParam(
@@ -244,8 +246,8 @@ class Simulation:
             "READNOISEFRAC": sp.StandardParam(
                 "Read Noise Frac", un.Unit("NA"),
                 0.0, np.inf, float),
-            "RESPONSIVITYFACTOR": sp.StandardParam(
-                "Responsivity Factor", un.Unit("NA"),
+            "RESPFACTOR": sp.StandardParam(
+                "Resp Factor", un.Unit("NA"),
                 0.0, np.inf, float),
             "ELEMENT": sp.StandardParam(
                 "Element", un.Unit("NA"),

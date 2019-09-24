@@ -8,28 +8,29 @@ class Foregrounds:
         self._phys = self._sky.tel.exp.sim.phys
 
     # ***** Public methods *****
-    def dust_spec_rad(self, freq, emiss=1.0):
+    def dust_temp(self, freq, emiss=1.0):
         """
-        Return the galactic dust spectral radiance [W/(m^2-Hz)]
+        Return the galactic effective physical temperature
 
         Args:
-        freq (float): frequency at which to evaluate the spectral radiance
+        freq (float): frequency at which to evaluate the physical temperature
         emiss (float): emissivity of the galactic dust. Default to 1.
         """
         # Passed amplitude [W/(m^2 sr Hz)] converted from [MJy]
-        amp = emiss * self._param("dust_amp")
+        MJy_to_W = 1.e-20
+        amp = emiss * self._param("dust_amp") * MJy_to_W
         # Frequency scaling
         # (freq / scale_freq)**dust_ind
-        if (self._param("dust_freq") is not "NA" and
-           self._param("dust_ind") is not "NA"):
+        if (str(self._param("dust_freq")) != "NA" and
+           str(self._param("dust_ind")) != "NA"):
             freq_scale = ((freq / float(self._param("dust_freq"))))**(
                         self._param("dust_ind"))
         else:
             freq_scale = 1.
         # Effective blackbody scaling
         # BB(freq, dust_temp) / BB(dust_freq, dust_temp)
-        if (self._param("dust_temp") is not "NA" and
-           self._param("dust_freq") is not "NA"):
+        if (str(self._param("dust_temp")) != "NA" and
+           str(self._param("dust_freq")) != "NA"):
             spec_scale = (
                 self._phys.bb_spec_rad(
                     freq, self._param("dust_temp")) /
@@ -37,10 +38,14 @@ class Foregrounds:
                     float(self._param("dust_freq")), self._param("dust_temp")))
         else:
             spec_scale = 1.
+        # Convert [W/(m^2 sr Hz)] to brightness temperature [K_RJ]
+        scaled_spec_rad = (amp * freq_scale * spec_scale)
+        bright_temp = self._phys.brightness_temp(freq, scaled_spec_rad)
+        # Convert brightness temperature [K_RJ] to physical temperature [K]
+        phys_temp = self._phys.Tb_from_Trj(freq, bright_temp)
+        return phys_temp
 
-        return (amp * freq_scale * spec_scale)
-
-    def sync_spec_rad(self, freq, emiss=1.0):
+    def sync_temp(self, freq, emiss=1.0):
         """
         Return the synchrotron spectral radiance [W/(m^2-Hz)]
 
@@ -50,12 +55,12 @@ class Foregrounds:
         """
         # Passed brightness temp [K_RJ]
         bright_temp = emiss * self._param("sync_amp")
-        # Spectral radiance [W/(m^2 sr Hz)]
-        amp = self._phys.brightness_spec_rad(freq, bright_temp)
         # Frequency scaling (freq / sync_freq)**sync_ind
         freq_scale = (freq / self._param("sync_freq"))**self._param("sync_ind")
-
-        return (amp * freq_scale)
+        scaled_bright_temp = bright_temp * freq_scale
+        # Convert brightness temperature [K_RJ] to physical temperature [K]
+        phys_temp = self._phys.Tb_from_Trj(freq, scaled_bright_temp)
+        return phys_temp
 
     # ***** Helper methods *****
     def _param(self, param):

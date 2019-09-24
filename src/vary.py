@@ -10,6 +10,20 @@ import src.unit as un
 
 
 class Vary:
+    """
+    Vary object takes a simulation object, which has information about
+    the experiment, and an input parameter vary file and calculates
+    sensitivity for a user-defined set of parameters
+
+    Args:
+    sim (src.Simulation): parent Simulation object
+    param_file (str): parameter vary input filename
+    vary_name (str): name to which to save vary outputs
+    vary_tog (bool): whether or not to vary input parameter arrays together
+
+    Parents:
+    sim (src.Simulation): parent Simulation object
+    """
     def __init__(self, sim, param_file, vary_name, vary_tog=False):
         # Store passed parameters
         self._sim = sim
@@ -29,7 +43,7 @@ class Vary:
         # Status bar length
         self._bar_len = 100
 
-        # Scope (exp, tel, cam, or ch) of the parameter set
+        # Scope (exp, tel, cam, or ch) of the parameter setx
         self._scope = ''
         self._scope_enums = {
             'exp': 3, 'tel': 2, 'cam': 1, 'ch': 0,
@@ -38,14 +52,9 @@ class Vary:
         # Name of parameter vary directory
         self._param_dir = "paramVary"
 
-        # Generate the output file tag
-        # self._store_file_tag()
-
-        # Configure parameter arrays
-        # self._config_params()
-
     # **** Public methods ****
     def vary(self):
+        """ Run parmaeter vary simulation """
         # Start by generating "fiducial" experiments
         tot_sims = (self._sim.param("nexp") * self._sim.param("ndet") *
                     self._sim.param("nobs"))
@@ -84,6 +93,7 @@ class Vary:
 
     # ***** Helper methods *****
     def _save(self):
+        """ Save simulation outputs to files """
         # Write parameter by parameter
         tot_writes = len(self.adj_sns)
         self._log.out((
@@ -95,6 +105,7 @@ class Vary:
         return
 
     def _adjust_sens(self, exp, sns, tel='', cam='', ch=''):
+        """ Calculate new sensitivity array where needed """
         tel = self._cap(tel)
         cam = self._cap(cam)
         ch = self._cap(ch)
@@ -145,6 +156,7 @@ class Vary:
         return cp.deepcopy(sns)
 
     def _set_new_pix_sz(self, cam, ch, tup):
+        """ Set new pixel size for given camera and channel """
         i = tup[0]
         j = tup[1]
         # Check that the f-number is defined
@@ -218,6 +230,7 @@ class Vary:
         return np.any(changed)
 
     def _set_new_param(self, exp, tup):
+        """ Set new parameter value for given experiment """
         i = tup[0]
         j = tup[1]
         scope = self._vary_scope(j)
@@ -263,17 +276,15 @@ class Vary:
         return changed
 
     def _vary_exp(self, exp, sns, n, ntot):
+        """ Set new parameter combinations for defined experiment """
         # Sensitivity for every parameter combination
         sns_arr = []
         # Loop over long-form data
         for i in range(len(self._set_arr)):
             self._status((n * len(self._set_arr) + i), ntot)
             changes = []
-            # scopes = []
             # First adjust parameters
             for j in range(len(self._set_arr[i])):
-                # vary_scope = self._vary_scope(j)
-                # scopes.append(self._scope_enums[vary_scope])
                 changed = self._set_new_param(exp, (i, j))
                 changes.append(changed)
             # Where changes happened
@@ -295,6 +306,7 @@ class Vary:
         return sns_arr
 
     def _save_param_iter(self, it):
+        """ Save sensitiviy for this parameter iteration """
         exp = self._exps[0]  # Just for retrieving names
         sns = self.adj_sns[it]
         # Write output files for every channel
@@ -361,6 +373,7 @@ class Vary:
         return
 
     def _init_vary_file(self, fvary):
+        """ Initiate and format the output file """
         # Add a left-most column for the parameter index
         # Build formatting string using efficient spacer
         fmt_str = ""
@@ -385,20 +398,22 @@ class Vary:
         return
 
     def _write_vary_header_params(self, f):
+        """ Write header for vary params output file """
         title = ("%-23s | %-23s | %-23s | %-23s | "
                  "%-23s | %-23s | %-23s | %-23s | %-26s | %-26s | "
                  "%-23s | %-23s | %-23s | %-23s | %-23s\n"
                  % ("Optical Throughput", "Optical Power",
                     "Telescope Temp", "Sky Temp",
                     "Photon NEP", "Bolometer NEP", "Readout NEP",
-                    "Detector NEP", "Detector NET",
-                    "Detector NET_RJ",  "Array NET",
+                    "Detector NEP", "Detector NET_CMB",
+                    "Detector NET_RJ",  "Array NET_CMB",
                     "Array NET_RJ", "Correlation Factor",
                     "CMB Map Depth", "RJ Map Depth"))
         f.write(title)
         return
 
     def _write_vary_header_units(self, f):
+        """ Write header units for output vary file """
         unit = ("%-23s | %-23s | %-23s | %-23s | "
                 "%-23s | %-23s | %-23s | %-23s | %-26s | %-26s | "
                 "%-23s | %-23s | %-23s | %-23s | %-23s\n"
@@ -411,22 +426,25 @@ class Vary:
         return
 
     def _horiz_line(self, f):
+        """ Draw a horizontal line in the output file """
         width = int(405 + sum(self._param_widths) + len(self._params))
         f.write(("-" * width + "\n"))
         return
 
     def _write_output(self, data, fout):
+        """ Write formatted output to output file """
         with open(fout, 'w') as fwrite:
-            for i in range(len(data)):  # params
-                row = data[i]
+            data_write = np.transpose(data)
+            for row in data_write:  # params
                 wrstr = ""
-                for k in range(len(row)):
-                    wrstr += ("%-9.4f " % (row[k]))
+                for val in row:
+                    wrstr += ("%-9.4f " % (val))
                 fwrite.write(wrstr)
-            fwrite.write("\n")
+                fwrite.write("\n")
         return
 
     def _write_vary_row(self, it, data, fch):
+        """ Write row of data to the output file """
         with open(fch, 'a') as f:
             f.write(self._fmt_ind % (int(it)))
             f.write(self._fmt_str % (*self._set_arr[it],))
@@ -451,11 +469,13 @@ class Vary:
         return
 
     def _check_dir(self, dir_val):
+        """ Check that the output directory exists, or make it """
         if not os.path.isdir(dir_val):
             os.mkdir(dir_val)
         return dir_val
 
     def _status(self, n, ntot):
+        """ Print status bar """
         frac = float(n)/float(ntot)
         sy.stdout.write('\r')
         sy.stdout.write("[%-*s] %02.1f%%" % (int(self._bar_len),
@@ -472,6 +492,7 @@ class Vary:
         return
 
     def _load_params(self):
+        """ Load parameters to vary from input file """
         self._log.log(
             "Loading parameters to vary from %s" % (self._param_file))
         # Converted loaded paraemters to strings with whitespace stripped
@@ -544,6 +565,7 @@ class Vary:
         return
 
     def _vary_scope(self, ind):
+        """ Calculate scope of the parameter vary """
         if self._tels[ind] != '':
             if (str(self._scope) == '' or
                str(self._scope) == 'ch' or
@@ -575,6 +597,7 @@ class Vary:
             return 'exp'
 
     def _wide_to_long(self, inp_arr):
+        """ Convert wide-form data to long-form data """
         len_arr = [len(inp) for inp in inp_arr]
         ret_arr = []
         for i in range(len(inp_arr)):
@@ -592,6 +615,7 @@ class Vary:
         return np.transpose(ret_arr)
 
     def _spread(self, inp, unit=None):
+        """ Calculate parameter output distribution spread """
         pct_lo, pct_hi = self._sim.param("pct")
         if unit is None:
             unit = un.Unit("NA")
@@ -600,4 +624,5 @@ class Vary:
         return [med, abs(hi-med), abs(med-lo)]
 
     def _cap(self, inp):
+        """ Captialize a string and strip spaces """
         return str(inp).replace(" ", "").strip().upper()

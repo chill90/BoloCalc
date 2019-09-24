@@ -13,11 +13,13 @@ class OpticalChain:
     cam (src.Camera): Camera object for this optical chain
 
     Attributes:
-    cam (src.Camera): where 'cam' arg is stored
     elem (list): list of optic element names
     abso (list): list of optic element absorbtivities
     tran (list): list of optic element transmissions
     temp (list): list of optic element temperatures
+
+    Parents:
+    cam (src.Camera): Camera object
     """
     def __init__(self, cam):
         # Store passed parameters
@@ -47,6 +49,7 @@ class OpticalChain:
 
     # ***** Private Methods *****
     def _store_optics(self):
+        """ Store Optic objects into a dictionary """
         # Load optics parameters from the optics.txt file
         param_dicts = self._load.optics(
             os.path.join(self.cam.config_dir, 'optics.txt'))

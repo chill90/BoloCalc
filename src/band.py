@@ -8,14 +8,18 @@ class Band:
     for detectors and optics
 
     Args:
-    log (src.Log): Log object
-    load (src.Load): Load object
+    log (src.Log): parent Log object
+    load (src.Load): parent Load object
     band_file (str): band file to be loaded
     freq_inp (list): frequencies at which to evaluate the band.
     Defaults to None.
 
     Attributes:
     freqs (list): list of frequencies [Hz] for this band
+
+    Parents:
+    log (src.Log): parent Log object
+    load (src.Load): parent Load object
     """
     def __init__(self, log, load, band_file, freq_inp=None):
         # Store passed parameters
@@ -57,7 +61,7 @@ class Band:
                 return np.array([np.random.normal(self._band, self._err)])
             else:
                 return np.random.normal(self._band, self._err,
-                                       (nsample, len(self._band)))
+                                        (nsample, len(self._band)))
 
     def interp_freqs(self, freq_inp):
         """

@@ -13,12 +13,15 @@ class Optic:
     temperature for a given optic in a given optic chain
 
     Args:
-    opt_chn (src.OpticalChain): OpticalChain object
+    opt_chn (src.OpticalChain): parent OpticalChain object
     inp_dict (dict): dictionary of optic properties
     band_file (str): input band file. Defaults to 'None.'
 
     Attributes:
     name (str): optical element name
+
+    Parents:
+    opt_chn (src.OpticalChain): OpticalChain object
     """
     def __init__(self, opt_chn, inp_dict, band_files=None):
         # Store passed parameters
@@ -83,6 +86,15 @@ class Optic:
         return self._param_dict[param].get_med(band_ind=band_ind)
 
     def change_param(self, param, new_val, band_ind=None, num_bands=None):
+        """
+        Change optic parameter value to new value
+
+        Args:
+        param (str): parameter name
+        new_val (float): new parameter value
+        band_ind (int): band number for this parameter
+        num_bands (int): number of bands for this optic
+        """
         if param not in self._param_dict.keys():
             caps_param = param.replace(" ", "").strip().upper()
             if caps_param in self._param_names.keys():
@@ -102,16 +114,19 @@ class Optic:
 
     # ***** Helper Methods *****
     def _pow_frac(self, T1, T2, freqs):
+        """ Fractional power between two physical temperatures """
         return (self._phys.bb_pow_spec(freqs, T1) /
                 self._phys.bb_pow_spec(freqs, T2))
 
     def _param_samp(self, param, band_ind):
+        """ Sample optic parameter for given band """
         if self._nexp == 1:
             return param.get_med(band_ind=band_ind)
         else:
             return param.sample(band_ind=band_ind, nsample=1)
 
     def _store_param(self, name):
+        """ Store Parameter objects for this optic """
         cap_name = name.replace(" ", "").strip().upper()
         if cap_name in self._std_params.keys():
             param = pr.Parameter(
@@ -136,6 +151,7 @@ class Optic:
                 "recognized" % (name))
 
     def _store_param_dict(self):
+        """ Store optic parameter dictionary """
         # To label optic parameters for each band, also pass the band IDs
         self._band_ids = list(self._cam.chs.keys())
         self._param_dict = {
@@ -157,6 +173,7 @@ class Optic:
         return
 
     def _store_param_vals(self, ch):
+        """ Sampe and store parameter values """
         self._param_vals = {}
         for k in self._param_dict.keys():
             self._param_vals[k] = self._param_samp(
@@ -164,6 +181,7 @@ class Optic:
         return
 
     def _store_bands(self):
+        """ Store bands for this optic """
         # Store the band files in a dictionary
         self._band_dict = {}
         if self._band_files is None:
@@ -199,10 +217,12 @@ class Optic:
         return
 
     def _store_temp(self):
+        """ Store temperature for this optic """
         self._temp = np.ones(self._nfreq) * self._param_vals["temp"]
         return
 
     def _store_refl(self):
+        """ Store reflection for this optic """
         # Reflection from a band file?
         if str(self._param_dict["refl"].get_avg()).upper() == "BAND":
             self._refl = self._band_samp("REFLECTION")
@@ -215,6 +235,7 @@ class Optic:
         return
 
     def _store_spill(self):
+        """ Store spillover for this optic """
         # Spillover from a band file?
         if str(self._param_dict["spill"].get_avg()).upper() == "BAND":
             self._spill = self._band_samp("SPILLOVER")
@@ -227,6 +248,7 @@ class Optic:
         return
 
     def _store_spill_temp(self):
+        """ Store spillover temperature for this optic """
         if not self._param_vals["spillt"] == "NA":
             self._spill_temp = (np.ones(self._nfreq) *
                                 self._param_vals["spillt"])
@@ -235,6 +257,7 @@ class Optic:
         return
 
     def _store_scatt(self):
+        """ Store scattering for this optic """
         # Scattering from a band file?
         if str(self._param_dict["scatf"].get_avg()).upper() == "BAND":
             self._scatt = self._band_samp("SCATTERFRAC")
@@ -250,6 +273,7 @@ class Optic:
         return
 
     def _store_scatt_temp(self):
+        """ Store scattering temperature for this optic """
         if not self._param_vals["scatt"] == 'NA':
             self._scatt_temp = np.ones(self._nfreq) * self._param_vals["scatt"]
         else:
@@ -257,6 +281,7 @@ class Optic:
         return
 
     def _store_abso(self):
+        """ Store absorption for this optic """
         elem = str(self._elem).replace(" ", "").upper()
         # Absorption from a band file?
         if str(self._param_dict["abs"].get_avg()).upper() == "BAND":
@@ -296,6 +321,7 @@ class Optic:
         return
 
     def _calculate(self):
+        """ Calculate emission, efficiency and temperature for this optic """
         # Absorption array
         self._emiss = (
             self._abso +
@@ -318,12 +344,14 @@ class Optic:
         return
 
     def _phys_lims(self, band):
+        """ Forcibly set physical limits of 0 and 1 on input array """
         if band is not None:
             band = np.array([x if x > 0. else 0. for x in band])
             band = np.array([x if x < 1. else 1. for x in band])
         return band
 
     def _band_samp(self, key):
+        """ Sample optic band """
         elem = self._param_vals["elem"]
         if key in self._band_dict.keys():
             band_f = self._band_dict[key]
@@ -344,6 +372,7 @@ class Optic:
         return samp_band
 
     def _check_param_len(self, param):
+        """ Check that parameter has same length as number of channels """
         if isinstance(param, list) or isinstance(param, np.ndarray):
             if not len(param) == self._nchs:
                 return False

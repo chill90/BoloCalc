@@ -7,6 +7,9 @@ class DetectorArray:
     DetectorArray object contains the Detector object for a given channel
 
     Args:
+    ch (src.Channel): parent Channel object
+
+    Parents:
     ch (src.Channel): Channel object
 
     Attributes:
@@ -22,8 +25,7 @@ class DetectorArray:
         # Store detector objects
         self._log.log(
             "Storing detector objects in DetectorArray for "
-            "channel Band_ID '%s'"
-            % (self.ch.band_id))
+            "channel Band_ID '%s'" % (self.ch.band_id))
         self.dets = [dt.Detector(self) for n in range(self._ndet)]
 
     def evaluate(self):

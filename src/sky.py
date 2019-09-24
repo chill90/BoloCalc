@@ -1,6 +1,5 @@
 # Built-in modules
 import numpy as np
-import glob as gb
 import sys as sy
 try:
     import h5py as hp
@@ -11,7 +10,6 @@ except ImportError:
         "Use pip to install via 'pip install h5py'\n"
         "Or, if using an Anaconda environment, 'conda install h5py'\n")
 import os
-import io
 
 # BoloCalc modules
 import src.foregrounds as fg
@@ -23,10 +21,10 @@ class Sky:
     added line
 
     Args:
-    tel (src.Telescope): Telescope object
+    tel (src.Telescope): parent Telescope object
 
-    Attributes:
-    tel (src.Telescope): there arg 'tel' is stored
+    Parents
+    tel (src.Telescope): Telescope object
     """
     def __init__(self, tel):
         # Store passed parameters
@@ -38,8 +36,7 @@ class Sky:
 
         # Initialize foregrounds
         if self._infg:
-            self._log.log(
-                "Initializing foregrounds in Sky object")
+            self._log.log("Initializing foregrounds in Sky object")
             self._fg = fg.Foregrounds(self)
         else:
             self._fg = None
@@ -86,11 +83,11 @@ class Sky:
         Acmb = [1. for f in freqs]
         if self._infg:
             Nsyn = ['SYNC' for f in freqs]
-            Tsyn = self._syn_spectrum(freqs)
+            Tsyn = self._syn_temp(freqs)
             Esyn = [1. for f in freqs]
             Asyn = [1. for f in freqs]
             Ndst = ['DUST' for f in freqs]
-            Tdst = self._dst_spectrum(freqs)
+            Tdst = self._dst_temp(freqs)
             Edst = [1. for f in freqs]
             Adst = [1. for f in freqs]
             if site != 'SPACE':
@@ -163,10 +160,10 @@ class Sky:
         tran = np.interp(freqs, freq, tran).flatten().tolist()
         return freq, temp, tran
 
-    def _syn_spectrum(self, freqs):
-        """ Synchrotron spectrum """
-        return self._fg.sync_spec_rad(freqs)
+    def _syn_temp(self, freqs):
+        """ Synchrotron physical temperature spectrum """
+        return self._fg.sync_temp(freqs)
 
-    def _dst_spectrum(self, freqs):
+    def _dst_temp(self, freqs):
         """ Dust spectrum """
-        return self._fg.dust_spec_rad(freqs)
+        return self._fg.dust_temp(freqs)

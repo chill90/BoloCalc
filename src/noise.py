@@ -10,6 +10,9 @@ class Noise:
     Noise object calculates NEP, NET, mapping speed, and sensitivity
 
     Args:
+    phys (src.Physics): parent Physics object
+
+    Parents:
     phys (src.Physics): Physics object
     """
     def __init__(self, phys):

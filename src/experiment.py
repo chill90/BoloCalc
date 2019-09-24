@@ -14,12 +14,16 @@ class Experiment:
     object.
 
     Args:
-    sim (src.Simulation): Simulation object
+    sim (src.Simulation): parent Simulation object
 
     Attributes:
-    sim (src.Simulation): where the 'sim' arg is stored
     dir (str): the input directory for the experiment
-    tels (dict): dictionary of src.Telescope objects
+
+    Parents:
+    sim (src.Simulation): Simulation object
+
+    Children:
+    tels (dict): dictionary of Telescope objects
     """
     def __init__(self, sim):
         # Store passed classes
@@ -31,9 +35,7 @@ class Experiment:
         self.dir = self.sim.exp_dir
 
         # Generate the experiment
-        self._log.log(
-            "Generating expeiment realization from %s"
-            % (self.dir))
+        self._log.log("Generating expeiment realization from %s" % (self.dir))
         # Check whether experiment and config dirs exist
         self._check_dirs()
         # Store foreground parameter dictionary
@@ -44,14 +46,11 @@ class Experiment:
     # ***** Public Methods *****
     def evaluate(self):
         """ Generate param dict and telescope dict """
-        self._log.log(
-            "Evaluating experiment %s" % (self.dir))
+        self._log.log("Evaluating experiment %s" % (self.dir))
         # Generate parameter values
         self._store_param_vals()
         # Evaluate telescopes
-        self._log.log(
-            "Evaluating telescopes in experiment %s"
-            % (self.dir))
+        self._log.log("Evaluating telescopes in experiment %s" % (self.dir))
         for tel in self.tels.values():
             tel.evaluate()
         return
@@ -111,6 +110,7 @@ class Experiment:
             return param.sample(nsample=1)
 
     def _store_param(self, name):
+        """ Generate src.Parameter object and return it """
         cap_name = name.replace(" ", "").strip().upper()
         if cap_name in self._std_params.keys():
             return pr.Parameter(
@@ -122,6 +122,7 @@ class Experiment:
                 "recognized" % (name))
 
     def _store_param_dict(self):
+        """ Store dictionary of experiment parameters """
         if self.sim.param("infg"):
             # Load foreground file into a dictionary
             fgnd_file = os.path.join(self._config_dir, 'foregrounds.txt')
@@ -152,6 +153,7 @@ class Experiment:
         return
 
     def _store_param_vals(self):
+        """ Sample and store parameter values """
         self._log.log(
             "Evaluating parameters for experiment %s"
             % (self.dir))

@@ -1,6 +1,5 @@
 # Built-in modules
 import numpy as np
-import src.unit as un
 
 
 class Distribution:
@@ -10,8 +9,17 @@ class Distribution:
 
     Args:
     inp (str or arr): file name for the input PDF or input data array
+    std_param (src.StandardParameter): StandardParameter object.
+    Defaults to None.
+    name (str): parameter name. Defaults to None
+    unit (src.Unit): Unit object. Defaults to None
+    min (float): minimum allowed value for the parameter.
+    Defaults to None
+    max (float): maximum allowed value for the parameter.
+    Defaults to None
 
     Attributes:
+    name (str): parameter name
     prob (array): probabilities
     val (array): values
     """
