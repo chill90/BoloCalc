@@ -236,7 +236,7 @@ class Channel:
         self._param_vals = {}
         # Store ID parameters first
         self._param_vals["band_id"] = self._inp_dict["BANDID"]
-        self._param_vals["pix_id"] = self._inp_dict["PIXELID"]
+        # self._param_vals["pix_id"] = self._inp_dict["PIXELID"]
         self._param_vals["ch_name"] = (self.cam.param("cam_name") + "_" +
                                        str(self.param("band_id")))
         # Store channel parameters

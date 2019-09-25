@@ -1,61 +1,69 @@
-import sys     as sy
-import            os
-import getpass as gp
+import sys as sy
 
-#Python 2 uses raw_input(), Python 3 uses input()
-PY2 = (sy.version_info[0] == 2)
+# Verify the python version
+if sy.version_info.major == 2:
+    sy.stdout.write("\n***** Python 2 is no longer supported for "
+                    "BoloCalc v0.10 (Sep 2019) and beyond *****\n\n")
+    sy.exit()
 
-#Remove command is different on Windows
+import os  # noqa: E42
+
+# Remove command is different on Windows
 if sy.platform in ['win32']:
     rm_cmd = 'del'
 else:
     rm_cmd = 'rm'
 
+
 def exit():
-    print ()
-    print ('Usage: python importExperiments.py [ExperimentToImport]')
-    print ('Available Experiments for download:')
-    print ('"EX": An simple example experiment')
-    print ('"SO": Simons Observatory files (password protected)')
-    print ('"SA": Simons Array files (password protected)')
-    print ()
+    print("Usage: python importExperiments.py [ExperimentToImport]")
+    print("Available Experiments for download:")
+    print("'EX': An simple example experiment")
+    print("'SO': Simons Observatory files (password protected)")
+    print("'SA': Simons Array files (password protected)")
     sy.exit(1)
 
-def check(dir):
-    isdir = os.path.isdir(dir)
+
+def check(inp_dir):
+    isdir = os.path.isdir(inp_dir)
     if isdir:
         while True:
-            if PY2:
-                answer = raw_input("Directory '%s' already exists. Overwrite data? [Y/N]: " % (dir))
-            else:
-                answer = input("Directory '%s' already exists. Overwrite data? [Y/N]: " % (dir))
-            if answer == "" or answer.upper() == "N":
+            answer = input(
+                "Directory '%s' already exists. Overwrite data? [Y/N]: "
+                % (inp_dir))
+            answer = answer.upper()
+            if answer == "" or answer == "N":
                 return False
-            elif answer.upper() == "Y":
-                os.system("%s -r %s" % (rm_cmd, dir))
+            elif answer == "Y":
+                os.system("%s -r %s" % (rm_cmd, inp_dir))
                 return True
             else:
-                print ("Could not understand answer '%s'" % (answer))
-                print ()
+                print("Could not understand answer '%s'\n" % (answer))
     else:
         return True
 
-def get(dir, rem_dir, file, pwd=False):
-    ch = check(dir)
+
+def get(inp_dir, rem_dir, inp_file, pwd=False):
+    ch = check(inp_dir)
     if ch:
-        if os.path.exists(file): os.system("%s %s" % (rm_cmd, file))
+        if os.path.exists(inp_file):
+            os.system("%s %s" % (rm_cmd, inp_file))
         if pwd:
-            if PY2:
-                uname = raw_input("Username: ")
-            else:
-                uname = input("Username: ")
-            os.system("wget --user=%s --ask-password http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s" % (uname, rem_dir, file))
+            uname = input("Username: ")
+            os.system(
+                "wget --user=%s --ask-password "
+                "http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s"
+                % (uname, rem_dir, inp_file))
         else:
-            os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s" % (rem_dir, file))
-        os.system("unzip %s" % (file))
-        os.system("%s %s" % (rm_cmd, file))
+            os.system(
+                "wget http://pbfs.physics.berkeley.edu/BoloCalc/%s/%s"
+                % (rem_dir, inp_file))
+        os.system("unzip %s" % (inp_file))
+        os.system("%s %s" % (rm_cmd, inp_file))
     return
 
+
+# ***** MAIN *****
 args = sy.argv[1:]
 if len(args) == 0:
     exit()
@@ -66,19 +74,19 @@ else:
             rem_dir = "EX"
             file = "ex.zip"
             get(dir, rem_dir, file, pwd=False)
-            del args[0]            
+            del args[0]
         elif 'SA' in args[0].upper():
             dir = "SimonsArray"
             rem_dir = "SA"
             file = "sa.zip"
             get(dir, rem_dir, file, pwd=True)
-            del args[0]            
+            del args[0]
         elif 'SO' in args[0].upper():
             dir = "SimonsObservatory"
             rem_dir = "SO"
             file = "so.zip"
             get(dir, rem_dir, file, pwd=True)
-            del args[0]            
+            del args[0]
         else:
-            print ('Could not understand argument "%s"' % (args[0]))
+            print('Could not understand argument "%s"' % (args[0]))
             exit()

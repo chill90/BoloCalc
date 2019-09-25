@@ -78,8 +78,13 @@ class Loader:
         inp_dir (str): optics band directory
         """
         # Gather band files
-        band_dir = os.path.join(inp_dir, self._bd_dir, self._opt_dir)
-        band_files = os.listdir(band_dir)
+        band_dir = os.path.join(inp_dir, self._bd_dir)
+        if not os.path.exists(band_dir):
+            os.mkdir(band_dir)
+        opt_band_dir = os.path.join(band_dir, self._opt_dir)
+        if not os.path.exists(opt_band_dir):
+            os.mkdir(opt_band_dir)
+        band_files = os.listdir(opt_band_dir)
         # Ignore temporary files
         band_files = [f for f in band_files if "~" not in f]
         # Case-insensitive fname comparison
@@ -100,7 +105,7 @@ class Loader:
             for u_id in unique_ids:
                 args = np.argwhere(np.array(dist_ids) == u_id).flatten()
                 files = np.take(np.array(band_files), args)
-                ret_dict[u_id] = [os.path.join(band_dir, f) for f in files]
+                ret_dict[u_id] = [os.path.join(opt_band_dir, f) for f in files]
             return ret_dict
         else:
             return None
@@ -110,8 +115,10 @@ class Loader:
         Load all band files in a specified directory for detectors
 
         Args:
-        inp_dir (str): optics band directory
+        inp_dir (str): detectors band directory
         """
+        if not os.path.exists(inp_dir):
+            os.mkdir(inp_dir)
         band_files = sorted(gb.glob(os.path.join(inp_dir, '*')))
         if len(band_files):
             # No temporary files

@@ -3,6 +3,7 @@
 *#
 
 # Python library files
+*__pycache__*
 *.pyc
 
 # Atmosphere profile files

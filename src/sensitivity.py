@@ -308,7 +308,7 @@ class Sensitivity:
 
     def _calc_corr_deg(self, ch):
         """ Calculate correlation factor for a specific channel """
-        self._corr_deg = np.array([[self._NET_corr[i][j] / self._NET[i][i]
+        self._corr_deg = np.array([[self._NET_corr[i][j] / self._NET[i][j]
                                   for j in range(self._ndet)]
                                   for i in range(self._nobs)])
         return

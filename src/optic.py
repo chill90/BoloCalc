@@ -160,7 +160,7 @@ class Optic:
             "abs": self._store_param("Absorption"),
             "refl": self._store_param("Reflection"),
             "thick": self._store_param("Thickness"),
-            "Index": self._store_param("Index"),
+            "ind": self._store_param("Index"),
             "ltan": self._store_param("Loss Tangent"),
             "cond": self._store_param("Conductivity"),
             "surfr": self._store_param("Surface Rough"),

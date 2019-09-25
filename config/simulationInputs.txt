@@ -3,15 +3,15 @@
 #---------------------------------------------------------------------------------------------------------------------------
 Parameter    | Value        | Description
 #---------------------------------------------------------------------------------------------------------------------------
-Experiments  | 5           | Number of Experiment MC realizations. Positive integer
+Experiments  | 1            | Number of Experiment MC realizations. Positive integer
 #---------------------------------------------------------------------------------------------------------------------------
-Observations | 5           | Number of Observation MC realizations per experiment realization. Positive integer.
+Observations | 1            | Number of Observation MC realizations per experiment realization. Positive integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Detectors    | 5           | Number of Detector MC realizations per observation realization. Positive Integer.
+Detectors    | 1            | Number of Detector MC realizations per observation realization. Positive Integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Resolution   | 1.000        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
+Resolution   | 0.500        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
 #---------------------------------------------------------------------------------------------------------------------------
-Foregrounds  | True         | Include Foregrounds? True or False
+Foregrounds  | False        | Include Foregrounds? True or False
 #---------------------------------------------------------------------------------------------------------------------------
 Correlations | True         | Include white noise correlations? True or False
 #---------------------------------------------------------------------------------------------------------------------------
