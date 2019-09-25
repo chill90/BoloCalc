@@ -13,7 +13,7 @@
 # Latex temporary files
 *MANUAL/*
 !*MANUAL/
-!*MANUAL/BoloCalc_UserManual.pdf
+!*MANUAL/BoloCalc_User_Manual.pdf
 
 # All output files
 *sensitivity.txt
