@@ -197,7 +197,6 @@ class Physics:
         temp (float): blackbody temperature [K]
         """
         freq, temp = self._check_inputs(freq, [temp])
-        temp = np.where(temp <= 0, 1.e-3, temp)  # 1 mK is minimum allowed temp
         with np.errstate(divide='raise'):
             return 1. / (np.exp((self.h * freq)/(self.kB * temp)) - 1.)
 
@@ -226,7 +225,7 @@ class Physics:
         return (emis * (2 * self.h * (freq**3) /
                 (self.c**2)) * self.n_occ(freq, temp))
 
-    def bb_pow_spec(self, freq, temp, emiss=1.0):
+    def bb_pow_spec(self, freq, temp, emis=1.0):
         """
         Blackbody power spectrum [W/Hz] on a diffraction-limited polarimeter
         for a frequency [Hz], blackbody temperature [K],
@@ -237,8 +236,8 @@ class Physics:
         temp (float): blackbody temperature [K]
         emiss (float): blackbody emissivity. Defaults to 1.
         """
-        freq, temp, emiss = self._check_inputs(freq, [temp, emiss])
-        return 0.5 * self.a_omega(freq) * self.bb_spec_rad(freq, temp, emiss)
+        freq, temp, emis = self._check_inputs(freq, [temp, emis])
+        return 0.5 * self.a_omega(freq) * self.bb_spec_rad(freq, temp, emis)
 
     def ani_pow_spec(self, freq, temp, emiss=1.0):
         """

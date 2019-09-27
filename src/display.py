@@ -386,5 +386,5 @@ class Display:
         if unit is None:
             unit = un.Unit("NA")
         lo, med, hi = unit.from_SI(np.percentile(
-            inp, (float(pct_lo), 0.50, float(pct_hi))))
+            inp, (float(pct_lo), 50.0, float(pct_hi))))
         return [med, abs(hi-med), abs(med-lo)]

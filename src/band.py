@@ -1,5 +1,6 @@
 # Built-in modules
 import numpy as np
+import copy as cp
 
 
 class Band:
@@ -43,7 +44,9 @@ class Band:
         Args:
         nsample (int): number of lists to return
         """
-        return np.array([self._band for n in range(nsample)])
+        ret_arr = np.array([self._band for n in range(nsample)])
+        ret_arr = self._check_range(ret_arr)
+        return ret_arr
 
     def sample(self, nsample=1):
         """
@@ -58,10 +61,12 @@ class Band:
         # Otherwise, sample assuming data at each frequency is Gaussian
         else:
             if nsample == 1:
-                return np.array([np.random.normal(self._band, self._err)])
+                ret_arr = np.array([np.random.normal(self._band, self._err)])
             else:
-                return np.random.normal(self._band, self._err,
-                                        (nsample, len(self._band)))
+                ret_arr = np.random.normal(self._band, self._err,
+                                           (nsample, len(self._band)))
+        ret_arr = self._check_range(ret_arr)
+        return ret_arr
 
     def interp_freqs(self, freq_inp):
         """
@@ -117,4 +122,12 @@ class Band:
         # Not allowed to have a standard deviation of zero or negative
         if self._err is not None:
             self._err[(self._err <= 0.)] = 1.e-6
+        # Not allowed to have band values < 0 or > 1
+        self._band = self._check_range(self._band)
         return
+
+    def _check_range(self, arr):
+        ret_arr = cp.deepcopy(arr)
+        ret_arr = np.where(ret_arr < 0, 0., ret_arr)
+        ret_arr = np.where(ret_arr > 1, 1., ret_arr)
+        return ret_arr

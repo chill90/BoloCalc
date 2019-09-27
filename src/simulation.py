@@ -110,6 +110,8 @@ class Simulation:
     # **** Helper Methods ****
     def _store_standard_params(self):
         """ Store dictionary of StandardParameter objects """
+        # Functional minimum for zero-bounded parameters
+        func_min = 1.e-3
         self.std_params = {
             "EXPERIMENTS": sp.StandardParam(
                 "Experiments", un.Unit("NA"),
@@ -122,7 +124,7 @@ class Simulation:
                 0, np.inf, int),
             "RESOLUTION": sp.StandardParam(
                 "Resolution", un.Unit("GHz"),
-                0.0, np.inf, float),
+                0.01, np.inf, float),
             "FOREGROUNDS": sp.StandardParam(
                 "Foregrounds", None,
                 None, None, bool),
@@ -143,7 +145,7 @@ class Simulation:
                 0.0, np.inf, float),
             "DUSTSCALEFREQUENCY": sp.StandardParam(
                 "Dust Scale Frequency", un.Unit("GHz"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "SYNCHROTRONSPECINDEX": sp.StandardParam(
                 "Synchrotron Spec Index", un.Unit("NA"),
                 -np.inf, np.inf, float),
@@ -152,7 +154,7 @@ class Simulation:
                 0.0, np.inf, float),
             "SYNCSCALEFREQUENCY": sp.StandardParam(
                 "Sync Scale Frequency", un.Unit("GHz"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "SITE": sp.StandardParam(
                 "SITE", un.Unit("NA"),
                 None, None, str),
@@ -164,40 +166,40 @@ class Simulation:
                 0.0, 8.0, float),
             "OBSERVATIONTIME": sp.StandardParam(
                 "Observation Time", un.Unit("yr"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "SKYFRACTION": sp.StandardParam(
                 "Sky Fraction", un.Unit("NA"),
-                0.0, 1.0, float),
+                func_min, 1.0, float),
             "OBSERVATIONEFFICIENCY": sp.StandardParam(
                 "Observation Efficiency", un.Unit("NA"),
-                0.0, 1.0, float),
+                func_min, 1.0, float),
             "NETMARGIN": sp.StandardParam(
                 "NET Margin", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "BORESIGHTELEVATION": sp.StandardParam(
                 "Boresight Elevation", un.Unit("deg"),
                 -40.0, 40.0, float),
             "OPTICALCOUPLING": sp.StandardParam(
                 "Optical Coupling", un.Unit("NA"),
-                0.0, 1.0, float),
+                func_min, 1.0, float),
             "FNUMBER": sp.StandardParam(
                 "F Number", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "BATHTEMP": sp.StandardParam(
                 "Bath Temp", un.Unit("K"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "BANDCENTER": sp.StandardParam(
                 "Band Center", un.Unit("GHz"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "FRACTIONALBW": sp.StandardParam(
                 "Fractional BW", un.Unit("NA"),
-                0.0, 2.0, float),
+                func_min, 2.0, float),
             "PIXELSIZE": sp.StandardParam(
                 "Pixel Size", un.Unit("mm"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "PIXELSIZE**": sp.StandardParam(
                 "Pixel Size", un.Unit("mm"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "NUMDETPERWAFER": sp.StandardParam(
                 "Num Det per Wafer", un.Unit("NA"),
                 0.0, np.inf, float),
@@ -212,49 +214,49 @@ class Simulation:
                 2.0, np.inf, float),
             "DETEFF": sp.StandardParam(
                 "Det Eff", un.Unit("NA"),
-                0.0, 1.0, float),
+                func_min, 1.0, float),
             "PSAT": sp.StandardParam(
                 "Psat", un.Unit("pW"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "PSATFACTOR": sp.StandardParam(
                 "Psat Factor", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "CARRIERINDEX": sp.StandardParam(
                 "Carrier Index", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "TC": sp.StandardParam(
                 "Tc", un.Unit("K"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "TCFRACTION": sp.StandardParam(
                 "Tc Fraction", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "FLINK": sp.StandardParam(
                 "Flink", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "G": sp.StandardParam(
                 "G", un.Unit("pW"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "YIELD": sp.StandardParam(
                 "Yield", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "SQUIDNEI": sp.StandardParam(
                 "SQUID NEI", un.Unit("pA/rtHz"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "BOLORESISTANCE": sp.StandardParam(
                 "Bolo Resistance", un.Unit("Ohm"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "READNOISEFRAC": sp.StandardParam(
                 "Read Noise Frac", un.Unit("NA"),
                 0.0, np.inf, float),
             "RESPFACTOR": sp.StandardParam(
                 "Resp Factor", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "ELEMENT": sp.StandardParam(
                 "Element", un.Unit("NA"),
                 None, None, str),
             "TEMPERATURE": sp.StandardParam(
                 "Temperature", un.Unit("K"),
-                0.0, np.inf, float),
+                0.1, np.inf, float),
             "ABSORPTION": sp.StandardParam(
                 "Absorption", un.Unit("NA"),
                 0.0, 1.0, float),
@@ -281,13 +283,13 @@ class Simulation:
                 0.0, 1.0, float),
             "SPILLOVERTEMP": sp.StandardParam(
                 "Spillover Temp", un.Unit("K"),
-                0.0, np.inf, float),
+                0.1, np.inf, float),
             "SCATTERFRAC": sp.StandardParam(
                 "Scatter Frac", un.Unit("NA"),
                 0.0, 1.0, float),
             "SCATTERTEMP": sp.StandardParam(
                 "Scatter Temp", un.Unit("K"),
-                0.0, np.inf, float),
+                0.1, np.inf, float),
             "NUMDET": sp.StandardParam(
                 "Num Det", un.Unit("NA"),
                 0, np.inf, int),

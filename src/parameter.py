@@ -41,23 +41,42 @@ class Parameter:
             self.name = std_param.name
             self.caps_name = std_param.caps_name
             self.unit = std_param.unit
-            self._min = std_param.min
-            self._max = std_param.max
+            if self.unit is not None:
+                if std_param.min is not None:
+                    self._min = self.unit.to_SI(std_param.min)
+                else:
+                    self._min = std_param.min
+                if std_param.max is not None:
+                    self._max = self.unit.to_SI(std_param.max)
+                else:
+                    self._max = std_param.max
+            else:
+                self._min = std_param.min
+                self._max = std_param.max
             self._type = std_param.type
         # Otherwise, store the passed attributes
         else:
             self.name = name
             self.caps_name = self.name.replace(" ", "").strip().upper()
+            # Store passed unit, otherwise assume "NA"
             if unit is not None:
                 self.unit = unit
             else:
-                self.unit = un.Unit("NA")  # 1
+                self.unit = un.Unit("NA")
+            # Store min and convert it to SI units
             if min is not None:
-                self._min = float(min)
+                if self.unit is not None:
+                    self._min = self.unit.to_SI(float(min))
+                else:
+                    self._min = float(min)
             else:
                 self._min = None
+            # Store max and convert it to SI units
             if max is not None:
-                self._max = float(max)
+                if self.unit is not None:
+                    self._max = self.unit.to_SI(float(max))
+                else:
+                    self._max = float(max)
             else:
                 self._max = None
             self._type = inp_type
@@ -71,8 +90,6 @@ class Parameter:
 
         # Store the parameter value, mean, and standard deviation
         self._store_param(inp)
-        # Check that the value is within the allowed range
-        self._check_range()
 
     # ***** Public Methods *****
     def fetch(self, band_ind=None):
@@ -182,14 +199,20 @@ class Parameter:
         max (float): the maximum allowed value to be returned
         null (bool): whether to sample around zero
         """
-        # If this parameter is a distribution, just sample it
-        if isinstance(self._val, ds.Distribution):
-            return self._val.sample(nsample=nsample)
         # If min and max not explicitly passed, use constructor values
         if min is None:
             min = self._min
         if max is None:
             max = self._max
+        # If this parameter is a distribution, just sample it
+        if isinstance(self._val, ds.Distribution):
+            samp = self._val.sample(nsample=nsample)
+            # Check that the sampled value doesn't surpasse the max or min
+            if min is not None and samp < min:
+                return min
+            if max is not None and samp > max:
+                return max
+            return samp
         # Retrieve the mean, median, and std for this band
         vals = self.fetch(band_ind)
         avg = vals[0]
@@ -264,7 +287,8 @@ class Parameter:
         self._mult_bands = False
         try:
             self._val = None
-            self._avg = int(inp)
+            avg = int(inp)
+            self._avg = int(self._check_range(avg))
             self._med = self._avg
             self._std = 0.
         except ValueError:
@@ -307,13 +331,15 @@ class Parameter:
         if self._spread_delim in inp:
             self._val = None
             vals = inp.split(self._spread_delim)
-            self._avg = self._float(vals[0])
+            avg = self._float(vals[0])
+            self._avg = self._check_range(avg)
             self._med = self._avg
             self._std = self._float(vals[1])
         # Otherwise, no spread, and therefore no std
         else:
             self._val = None
-            self._avg = self._float(inp)
+            avg = self._float(inp)
+            self._avg = self._check_range(avg)
             self._med = self._avg
             if (isinstance(self._avg, str) or
                isinstance(self._avg, np.str_)):
@@ -407,6 +433,7 @@ class Parameter:
                     self._med.append(dist.median())
                     self._std.append(dist.std())
                 else:
+                    mv = self._check_range(float(mv))
                     self._val.append(None)
                     self._avg.append(float(mv))
                     self._med.append(float(mv))
@@ -437,8 +464,9 @@ class Parameter:
         # values straight away
         elif isinstance(mean_val, float) or isinstance(mean_val, int):
             self._val = None
-            self._avg = mean_val
-            self._med = mean_val
+            avg = self._check_range(mean_val)
+            self._avg = avg
+            self._med = avg
             if std_val is not None:
                 if (not isinstance(std_val, float) or
                    not isinstance(std_val, int)):
@@ -525,24 +553,36 @@ class Parameter:
         else:
             return 0.
 
-    def _check_range(self):
-        """ Check that the parameter value is within the min-max range """
-        if self._avg is None or isinstance(self._avg, str):
-            return True
+    def _check_range(self, val):
+        if self._mult_bands:
+            val = np.array(
+                [self._check_range_val(v) for v in val])
         else:
-            avg = np.array(self._avg)
-            if self._min is not None and np.any(avg < self._min):
-                self._log.err(
-                    "Passed value %s for parameter %s lower than the mininum \
-                    allowed value %f" % (
-                        str(self._avg), self.name, self._min), 0)
-            elif self._max is not None and np.any(avg > self._max):
-                self._log.err(
-                    "Passed value %s for parameter %s greater than the maximum \
-                    allowed value %f" % (
-                        str(self._avg), self.name, self._max))
-            else:
-                return True
+            val = self._check_range_val(val)
+        return val
+
+    def _check_range_val(self, val):
+        # Simply return the value if it is not a float
+        try:
+            val = float(val)
+        except ValueError:
+            return val
+        # Return the minimum value if below it
+        if self._min is not None and val < self._min:
+            self._log.log(
+                "Sampled/stored value for '%s' Parameter '%s' below minimum "
+                "allowed value '%s'. Forcing to min"
+                % (str(val), str(self.name), str(self._min)))
+            return self._min
+        # Return the maximum value if below it
+        elif self._max is not None and val > self._max:
+            self._log.log(
+                "Sampled/stored value for '%s' Parameter '%s' above maximum "
+                "allowed value '%s'. Forcing to max"
+                % (str(val), str(self.name), str(self._max)))
+            return self._max
+        else:
+            return val
 
     def _sig_figs(self, inp, sig):
         """ Return an input with a specified number of sig figs """

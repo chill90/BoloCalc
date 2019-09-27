@@ -3,13 +3,13 @@
 #---------------------------------------------------------------------------------------------------------------------------
 Parameter    | Value        | Description
 #---------------------------------------------------------------------------------------------------------------------------
-Experiments  | 1            | Number of Experiment MC realizations. Positive integer
+Experiments  | 10           | Number of Experiment MC realizations. Positive integer
 #---------------------------------------------------------------------------------------------------------------------------
-Observations | 1            | Number of Observation MC realizations per experiment realization. Positive integer.
+Observations | 10           | Number of Observation MC realizations per experiment realization. Positive integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Detectors    | 1            | Number of Detector MC realizations per observation realization. Positive Integer.
+Detectors    | 10           | Number of Detector MC realizations per observation realization. Positive Integer.
 #---------------------------------------------------------------------------------------------------------------------------
-Resolution   | 0.500        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
+Resolution   | 1.000        | Resolution for integration over bands and spectra in GHz. Positive floating point value.
 #---------------------------------------------------------------------------------------------------------------------------
 Foregrounds  | False        | Include Foregrounds? True or False
 #---------------------------------------------------------------------------------------------------------------------------
