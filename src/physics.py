@@ -42,10 +42,11 @@ class Physics:
     def band_edges(self, freqs, tran):
         """ Find the -3 dB points of an arbirary band """
         max_tran = np.amax(tran)
+        max_tran_loc = np.argmax(tran)
         lo_point = np.argmin(
-            abs(tran[:len(tran)//2] - 0.5 * max_tran))
+            abs(tran[:max_tran_loc] - 0.5 * max_tran))
         hi_point = np.argmin(
-            abs(tran[len(tran)//2:] - 0.5 * max_tran)) + len(tran)//2
+            abs(tran[max_tran_loc:] - 0.5 * max_tran)) + max_tran_loc
         flo = freqs[lo_point]
         fhi = freqs[hi_point]
         return flo, fhi

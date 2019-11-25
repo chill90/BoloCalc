@@ -204,6 +204,8 @@ class Camera:
         """ Generate a dictionary of band files given an input directory """
         # Gather potential band files in the passed directory
         band_files = sorted(gb.glob(os.path.join(band_dir, '*')))
+        band_files = [band_file for band_file in band_files
+                      if '~' not in band_file]
         # Check that at least one band file was found
         if len(band_files):
             # Array of potential band names, ignoring temp files
