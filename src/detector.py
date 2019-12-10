@@ -1,4 +1,4 @@
-# Built-in modules
+# built-in modules
 import numpy as np
 
 
@@ -110,8 +110,8 @@ class Detector:
                 else 0. for f in freqs]
         else:
             top_hat = None
-        # Use a band if "BAND" is called explicitly in "Band Center"
-        if str(self.param("bc")) == "BAND":
+        # Use a custom band if "BAND" is passed for band center
+        if self._ch.param("cust"):
             if band is None:
                 self._log.err(
                     "Band Center for channel '%s' defined as 'BAND' "

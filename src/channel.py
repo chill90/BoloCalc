@@ -258,6 +258,9 @@ class Channel:
         # Store estimated band center if user-defined band
         if self._band_file:
             self._param_vals["bc"] = self._bc
+            self._param_vals["cust"] = True
+        else:
+            self._param_vals["cust"] = False
         # To be stored by specific optic
         self._param_vals["ap_eff"] = None
         self._param_vals["edge_tap"] = None
