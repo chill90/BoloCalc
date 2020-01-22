@@ -333,7 +333,7 @@ class Channel:
         elem, emis, tran, temp = self.cam.opt_chn.evaluate(self)
         # Concatenate the elem/emiss/effic/temp arrays, sky to det
         self.elem = np.array(
-            [[obs.elem[i] + elem + self.det_arr.dets[i].elem
+            [[obs.elem[i][0] + elem + self.det_arr.dets[i].elem
              for i in range(self._ndet)]
              for obs in self._obs_set.obs_arr]).astype(np.str)
         self.emis = np.array(

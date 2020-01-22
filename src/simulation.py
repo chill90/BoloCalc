@@ -238,7 +238,7 @@ class Simulation:
                 func_min, np.inf, float),
             "YIELD": sp.StandardParam(
                 "Yield", un.Unit("NA"),
-                func_min, np.inf, float),
+                func_min, 1.000, float),
             "SQUIDNEI": sp.StandardParam(
                 "SQUID NEI", un.Unit("pA/rtHz"),
                 func_min, np.inf, float),
@@ -268,7 +268,7 @@ class Simulation:
                 0.0, np.inf, float),
             "INDEX": sp.StandardParam(
                 "Index", un.Unit("NA"),
-                0.0, np.inf, float),
+                func_min, np.inf, float),
             "LOSSTANGENT": sp.StandardParam(
                 "Loss Tangent", un.Unit("e-4"),
                 0.0, np.inf, float),
