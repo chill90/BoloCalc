@@ -42,16 +42,10 @@ fi
 if [ -d "src/atmFiles/" ]
 then
     echo
-    echo "NOTE: src/atmFiles/ already exists. Do 'rm -r src/atmFiles/' to remove before re-downloading"
-else
-    if [ -f "atm.zip" ]
-    then
-	${RM_CMD} atm.zip
-    fi
-    wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm.zip
-    unzip atm.zip -d src/
-    ${RM_CMD} atm.zip
+    echo "NOTE: src/atmFiles/ no longer used by BoloCalc. We suggest removing it."
 fi
+wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm.hdf5
+mv atm.hdf5 src/
 
 #Download example experiment
 if [ -d "Experiments/ExampleExperiment/" ]
