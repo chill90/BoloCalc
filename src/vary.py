@@ -316,25 +316,29 @@ class Vary:
                     for tel_name in tel_names]
             tel_inds = [list(exp.tels.keys()).index(self._cap(tel_name))
                         for tel_name in tel_names]
+            tel_iter = range(len(tels))
         else:  # Loop over all telescopes
             tel_names = list(exp.tels.keys())
             tels = exp.tels.values()
             tel_inds = range(len(tels))
-        for i, tel in zip(tel_inds, tels):
+            tel_iter = tel_inds
+        for i, tel, a in zip(tel_inds, tels, tel_iter):
             if (str(self._scope) == 'cam' or str(self._scope) == 'ch' or
                str(self._scope) == 'pix'):
                 valid_inds = np.argwhere(
-                    self._tels == self._cap(tel_names[i])).flatten()
+                    self._tels == self._cap(tel_names[a])).flatten()
                 cam_names = list(set(self._cams[valid_inds]))
                 cams = [tel.cams[self._cap(cam_name)]
                         for cam_name in cam_names]
                 cam_inds = [list(tel.cams.keys()).index(self._cap(cam_name))
                             for cam_name in cam_names]
+                cam_iter = range(len(cams))
             else:  # Loop over all cameras
                 cam_names = list(tel.cams.keys())
                 cams = list(tel.cams.values())
                 cam_inds = range(len(cams))
-            for j, cam in zip(cam_inds, cams):
+                cam_iter = cam_inds
+            for j, cam, b in zip(cam_inds, cams, cam_iter):
                 param_dir = self._check_dir(
                     os.path.join(cam.dir, self._param_dir))
                 vary_dir = os.path.join(param_dir, self._vary_name)
@@ -343,18 +347,20 @@ class Vary:
                         os.mkdir(vary_dir)
                 if (str(self._scope) == 'ch' or str(self._scope) == 'pix'):
                     valid_inds = np.argwhere(
-                        (self._tels == self._cap(tel_names[i])) *
-                        (self._cams == self._cap(cam_names[j]))).flatten()
+                        (self._tels == self._cap(tel_names[a])) *
+                        (self._cams == self._cap(cam_names[b]))).flatten()
                     ch_names = list(set(self._chs[valid_inds]))  # uniqee chs
                     chs = [cam.chs[self._cap(ch_name)]
                            for ch_name in ch_names]
                     ch_inds = [list(cam.chs.keys()).index(self._cap(ch_name))
                                for ch_name in ch_names]
+                    ch_iter = range(len(chs))
                 else:  # Loop over all channels
                     ch_names = list(cam.chs.keys())
                     chs = cam.chs.values()
                     ch_inds = range(len(chs))
-                for k, ch in zip(ch_inds, chs):
+                    ch_iter = ch_inds
+                for k, ch, c in zip(ch_inds, chs, ch_iter):
                     fch = os.path.join(
                         vary_dir, "%s.txt" % (ch.param("ch_name")))
                     if it == 0:
