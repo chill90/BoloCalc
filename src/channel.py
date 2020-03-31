@@ -121,25 +121,30 @@ class Channel:
            param not in self.det_dict.keys()):
             caps_param = param.replace(" ", "").strip().upper()
             if caps_param in self._param_names.keys():
-                return (self._param_dict[
-                        self._param_names[caps_param]].change(new_val))
+                ret_val = (self._param_dict[
+                           self._param_names[caps_param]].change(new_val))
             elif caps_param in self._det_param_names.keys():
-                return (self.det_dict[
-                        self._det_param_names[caps_param]].change(new_val))
+                ret_val = (self.det_dict[
+                           self._det_param_names[caps_param]].change(new_val))
             else:
                 self._log.err(
                     "Parameter '%s' not understood by Channel.change_param()"
                     % (str(param)))
         # Check if the parameter label is by dict key
         elif param in self._param_dict.keys():
-            return self._param_dict[param].change(new_val)
+            ret_val = self._param_dict[param].change(new_val)
         elif param in self.det_dict.keys():
-            return self.det_dict[param].change(new_val)
+            ret_val = self.det_dict[param].change(new_val)
         # Throw an error if they parameter cannot be identified
         else:
             self._log.err(
                 "Parameter '%s' not understood by Channel.change_param()"
                 % (str(param)))
+        # If the band center or bandwidth is changed, redefine frequencies
+        if (param == "bc" or param == "fbw" or
+            param == "Band Center" or param == "Fractional BW"):
+            self._store_band()
+        return ret_val
 
     def get_param(self, param):
         """ Return parameter median value """

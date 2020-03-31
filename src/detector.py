@@ -46,7 +46,8 @@ class Detector:
         self._store_bw_bc(band)
         # Evaluate transmission
         self._store_band(band)
-        # Store transmission and temperature
+        # Store emissivity, transmission, and temperature
+        self.emis = [[0.000 for f in self._ch.freqs]]
         self.tran = [self.band]
         self.temp = [[self.param("tb") for f in self._ch.freqs]]
         return
