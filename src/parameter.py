@@ -671,8 +671,12 @@ class Parameter:
                 ret_bool = False
         # Otherwise handle the scenario of a single value
         else:
-            if (self._sig_figs(avg_new, 5) !=
-               self._sig_figs(self._avg, 5)):
+            if self._avg == "NA":
+                self._avg = avg_new
+                self._med = self._avg
+                ret_bool = True
+            elif (self._sig_figs(avg_new, 5) !=
+                  self._sig_figs(self._avg, 5)):
                 self._avg = avg_new
                 self._med = self._avg
                 ret_bool = True
