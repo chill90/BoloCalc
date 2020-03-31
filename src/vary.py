@@ -324,9 +324,9 @@ class Vary:
             tel_iter = tel_inds
         for i, tel, a in zip(tel_inds, tels, tel_iter):
             if (str(self._scope) == 'cam' or str(self._scope) == 'ch' or
-               str(self._scope) == 'pix'):
+                str(self._scope) == 'pix' or str(self._scope) == 'opt'):
                 valid_inds = np.argwhere(
-                    self._tels == self._cap(tel_names[a])).flatten()
+                    self._tels == tel_names[a]).flatten()
                 cam_names = list(set(self._cams[valid_inds]))
                 cams = [tel.cams[self._cap(cam_name)]
                         for cam_name in cam_names]
@@ -345,10 +345,11 @@ class Vary:
                 if it == 0:
                     if not os.path.isdir(vary_dir):
                         os.mkdir(vary_dir)
-                if (str(self._scope) == 'ch' or str(self._scope) == 'pix'):
+                if (str(self._scope) == 'ch' or str(self._scope) == 'pix' or
+                    str(self._scope) == 'opt'):
                     valid_inds = np.argwhere(
-                        (self._tels == self._cap(tel_names[a])) *
-                        (self._cams == self._cap(cam_names[b]))).flatten()
+                        (self._tels == tel_names[a]) *
+                        (self._cams == cam_names[b])).flatten()
                     ch_names = list(set(self._chs[valid_inds]))  # uniqee chs
                     chs = [cam.chs[self._cap(ch_name)]
                            for ch_name in ch_names]
