@@ -51,8 +51,12 @@ class Parameter:
                 else:
                     self._max = std_param.max
             else:
-                self._min = std_param.min
-                self._max = std_param.max
+                if std_param.unit is not None:
+                    self._min = std_param.unit.to_SI(std_param.min)
+                    self._max = std_param.unit.to_SI(std_param.max)
+                else:
+                    self._min = std_param.min
+                    self._max = std_param.max
             self._type = std_param.type
         # Otherwise, store the passed attributes
         else:

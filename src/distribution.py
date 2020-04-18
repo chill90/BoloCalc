@@ -27,16 +27,32 @@ class Distribution:
                  min=None, max=None):
         # Store passed parameters
         self._inp = np.array(inp)
+
+        # Convert min and max to SI units
         if std_param is not None:
             self.name = std_param.name
             self._unit = std_param.unit
-            self._min = std_param.min
-            self._max = std_param.max
+            if std_param.min is not None:
+                self._min = self._unit.to_SI(std_param.min)
+            else:
+                self._min = std_param.min
+            if std_param.max is not None:
+                self._max = self._unit.to_SI(std_param.max)
+            else:
+                self._max = std_param.max
         else:
-            self.name = name
-            self._unit = unit
-            self._min = min
-            self._max = max
+            if unit is not None:
+                if min is not None:
+                    self._min = unit.to_SI(min)
+                else:
+                    self._min = min
+                if max is not None:
+                    self._max = unit.to_SI(max)
+                else:
+                    self._max = max
+            else:
+                self._min = min
+                self._max = max
 
         # Load PDF from file if 'finput' is a string
         if len(self._inp.shape) == 1:

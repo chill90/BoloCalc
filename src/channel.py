@@ -320,9 +320,13 @@ class Channel:
         elif isinstance(bc, float) and isinstance(fbw, float):
             self.det_band = None
             # Define edges of frequencies to integrate over
-            # Use wider than nominal band by 30% to cover tolerances/errors
-            lo_freq = (bc * (1. - 0.65 * fbw))
-            hi_freq = (bc * (1. + 0.65 * fbw))
+            if fbw < 1.5:
+                # Use wider than nominal band by 30% to cover tolerances/errors
+                lo_freq = (bc * (1. - 0.65 * fbw))
+                hi_freq = (bc * (1. + 0.65 * fbw))
+            else:
+                lo_freq = 1.
+                hi_freq = 2 * bc
             self.freqs = np.arange(
                 lo_freq, hi_freq + self._fres, self._fres)
         else:

@@ -194,7 +194,7 @@ class Display:
         ch_name = ch.param("ch_name")
         ndet = ch.param("ndet")
         stored_vals = [
-            [ndet]*3, spreads[10], spreads[11], spreads[12], spreads[13]]
+            [ndet]*3, spreads[10], spreads[11], spreads[13], spreads[14]]
 
         # Write camera row
         wstr = ("%-10s | %-7d | "
