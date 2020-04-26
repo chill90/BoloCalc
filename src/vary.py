@@ -37,9 +37,6 @@ class Vary:
         self._units = self._sim.output_units
         self._nexp = self._sim.param("nexp")
 
-        # Load parameters to vary
-        self._load_params()
-
         # Status bar length
         self._bar_len = 100
 
@@ -51,6 +48,12 @@ class Vary:
 
         # Name of parameter vary directory
         self._param_dir = "paramVary"
+        self._input_param_dir = os.path.split(self._param_file)[0]
+        self._cust_dir = os.path.join(self._input_param_dir, "customVary")
+        self._cust_str = "CUST"
+
+        # Load parameters to vary
+        self._load_params()
 
     # **** Public methods ****
     def vary(self):
@@ -260,12 +263,18 @@ class Vary:
         elif str(scope) == 'opt':
             tel = exp.tels[self._cap(self._tels[j])]
             cam = tel.cams[self._cap(self._cams[j])]
-            ch = cam.chs[self._cap(self._chs[j])]
             opt = cam.opt_chn.optics[self._cap(self._opts[j])]
-            changed = opt.change_param(
-                self._params[j], self._set_arr[i][j],
-                band_ind=ch.band_ind,
-                num_bands=len(ch.cam.chs))
+            if self._chs[j] != '':
+                ch = cam.chs[self._cap(self._chs[j])]
+                changed = opt.change_param(
+                    self._params[j], self._set_arr[i][j],
+                    band_ind=ch.band_ind,
+                    num_bands=len(cam.chs))
+            else:
+                changed = opt.change_param(
+                    self._params[j], self._set_arr[i][j],
+                    band_ind=None,
+                    num_bands=len(cam.chs))
         # Change the pixel size,
         # varying detector number also
         elif str(scope) == 'pix':
@@ -324,7 +333,7 @@ class Vary:
             tel_iter = tel_inds
         for i, tel, a in zip(tel_inds, tels, tel_iter):
             if (str(self._scope) == 'cam' or str(self._scope) == 'ch' or
-                str(self._scope) == 'pix' or str(self._scope) == 'opt'):
+                str(self._scope) == 'pix'):
                 valid_inds = np.argwhere(
                     self._tels == tel_names[a]).flatten()
                 cam_names = list(set(self._cams[valid_inds]))
@@ -345,8 +354,7 @@ class Vary:
                 if it == 0:
                     if not os.path.isdir(vary_dir):
                         os.mkdir(vary_dir)
-                if (str(self._scope) == 'ch' or str(self._scope) == 'pix' or
-                    str(self._scope) == 'opt'):
+                if (str(self._scope) == 'ch' or str(self._scope) == 'pix'):
                     valid_inds = np.argwhere(
                         (self._tels == tel_names[a]) *
                         (self._cams == cam_names[b])).flatten()
@@ -355,13 +363,11 @@ class Vary:
                            for ch_name in ch_names]
                     ch_inds = [list(cam.chs.keys()).index(self._cap(ch_name))
                                for ch_name in ch_names]
-                    ch_iter = range(len(chs))
                 else:  # Loop over all channels
                     ch_names = list(cam.chs.keys())
                     chs = cam.chs.values()
                     ch_inds = range(len(chs))
-                    ch_iter = ch_inds
-                for k, ch, c in zip(ch_inds, chs, ch_iter):
+                for k, ch in zip(ch_inds, chs):
                     fch = os.path.join(
                         vary_dir, "%s.txt" % (ch.param("ch_name")))
                     if it == 0:
@@ -529,18 +535,68 @@ class Vary:
             self._log.err("Number of telescopes, parameters, mins, maxes, and "
                           "steps must match for parameters to be varied "
                           "in %s" % (self._param_file))
-        # Check that none of the step sizes are larger than max - min
-        max_min = (np.array(stps).astype(float) - (
-            np.array(maxs).astype(float) - np.array(mins).astype(float)))
-        if np.any(max_min > 0):
-            self._log.err(
-                "Step value cannot be larger than max value minus min value "
-                "for parameters to be varied in %s" % (self._param_file))
+        # Check if any parameters use custom-defined inputs
+        min_empty = (np.char.upper(mins) == self._cust_str)
+        max_empty = (np.char.upper(maxs) == self._cust_str)
+        stp_empty = (np.char.upper(stps) == self._cust_str)
+        if np.any(min_empty) or np.any(max_empty) or np.any(stp_empty):
+            if not np.any(np.logical_and(
+               np.logical_and(min_empty, max_empty),
+               np.logical_and(max_empty, stp_empty))):
+                self._log.err(
+                    "Either all of or none of (min, max, step) must be "
+                    "defined as 'CUST' for each parameter to be varied "
+                    "in %s" % (self._param_file))
+            else:
+                cust_inds = min_empty
+        else:
+            cust_inds = None
+        # If min, max, and step is not defined, check for a custom file
+        cust_params = [[] for n in range(self._num_params)]
+        if cust_inds is not None:
+            existing_files = os.listdir(self._cust_dir)
+            existing_files_upper = np.char.upper(existing_files)
+            cust_labels = np.array(
+                [self._tels[cust_inds], self._cams[cust_inds],
+                 self._chs[cust_inds], self._opts[cust_inds],
+                 self._params[cust_inds]]).T
+            for ii, cust_label in enumerate(cust_labels):
+                lab_arr = [("%s" % (lab)).replace(" ", "").strip()
+                           for lab in cust_label if lab != ""]
+                fname = "%s.txt" % ("_".join(lab_arr))
+                fname_upper = fname.upper()
+                select_ind = np.argwhere(
+                    fname_upper == existing_files_upper).flatten()
+                if len(select_ind) == 1:
+                    fload = np.take(existing_files, select_ind)[0]
+                    fload_path = os.path.join(self._cust_dir, fload)
+                    cust_param_arr = np.loadtxt(
+                        fload_path, unpack=True, dtype=np.float)
+                    cust_params[ii] = cust_param_arr.tolist()
+                elif len(select_ind) > 1:
+                    self._log.err("Duplicate custom parameter vary file %s detected"
+                                  % (existing_files[select_ind].flatten()[0]))
+                else:
+                    fload = os.path.join(self._cust_dir, fname)
+                    self._log.err("Could not locate custom parameter vary file %s"
+                                  % (fload))
         # Store the parameter arrays
-        set_arr = [np.arange(
-            float(mins[i]), float(maxs[i])+float(stps[i]),
-            float(stps[i])).tolist()
-            for i in range(self._num_params)]
+        set_arr = []
+        for ii in range(self._num_params):
+            min_val = mins[ii]
+            max_val = maxs[ii]
+            stp_val = stps[ii]
+            if min_val.upper() == self._cust_str:
+                set_arr.append(cust_params[ii])
+            elif (float(max_val) - float(min_val)) < float(stp_val):
+                self._log.err(
+                    "Step value cannot be larger than max value minus min "
+                    "value for parameters to be varied in %s"
+                    % (self._param_file))
+            else:
+                set_arr.append(np.arange(
+                    float(min_val), float(max_val)+float(stp_val),
+                    float(stp_val)).tolist())
 
         # If vary together flag is set, move the parameters together
         # Transpose parameter arrays from wide-form to long-form
@@ -586,7 +642,6 @@ class Vary:
                     if str(self._scope) == '':
                         self._scope = 'ch'
                     if self._opts[ind] != '':
-                        self._scope = 'ch'
                         return 'opt'
                     elif ('PIXELSIZE' in
                           self._params[ind].replace(" ", "").upper() and
@@ -596,7 +651,10 @@ class Vary:
                     else:
                         return 'ch'
                 else:
-                    return 'cam'
+                    if self._opts[ind] != '':
+                        return 'opt'
+                    else:
+                        return 'cam'
             else:
                 return 'tel'
         else:

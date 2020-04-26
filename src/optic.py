@@ -98,8 +98,21 @@ class Optic:
         if param not in self._param_dict.keys():
             caps_param = param.replace(" ", "").strip().upper()
             if caps_param in self._param_names.keys():
-                return (self._param_dict[self._param_names[caps_param]].change(
-                        new_val, band_ind=band_ind, num_bands=num_bands))
+                if band_ind is not None:
+                    ret_val = (
+                        self._param_dict[
+                            self._param_names[caps_param]].change(
+                            new_val, band_ind=band_ind, num_bands=num_bands))
+                else:
+                    rets = []
+                    for ii in range(num_bands):
+                        ret = (
+                            self._param_dict[
+                                self._param_names[caps_param]].change(
+                                new_val, band_ind=ii, num_bands=num_bands))
+                        rets.append(ret)
+                    ret_val = (np.any(not rets))
+                return ret_val
             else:
                 self._log.err(
                     "Parameter '%s' not understood by Optic.change_param()"
