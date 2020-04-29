@@ -10,47 +10,31 @@
 *src/atmFiles/*
 *hdf5
 
-# Latex temporary files
-*MANUAL/*
-!*MANUAL/
-!*MANUAL/BoloCalc_User_Manual.pdf
-
-# All output files
-*sensitivity.txt
-*opticalPower.txt
-*mappingSpeedVary*.txt
-
 # All logging files
 *log/*.txt
 
-# Auxiliary scripts
-*overplotATM.py
-*plotATM.py
-
-# Ignore non-example directories
+# Ignore all experiment directories
 *Experiments/*
 !*Experiments/importExperiment.py
-#!*Experiments/ExampleExperiment/
-#!*Experiments/ExampleExperiment/*
-
-# Take anything intended to be offline offline
-*OFFLINE/
-*OFFLINE/*
 
 # OSX style files
 *.DS_Store
-
-# For now, ignore the web development directory
-*web*
 
 # Ignore VS code files
 .vscode/settings.json
 .vscode/launch.json
 
-# All output image files
-*.jpg
+# Ignore everything in the config directory except sim config files
+config/*.txt
+!config/simInputs.txt
+!config/paramsToVary.txt
 
-# Certain types of files in auxil for now
-auxil/*.txt
-auxil/*.ipynb
-auxil/.ipynb_checkpoints/*
+# Ignore everything in the custVary file, except the examples
+config/customVary/*.txt
+!config/customVary/Tel_Cam_2_DetEff.txt
+!config/customVary/Tel_Cam_2_Psat.txt
+
+# Ignore all analysis files except for the tutorial
+analyze/*.ipynb
+!analyze/unpack_tutorial.ipynb
+analyze/.ipynb_checkpoints/*

@@ -1,9 +1,0 @@
-#List of needed upgrades to BoloCalc -- updated 2018-10-30
-(1) PWV cutoff in 'telescope.txt'. Above this PWV, the telescope will not observe, and therefore the data should not be included in the weighted NET estimate
-(2) Beam integration script added to 'auxil/'
-(3) Convert text tables to emacs tables
-(4) Add script for applying an integrated top-hat efficiency to an arbitrary band to 'auxil/'
-(5) Add script for tranforming BoloCalc tables into bolo wiki tables to 'auxil/'
-(6) Add script for converting output mappingSpeed_vary.py tables to CSV
-(7) Add plotting scripts
-(8) Add some more useful outputs to 'sensitivity.txt'
