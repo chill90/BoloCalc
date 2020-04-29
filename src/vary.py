@@ -83,7 +83,7 @@ class Vary:
         tot_adjs = self._nexp * len(self._set_arr)
         self._log.out((
                 "Looping over %d parameter sets for %d realizations. "
-                "Total sims = %d"
+                "Number of experiment realizations to adjust = %d"
                 % (len(self._set_arr), tot_sims, tot_adjs)))
         for n, (exp, sens) in enumerate(zip(self._exps, self._sens)):
             adj_sns.append(self._vary_exp(exp, sens, n, tot_adjs))

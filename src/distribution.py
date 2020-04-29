@@ -81,6 +81,13 @@ class Distribution:
         samps = np.where(samps > self._max, self._max, samps)
         samps = np.where(samps < self._min, self._min, samps)
         return samps
+    
+    def change(self, new_avg):
+        # Arithmetically shift the distribution to the new central value
+        old_mean = self.mean()
+        shift = new_avg - old_mean
+        self.val += shift
+        return
 
     def mean(self):
         """ Return the mean of the distribution """

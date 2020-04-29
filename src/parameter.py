@@ -1,5 +1,6 @@
 # Built-in modules
 import numpy as np
+import copy as cp
 
 # BoloCalc modules
 import src.unit as un
@@ -647,10 +648,16 @@ class Parameter:
         avg_new = self.unit.to_SI(new_avg)
         # If multiple bands are already set, just change the value
         if band_ind is not None and self._mult_bands:
+            # If this value is empty, simply store it
             if self._is_empty(band_ind=band_ind):
                 self._avg[band_ind] = avg_new
                 self._med = self._avg
                 ret_bool = True
+            # If this value is a distribution, adjust it
+            elif isinstance(self._val, ds.Distribution):
+                self._val.change(avg_new)
+                ret_bool = True
+            # Otherwise, simply set a new value
             elif (self._sig_figs(avg_new, 5) !=
                   self._sig_figs(self._avg[band_ind], 5)):
                 self._avg[band_ind] = avg_new
@@ -660,16 +667,24 @@ class Parameter:
                 ret_bool = False
         # If multiple bands aren't defined, we can define them now
         elif band_ind is not None and not self._mult_bands:
-            avg_old = self._avg
-            self._avg = [avg_new if i == band_ind else avg_old
+            if isinstance(self._val, ds.Distribution):
+                old_val = self._val
+                old_avg = old_val.mean()
+                new_val = cp.deepcopy(self._val).change(avg_new)
+                new_avg = new_val.mean()
+            else:
+                old_val = self._avg
+                new_val = avg_new
+            self._avg = [new_val if i == band_ind else old_val
                          for i in range(int(num_bands))]
             self._med = self._avg
             self._std = [self._std for i in range(int(num_bands))]
             self._mult_bands = True
-            if str(avg_old).upper() in self._float_str_vals:
+            # Check to see if anything has changed
+            if str(old_avg).upper() in self._float_str_vals:
                 ret_bool = True
-            elif (self._sig_figs(avg_new, 5) !=
-                  self._sig_figs(avg_old, 5)):
+            elif (self._sig_figs(new_avg, 5) !=
+                  self._sig_figs(old_avg, 5)):
                 ret_bool = True
             else:
                 ret_bool = False
@@ -678,6 +693,9 @@ class Parameter:
             if self._avg == "NA":
                 self._avg = avg_new
                 self._med = self._avg
+                ret_bool = True
+            elif isinstance(self._val, ds.Distribution):
+                self._val.change(avg_new)
                 ret_bool = True
             elif (self._sig_figs(avg_new, 5) !=
                   self._sig_figs(self._avg, 5)):
