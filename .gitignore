@@ -35,6 +35,6 @@ config/customVary/*.txt
 !config/customVary/Tel_Cam_2_Psat.txt
 
 # Ignore all analysis files except for the tutorial
-analyze/*.ipynb
+analyze/*
 !analyze/unpack_tutorial.ipynb
 analyze/.ipynb_checkpoints/*
