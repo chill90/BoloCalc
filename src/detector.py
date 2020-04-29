@@ -135,9 +135,9 @@ class Detector:
                 self._param_vals["bshift"] = bc_param.sample(
                     max=np.inf, min=-np.inf, null=True)
                 delta_f = self._param_vals["bshift"]
-                delta_ind = np.round(delta_f / np.diff(freqs)[0])
+                delta_ind = int(np.round(delta_f / np.diff(freqs)[0]))
                 if delta_ind != 0:
-                    self.band = np.roll(self.band, delta_ind)
+                    self.band = self._shift_band(self.band, delta_ind)
                     # Use the edge value to fill the edge of the array
                     if delta_ind > 0:
                         self.band[:delta_ind] = self.band[delta_ind]
@@ -180,3 +180,16 @@ class Detector:
         #    1. if f >= self.param("flo") and f < self.param("fhi")
         #    else 0. for f in freqs]
         return
+
+    def _shift_band(self, band, delta_ind):
+        if delta_ind == 0:
+            ret_band = band
+        elif delta_ind < 0:
+            ret_band = np.concatenate(
+                [np.roll(band, delta_ind)[:delta_ind],
+                 [band[-1]] * int(abs(delta_ind))])
+        else:
+            ret_band = np.concatenate(
+                [[band[0]] * int(abs(delta_ind)),
+                 np.roll(band, delta_ind)[delta_ind:]])
+        return ret_band
