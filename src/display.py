@@ -1,5 +1,6 @@
 # Built-in modules
 import numpy as np
+import itertools as it
 import os
 
 # BoloCalc modules
@@ -77,8 +78,49 @@ class Display:
 
     # ***** Helper Methods *****
     def _merge_exps(self):
-        self._sns = np.concatenate(self._sim.senses, axis=-1)
-        self._opts = np.concatenate(self._sim.opt_pows, axis=-1)
+        # Loop over experiment realizations
+        self._sns = []
+        self._opts = []
+        nexp = len(self._sim.senses)
+        ntel = len(self._sim.senses[0])
+        for i in range(ntel):
+            sns_1 = []
+            opts_1 = []
+            ncam = len(self._sim.senses[0][i])
+            for j in range(ncam):
+                sns_2 = []
+                opts_2 = []
+                nch = len(self._sim.senses[0][i][j])
+                for k in range(nch):
+                    # Merge sensitivities
+                    sns_3 = []
+                    nparam = len(self._sim.senses[0][i][j][k])
+                    for m in range(nparam):
+                        sn_arrs = []
+                        opt_arrs = []
+                        for n in range(nexp):
+                            sn_arrs.append(
+                                self._sim.senses[n][i][j][k][m])
+                        sns_3.append(np.concatenate(sn_arrs).tolist())
+                    # Merge optical powers
+                    opts_3 = []
+                    nparam = len(self._sim.opt_pows[0][i][j][k])
+                    for m in range(nparam):
+                        opts_4 = []
+                        nopt = len(self._sim.opt_pows[0][i][j][k][m])
+                        for n in range(nopt):
+                            opt_arrs = []
+                            for p in range(nexp):
+                                opt_arrs.append(
+                                    self._sim.opt_pows[p][i][j][k][m][n])
+                            opts_4.append(np.concatenate(opt_arrs).tolist())
+                        opts_3.append(opts_4)
+                    sns_2.append(sns_3)
+                    opts_2.append(opts_3)
+                sns_1.append(sns_2)
+                opts_1.append(opts_2)
+            self._sns.append(sns_1)
+            self._opts.append(opts_1)
         return
 
     def _table_format(self):
