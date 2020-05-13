@@ -261,7 +261,7 @@ class Channel:
         else:
             self._param_vals["cdet"] = self.cam.tel.exp.sim.param("ndet")
         # Store estimated band center if user-defined band
-        if self._band_file:
+        if self._band_file is not None and self._bc is not None:
             self._param_vals["bc"] = self._bc
             self._param_vals["cust"] = True
         else:
@@ -329,6 +329,7 @@ class Channel:
                 hi_freq = 2 * bc
             self.freqs = np.arange(
                 lo_freq, hi_freq + self._fres, self._fres)
+            self._bc = None
         else:
             self._log.err(
                 "Problem constructing detector band for channel "
