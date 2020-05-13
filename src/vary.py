@@ -513,6 +513,9 @@ class Vary:
         # Load data from vary file
         data = np.loadtxt(self._param_file, delimiter='|', dtype=str,
                           unpack=True, ndmin=2, converters=convs)
+        # Skip the first line if it wasn't commented out
+        if data[5][0].upper() == "MINIMUM":
+            data = [d[1:] for d in data]
         self._tels, self._cams, self._chs, self._opts = data[:4]
         self._params, mins, maxs, stps = data[4:]
         params_upper = [param.replace(" ", "").strip().upper()
