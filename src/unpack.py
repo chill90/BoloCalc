@@ -31,11 +31,6 @@ class Unpack:
         self._out_str = 'All'
         self._num_det_str = 'Num Det'
 
-        # These are the dictionaries that can be accessed by the user
-        self.sens_outputs = {}
-        self.vary_inputs = {}
-        self.vary_outputs = {}
-
     def unpack_sensitivities(self, inp_dir):
         """
         Generate self.sens_outputs from an input Experiment directory
@@ -43,6 +38,7 @@ class Unpack:
         Args:
         inp_dir (str): input directory. Must be an absolute path, not relative
         """
+        self.sens_outputs = {}
         self._inp_sens_dir = inp_dir
         self._gather_sens_files()
         return
@@ -56,6 +52,8 @@ class Unpack:
         Args:
         inp_dir (str): input directory. Must be an absolute path, not relative
         """
+        self.vary_inputs = {}
+        self.vary_outputs = {}
         self._inp_vary_dir = inp_dir
         self._inp_vary_name = var_name
         # Gather the relevant files given the input directory
