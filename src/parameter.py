@@ -337,6 +337,10 @@ class Parameter:
             self._val = None
             vals = inp.split(self._spread_delim)
             avg = self._float(vals[0])
+            if isinstance(avg, np.ndarray):
+                self._mult_bands = True
+            else:
+                self._mult_bands = False
             self._avg = self._check_range(avg)
             self._med = self._avg
             self._std = self._float(vals[1])
@@ -344,6 +348,10 @@ class Parameter:
         else:
             self._val = None
             avg = self._float(inp)
+            if isinstance(avg, np.ndarray):
+                self._mult_bands = True
+            else:
+                self._mult_bands = False
             self._avg = self._check_range(avg)
             self._med = self._avg
             if (isinstance(self._avg, str) or
@@ -468,6 +476,7 @@ class Parameter:
         # If the mean value is a float or an int, then simply store the
         # values straight away
         elif isinstance(mean_val, float) or isinstance(mean_val, int):
+            self._mult_bands = False
             self._val = None
             avg = self._check_range(mean_val)
             self._avg = avg
@@ -519,13 +528,11 @@ class Parameter:
         """ Convert val to an array of or single float(s) """
         # If the passed value is None, return it right back
         if val is None:
-            self._mult_bands = False
             return None
         # Try to convert the value to a float. If successful,
         # convert to SI units and return
         try:
             float_val = float(val)
-            self._mult_bands = False
             return self.unit.to_SI(float_val)
         # If unable to convert to a float...
         except ValueError:
@@ -533,12 +540,10 @@ class Parameter:
             # convert to an array of SI unit floats and return
             try:
                 arr_val = np.array(eval(val)).astype(float)
-                self._mult_bands = True
                 return self.unit.to_SI(arr_val)
             # If that fails, look for a special string
             except NameError:
                 # The final option is to accpet either "BAND" or "NA"
-                self._mult_bands = False
                 ret = str(val).strip().upper()
                 if ret in self._float_str_vals:
                     return ret
@@ -618,6 +623,7 @@ class Parameter:
         if band_ind is not None and self._mult_bands:
             if self._avg[band_ind].upper() != avg_new.upper():
                 self._avg[band_ind] = avg_new
+                self._med[band_ind] = self._avg[band_ind]
                 ret_bool = True
             else:
                 ret_bool = False
@@ -644,24 +650,26 @@ class Parameter:
 
     def _change_float(self, new_avg, band_ind=None, num_bands=None):
         """ Change a float parmaeter to a new value """
-        # Convert to SI units
-        avg_new = self.unit.to_SI(new_avg)
+        avg_new = self._float(new_avg)
         # If multiple bands are already set, just change the value
         if band_ind is not None and self._mult_bands:
             # If this value is empty, simply store it
             if self._is_empty(band_ind=band_ind):
                 self._avg[band_ind] = avg_new
-                self._med = self._avg
+                self._med[band_ind] = self._avg[band_ind]
                 ret_bool = True
             # If this value is a distribution, adjust it
-            elif isinstance(self._val, ds.Distribution):
-                self._val.change(avg_new)
+            elif isinstance(self._val[band_ind], ds.Distribution):
+                self._val[band_ind].change(avg_new)
+                self._avg[band_ind] = self._val[band_ind].mean()
+                self._med[band_ind] = self._val[band_ind].median()
+                self._std[band_ind] = self._val[band_ind].std()
                 ret_bool = True
             # Otherwise, simply set a new value
             elif (self._sig_figs(avg_new, 5) !=
                   self._sig_figs(self._avg[band_ind], 5)):
                 self._avg[band_ind] = avg_new
-                self._med = self._avg
+                self._med[band_ind] = self._avg[band_ind]
                 ret_bool = True
             else:
                 ret_bool = False
@@ -696,6 +704,9 @@ class Parameter:
                 ret_bool = True
             elif isinstance(self._val, ds.Distribution):
                 self._val.change(avg_new)
+                self._avg = self._val.mean()
+                self._med = self._val.median()
+                self._std = self._val.std()
                 ret_bool = True
             elif (self._sig_figs(avg_new, 5) !=
                   self._sig_figs(self._avg, 5)):
