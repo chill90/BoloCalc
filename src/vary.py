@@ -107,11 +107,12 @@ class Vary:
         self._done()
         return
 
-    def _adjust_sens(self, exp, sns, tel='', cam='', ch=''):
+    def _adjust_sens(self, exp, sns, tel='', cam='', ch='', opt=''):
         """ Calculate new sensitivity array where needed """
         tel = self._cap(tel)
         cam = self._cap(cam)
         ch = self._cap(ch)
+        opt = self._cap(opt)
         # Change channel parameter
         if str(tel) != '' and str(cam) != '' and str(ch) != '':
             tel_ind = list(exp.tels.keys()).index(tel)
@@ -121,6 +122,18 @@ class Vary:
             channel.evaluate()
             sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
                 channel)
+        # Change optics parameter for both channels
+        elif (str(tel) != '' and str(cam) != '' and
+              str(ch) == '' and str(opt) != ''):
+            tel_ind = list(exp.tels.keys()).index(tel)
+            cam_ind = list(exp.tels[tel].cams.keys()).index(cam)
+            # Evaluate all channels in this camera
+            for ch in exp.tels[tel].cams[cam].chs:
+                ch_ind = list(exp.tels[tel].cams[cam].chs.keys()).index(ch)
+                channel = exp.tels[tel].cams[cam].chs[ch]
+                channel.evaluate()
+                sns[tel_ind][cam_ind][ch_ind] = self._sns.ch_sensitivity(
+                    channel)
         # Change camera parameter
         elif str(tel) != '' and str(cam) != '':
             tel_ind = list(exp.tels.keys()).index(tel)
@@ -301,8 +314,9 @@ class Vary:
             chg_tels = self._tels[changed_args]
             chg_cams = self._cams[changed_args]
             chg_chs = self._chs[changed_args]
+            chg_opts = self._opts[changed_args]
             # Only account for unique changes
-            chgs = np.array([chg_tels, chg_cams, chg_chs]).T
+            chgs = np.array([chg_tels, chg_cams, chg_chs, chg_opts]).T
             # If no changes occurred, move to the next parameter step
             if len(chgs) == 0:
                 sns_arr.append(cp.deepcopy(sns))
@@ -332,8 +346,7 @@ class Vary:
             tel_inds = range(len(tels))
             tel_iter = tel_inds
         for i, tel, a in zip(tel_inds, tels, tel_iter):
-            if (str(self._scope) == 'cam' or str(self._scope) == 'ch' or
-                str(self._scope) == 'pix'):
+            if (str(self._scope) == 'cam' or str(self._scope) == 'ch'):
                 valid_inds = np.argwhere(
                     self._tels == tel_names[a]).flatten()
                 cam_names = list(set(self._cams[valid_inds]))
@@ -631,38 +644,49 @@ class Vary:
         return
 
     def _vary_scope(self, ind):
-        """ Calculate scope of the parameter vary """
+        """ Find scope of the parameter vary """
+        scope = ''
+        ret_val = ''
         if self._tels[ind] != '':
-            if (str(self._scope) == '' or
-               str(self._scope) == 'ch' or
-               str(self._scope) == 'cam'):
-                self._scope = 'tel'
+            scope = 'tel'
             if self._cams[ind] != '':
-                if (str(self._scope) == '' or
-                   str(self._scope) == 'ch'):
-                    self._scope = 'cam'
+                scope = 'cam'
                 if str(self._chs[ind]) != '':
-                    if str(self._scope) == '':
-                        self._scope = 'ch'
+                    scope = 'ch'
                     if self._opts[ind] != '':
-                        return 'opt'
+                        ret_val = 'opt'
                     elif ('PIXELSIZE' in
                           self._params[ind].replace(" ", "").upper() and
                           self._pix_size_special):
-                        self._scope = 'ch'
-                        return 'pix'
+                        ret_val = 'pix'
                     else:
-                        return 'ch'
+                        ret_val = 'ch'
                 else:
                     if self._opts[ind] != '':
-                        return 'opt'
+                        ret_val = 'opt'
                     else:
-                        return 'cam'
+                        ret_val = 'cam'
             else:
-                return 'tel'
+                ret_val = 'tel'
         else:
-            self._scope = 'exp'
-            return 'exp'
+            scope = 'exp'
+            ret_val = 'exp'
+        # Set a new global scope
+        if scope == 'exp':
+            self._scope == 'exp'
+        elif (scope == 'tel' and (
+             self._scope == '' or self._scope == 'cam' or 
+             self._scope == 'ch')):
+            self._scope = 'tel'
+        elif (scope == 'cam' and (
+             self._scope == '' or self._scope == 'ch')):
+            self._scope = 'cam'
+        elif (scope == 'ch' and self._scope == ''):
+            self._scope = 'ch'
+        else:
+            pass
+        # Return scope for this parameter
+        return ret_val
 
     def _wide_to_long(self, inp_arr):
         """ Convert wide-form data to long-form data """

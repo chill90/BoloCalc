@@ -105,13 +105,13 @@ class Optic:
                             new_val, band_ind=band_ind, num_bands=num_bands))
                 else:
                     rets = []
-                    for ii in range(num_bands):
+                    for i in range(num_bands):
                         ret = (
                             self._param_dict[
                                 self._param_names[caps_param]].change(
-                                new_val, band_ind=ii, num_bands=num_bands))
+                                new_val, band_ind=i, num_bands=num_bands))
                         rets.append(ret)
-                    ret_val = (np.any(not rets))
+                    ret_val = (np.any(rets))
                 return ret_val
             else:
                 self._log.err(

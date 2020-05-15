@@ -681,9 +681,13 @@ class Parameter:
                 new_val = cp.deepcopy(self._val).change(avg_new)
                 new_avg = new_val.mean()
             else:
-                old_val = self._avg
-                new_val = avg_new
-            self._avg = [new_val if i == band_ind else old_val
+                old_val = self._val
+                old_avg = self._avg
+                new_val = old_val   # val is always 'None' for floats
+                new_avg = avg_new
+            self._val = [new_val if i == band_ind else old_val
+                         for i in range(int(num_bands))]
+            self._avg = [new_avg if i == band_ind else old_avg
                          for i in range(int(num_bands))]
             self._med = self._avg
             self._std = [self._std for i in range(int(num_bands))]
