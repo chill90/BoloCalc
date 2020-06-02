@@ -80,7 +80,7 @@ class Vary:
 
         # Loop over parameter set and adjust sensitivities
         adj_sns = []
-        tot_adjs = self._nexp * len(self._set_arr)
+        tot_adjs = self._nexp * len(self._set_arr) * tot_sims
         self._log.out((
                 "Looping over %d parameter sets for %d realizations. "
                 "Number of experiment realizations to adjust = %d"

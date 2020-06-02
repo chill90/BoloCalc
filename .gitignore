@@ -24,6 +24,9 @@
 .vscode/settings.json
 .vscode/launch.json
 
+# Ignore iCloud files
+*.icloud
+
 # Ignore everything in the config directory except sim config files
 config/*.txt
 !config/simInputs.txt
