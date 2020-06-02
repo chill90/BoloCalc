@@ -349,8 +349,41 @@ class Simulation:
             "fres": self._store_param("Resolution"),
             "infg": self._store_param("Foregrounds"),
             "corr": self._store_param("Correlations"),
-            "pct": self._store_param("Percentile")}
+            }
+        # On 2020-06-01, "Percentile" was replaced with "Percentile Lo"
+        # and "Percentile Hi"
+        if self._input_param_exists("Percentile"):
+            self._param_dict.update({"pct": self._store_param("Percentile")})
+        elif (self._input_param_exists("Percentile Lo") and
+              self._input_param_exists("Percentile Hi")):
+            # Store the list entries manually
+            pct_lo = str(self._retrieve_input_param("Percentile Lo")).strip()
+            pct_hi = str(self._retrieve_input_param("Percentile Hi")).strip()
+            pct_val = "[%s, %s]" % (pct_lo, pct_hi)
+            self._param_dict.update({"pct": pr.Parameter(
+                self.log, pct_val,
+                std_param=self.std_params["PERCENTILE"])})
+        else:
+            self.log.err(
+                "Neither 'Percentile' not 'Percentile Lo' and 'Percentile Hi " 
+                "were found in 'simulationInputs.txt")
         return
+
+    def _input_param_exists(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._inp_dict.keys():
+            return True
+        else:
+            return False
+
+    def _retrieve_input_param(self, name):
+        cap_name = name.replace(" ", "").strip().upper()
+        if cap_name in self._inp_dict.keys():
+            return self._inp_dict[cap_name]
+        else:
+            self.log.err(
+                "Passed parameter in simulationInputs.txt '%s' not "
+                "recognized in _retrieve_input_param()" % (name))
 
     def _store_param(self, name):
         """ Helper method to store param dict """
@@ -362,7 +395,7 @@ class Simulation:
         else:
             self.log.err(
                 "Passed parameter in simulationInputs.txt '%s' not "
-                "recognized" % (name))
+                "recognized in _store_param()" % (name))
 
     def _evaluate(self):
         """ Evaluate experiment """
