@@ -564,7 +564,7 @@ class Parameter:
             return 0.
 
     def _check_range(self, val):
-        if self._mult_bands:
+        if isinstance(val, list) or isinstance(val, np.ndarray):
             val = np.array(
                 [self._check_range_val(v) for v in val])
         else:
