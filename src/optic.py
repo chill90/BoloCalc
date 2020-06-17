@@ -344,8 +344,8 @@ class Optic:
                 self._scatt_temp, self._temp, self._ch.freqs))
 
         # Efficiency array
-        self._effic = (
-            1. - self._refl - self._abso - self._spill - self._scatt)
+        self._effic = ((1 - self._refl) * (1 - self._abso) *
+                       (1 - self._spill) * (1 - self._scatt))
 
         # Store channel beam coupling efficiency if this is the aperture
         if self._elem.strip().upper() in self._ap_names:
