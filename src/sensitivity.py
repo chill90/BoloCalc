@@ -267,15 +267,13 @@ class Sensitivity:
             self._NEP[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
             ch.cam.param("opt_coup"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)]) * (
-                ch.cam.tel.param("net_mgn"))
+            for i in range(self._nobs)])
         # Total NET with correlation adjustment
         self._NET_corr = np.array([[self._noise.NET_from_NEP(
             self._NEP_corr[i][j], ch.freqs, np.prod(ch.tran[i][j], axis=0),
             ch.cam.param("opt_coup"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)]) * (
-                ch.cam.tel.param("net_mgn"))
+            for i in range(self._nobs)])
         return
 
     def _calc_NET_RJ(self, ch):
@@ -295,7 +293,8 @@ class Sensitivity:
         self._NET_arr = np.array([[self._noise.NET_arr(
             self._NET_corr[i][j], ch.param("ndet"), ch.param("yield"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)])
+            for i in range(self._nobs)]) * (
+                ch.cam.tel.param("net_mgn"))
         return
 
     def _calc_NET_arr_RJ(self, ch):
@@ -303,7 +302,8 @@ class Sensitivity:
         self._NET_arr_RJ = np.array([[self._noise.NET_arr(
             self._NET_corr_RJ[i][j], ch.param("ndet"), ch.param("yield"))
             for j in range(self._ndet)]
-            for i in range(self._nobs)])
+            for i in range(self._nobs)]) * (
+                ch.cam.tel.param("net_mgn"))
         return
 
     def _calc_corr_deg(self, ch):
