@@ -1,4 +1,4 @@
-# Telescope       | Camera        | Channel       | Optic      | Parameter       | Minimum       | Maximum       | Step Size 
+Telescope       | Camera        | Channel       | Optic      | Parameter       | Minimum       | Maximum       | Step Size 
 #-------------------------------------------------------------------------------------------------------------------------
 Tel             | Cam           | 2             |            | Psat            | 5             | 30            | 5
 #-------------------------------------------------------------------------------------------------------------------------
