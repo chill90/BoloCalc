@@ -34,6 +34,7 @@ class Camera:
         # Store passed parameters
         self.tel = tel
         self.dir = inp_dir
+        self.name = self.dir.split(os.sep)[-2]
         self._log = self.tel.exp.sim.log
         self._load = self.tel.exp.sim.load
         self._std_params = self.tel.exp.sim.std_params

@@ -33,6 +33,7 @@ class Experiment:
         self._std_params = self.sim.std_params
         # Experiment directory
         self.dir = self.sim.exp_dir
+        self.name = self.dir.split(os.sep)[-2]
 
         # Generate the experiment
         self._log.log("Generating expeiment realization from %s" % (self.dir))

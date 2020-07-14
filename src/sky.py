@@ -43,6 +43,9 @@ class Sky:
         # Maximum and minimum allowed PWV
         self._max_pwv = 8.0
         self._min_pwv = 0.0
+        # Allowed site names
+        self._allowed_sites = [
+            "ATACAMA", "POLE", "MCMURDO", "SPACE", "CUST"]
         # Directory which holds the ATM files
         self._atm_dir = os.path.dirname(__file__)
 
@@ -58,29 +61,37 @@ class Sky:
         freqs (float): frequencies [Hz] at which to evlauate the sky
         """
         site = self.tel.param("site").upper()
-        # Can't see any sky through the concrete
-        if site == 'ROOM':
-            Nroom = ['ROOM' for f in freqs]
-            Troom = [295. for f in freqs]
+        # Custom sky effective brightness temperature
+        if site.isnumeric():
+            Nroom = ['CUST' for f in freqs]
+            Troom = [site for f in freqs]
             Eroom = [1. for f in freqs]
             Aroom = [1. for f in freqs]
             return [[Nroom],
                     [Aroom],
                     [Eroom],
                     [Troom]]
-        # Check that an atmosphere exists
-        elif site != 'SPACE':
-            Natm = ['ATM' for f in freqs]
-            Tatm, Eatm = self._atm_spectrum(pwv, elev, freqs)[1:]
-            Aatm = [1. for f in freqs]
-        # Won't look at the atmosphere from space
-        else:  # site = 'SPACE'
-            pass  # no atmosphere
+        elif site in self._allowed_sites:
+            # Check that an atmosphere exists
+            if site != 'SPACE':
+                Natm = ['ATM' for f in freqs]
+                Tatm, Eatm = self._atm_spectrum(pwv, elev, freqs)[1:]
+                Aatm = [1. for f in freqs]
+            # Won't look at the atmosphere from space, probably
+            else:  # site = 'SPACE'
+                pass  # no atmosphere
+        else:  
+            self._log.err(
+                "Could not understand site '%s' defined for telescope '%s'\n"
+                "Allowed options: %s, or a float." % (
+                    site.lower().capitalize(), self.tel.name,
+                    ', '.join(self._allowed_sites)))
 
         Ncmb = ['CMB' for f in freqs]
         Tcmb = [self._phys.Tcmb for f in freqs]
         Ecmb = [1. for f in freqs]
         Acmb = [1. for f in freqs]
+        # Include foregrounds
         if self._infg:
             Nsyn = ['SYNC' for f in freqs]
             Tsyn = self._syn_temp(freqs)
@@ -100,6 +111,7 @@ class Sky:
                         [Acmb, Asyn, Adst],
                         [Ecmb, Esyn, Edst],
                         [Tcmb, Tsyn, Tdst]]
+        # Do not include foregrounds
         else:
             if site != 'SPACE':
                 return [[Ncmb, Natm],
