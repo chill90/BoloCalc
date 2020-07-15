@@ -50,7 +50,7 @@ class Sky:
         self._atm_dir = os.path.dirname(__file__)
 
     # ***** Public Methods ******
-    def evaluate(self, pwv, elev, freqs):
+    def evaluate(self, sky_temp, pwv, elev, freqs):
         """
         Generate the sky elements, absorbtivities, transmissions,
         and temperatures
@@ -62,15 +62,15 @@ class Sky:
         """
         site = self.tel.param("site").upper()
         # Custom sky effective brightness temperature
-        if site.isnumeric():
-            Nroom = ['CUST' for f in freqs]
-            Troom = [site for f in freqs]
-            Eroom = [1. for f in freqs]
-            Aroom = [1. for f in freqs]
-            return [[Nroom],
-                    [Aroom],
-                    [Eroom],
-                    [Troom]]
+        if sky_temp != "NA":
+            Nsky = ['Sky' for f in freqs]
+            Tsky = [sky_temp for f in freqs]
+            Esky = [1. for f in freqs]
+            Asky = [1. for f in freqs]
+            return [[Nsky],
+                    [Asky],
+                    [Esky],
+                    [Tsky]]
         elif site in self._allowed_sites:
             # Check that an atmosphere exists
             if site != 'SPACE':
@@ -145,6 +145,9 @@ class Sky:
         """ Retrieve ATM spectrum from HDF5 file """
         # Two-level dictionary structure in the HDF5 file
         site = self.tel.param("site").lower().capitalize()
+        # McMurdo need camel casing
+        if site == "Mcmurdo":
+            site = "McMurdo"
         key = "%d,%d" % (pwv, elev)
         with hp.File("%s/atm.hdf5" % (self._atm_dir), "r") as hf:
             data = hf[site][key]

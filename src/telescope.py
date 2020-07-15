@@ -112,6 +112,13 @@ class Telescope:
                     "Parameter '%s' not understood by Telescope.change_param()"
                     % (str(param)))
 
+    def sky_temp_sample(self):
+        """ Sample sky temperature for this telescope """
+        if self.exp.sim.param("nobs") == 1:
+            return self._param_dict["sky_temp"].get_med()
+        else:
+            return self._param_dict["sky_temp"].sample(nsample=1)
+
     def pwv_sample(self):
         """ Sample PWV for this telescope """
         if self.exp.sim.param("nobs") == 1:
@@ -158,6 +165,12 @@ class Telescope:
             "fsky": self._store_param("Sky Fraction"),
             "obs_eff": self._store_param("Observation Efficiency"),
             "net_mgn": self._store_param("NET Margin")}
+        # New parameters, added separately for backwards compatibility
+        if "SKYTEMPERATURE" in self._inp_dict.keys():
+            self._param_dict["sky_temp"] = self._store_param("Sky Temperature")
+        else:
+            self._param_dict["sky_temp"] = pr.Parameter(
+                self._log, "NA", name="Sky Temperature")
         # Dictionary for ID-ing parameters for changing
         self._param_names = {
             param.caps_name: pid

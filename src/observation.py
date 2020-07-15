@@ -24,15 +24,16 @@ class Observation:
         # Store passed parameters
         self._obs_set = obs_set
         self._ch = self._obs_set.ch
-        self._sky = self._ch.cam.tel.sky
-        self._scn = self._ch.cam.tel.scn
+        self._tel = self._ch.cam.tel
+        self._sky = self._tel.sky
+        self._scn = self._tel.scn
         self._det_arr = self._ch.det_arr
         self._ndet = self._ch.cam.tel.exp.sim.param("ndet")
 
     def evaluate(self):
         """ Evaluate the observation's elem, emiss, tran, and temp arrays """
         # Store PWV and elevation
-        self._get_pwv_elev()
+        self._get_temp_pwv_elev()
 
         # Store sky values
         elem, emis, tran, temp = self._get_sky_vals()
@@ -43,8 +44,10 @@ class Observation:
         return
 
     # ***** Helper Methods *****
-    def _get_pwv_elev(self):
+    def _get_temp_pwv_elev(self):
         """ Sample the pixel elevation """
+        # Sample sky temperature
+        self._sky_temp = self._tel.sky_temp_sample()
         # Sample PWV
         self._pwv = self._sky.pwv_sample()
         # Sample telescope elevation
@@ -70,5 +73,5 @@ class Observation:
     def _get_sky_vals(self):
         """ Get the sky values """
         return np.hsplit(np.array([self._sky.evaluate(
-            self._pwv, elev, self._ch.freqs)
+            self._sky_temp, self._pwv, elev, self._ch.freqs)
             for elev in self._pix_elev]), 4)

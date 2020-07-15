@@ -155,6 +155,9 @@ class Simulation:
             "SYNCSCALEFREQUENCY": sp.StandardParam(
                 "Sync Scale Frequency", un.Unit("GHz"),
                 func_min, np.inf, float),
+            "SKYTEMPERATURE": sp.StandardParam(
+                "Sync Scale Frequency", un.Unit("K"),
+                func_min, np.inf, float),
             "SITE": sp.StandardParam(
                 "SITE", un.Unit("NA"),
                 None, None, str),
