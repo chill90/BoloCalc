@@ -1,0 +1,2 @@
+atm_20200916.hdf5 -- updated South Pole atmosphere for a more accurate PWV impact. Previous iteration underestimated the load due to water by ~2x -- [2020-09-16]
+atm.hdf5 -- used from 09/25/2019 until 09/16/2020
