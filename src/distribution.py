@@ -56,12 +56,12 @@ class Distribution:
 
         # Load PDF from file if 'finput' is a string
         if len(self._inp.shape) == 1:
-            self.val = self._unit.to_SI(inp)
+            self.val = inp
             self.prob = None
             self._cum = None
         elif len(self._inp.shape) == 2:
-            self.val = self._unit.to_SI(self._inp[0])
-            self.prob = self._unit.to_SI(self._inp[1])
+            self.val = self._inp[0]
+            self.prob = self._inp[1]
             # Rescale probabilities to 1 in case they are not already
             self.prob = self.prob / np.sum(self.prob)
             self._cum = np.cumsum(self.prob)

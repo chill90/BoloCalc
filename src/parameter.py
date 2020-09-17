@@ -211,7 +211,7 @@ class Parameter:
             max = self._max
         # If this parameter is a distribution, just sample it
         if isinstance(self._val, ds.Distribution):
-            samp = self._val.sample(nsample=nsample)
+            samp = self._float(self._val.sample(nsample=nsample))
             # Check that the sampled value doesn't surpasse the max or min
             if min is not None and samp < min:
                 return min
@@ -659,7 +659,8 @@ class Parameter:
                 self._med[band_ind] = self._avg[band_ind]
                 ret_bool = True
             # If this value is a distribution, adjust it
-            elif isinstance(self._val[band_ind], ds.Distribution):
+            elif (self._val is not None and
+                  isinstance(self._val[band_ind], ds.Distribution)):
                 self._val[band_ind].change(avg_new)
                 self._avg[band_ind] = self._val[band_ind].mean()
                 self._med[band_ind] = self._val[band_ind].median()
