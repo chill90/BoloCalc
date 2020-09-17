@@ -33,6 +33,7 @@ class Sky:
         self._phys = self.tel.exp.sim.phys
         self._load = self.tel.exp.sim.load
         self._infg = self.tel.exp.sim.param("infg")
+        self._atm_file = self.tel.exp.sim.atm_file
 
         # Initialize foregrounds
         if self._infg:
@@ -46,8 +47,6 @@ class Sky:
         # Allowed site names
         self._allowed_sites = [
             "ATACAMA", "POLE", "MCMURDO", "SPACE", "CUST"]
-        # Directory which holds the ATM files
-        self._atm_dir = os.path.dirname(__file__)
 
     # ***** Public Methods ******
     def evaluate(self, sky_temp, pwv, elev, freqs):
@@ -149,7 +148,7 @@ class Sky:
         if site == "Mcmurdo":
             site = "McMurdo"
         key = "%d,%d" % (pwv, elev)
-        with hp.File("%s/atm.hdf5" % (self._atm_dir), "r") as hf:
+        with hp.File("%s" % (self._atm_file), "r") as hf:
             data = hf[site][key]
             freq = data[0]
             temp = data[2]

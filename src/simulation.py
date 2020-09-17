@@ -1,6 +1,8 @@
 # Built-in modules
+import datetime as dt
 import numpy as np
 import sys as sy
+import glob as gb
 import os
 
 # BoloCalc modules
@@ -47,12 +49,18 @@ class Simulation:
         self.exp_dir = exp_dir
         self._sim_file = sim_file
 
+        # Set up logging
+        self.log = lg.Log(log_file)
+
+        # Latest atm file
+        self._atm_log = 'atm_log.txt'
+        self._check_atm()
+
         # Store standard parameter values
         self._store_standard_params()
         self._store_output_units()
 
         # Build simulation-wide objects
-        self.log = lg.Log(log_file)
         self.log.log("Generating Simulation object")
         self.load = ld.Loader(self)
         self.phys = ph.Physics()
@@ -444,4 +452,113 @@ class Simulation:
             "[%-*s] %.1f%%" % (self._bar_len, '='*self._bar_len, 100.))
         sy.stdout.write('\n')
         sy.stdout.flush()
+        return
+
+    def _check_atm(self):
+        """ Check atmosphere file """
+        # Check that the atmosphere file exists
+        self._src_dir = os.path.dirname(os.path.abspath(__file__))
+        self._atm_files = gb.glob(os.path.join(self._src_dir, 'atm*.hdf5'))
+        if len(self._atm_files) == 0:
+            self.log.err(
+                "No atmosphere file found in %s" % (self._src_dir))
+        elif len(self._atm_files) > 1:
+            self.log.log(
+                "Multiple atmosphere files found in %s: %s"
+                % (self._src_dir, self._atm_files))
+            fnames = [f.split(os.sep)[-1].strip('.hdf5')
+                      for f in self._atm_files]
+            dates = [int(f.split('_')[-1]) if '_' in f else 0 for f in fnames]
+            args = np.argsort(dates)
+            self.atm_file = np.take(self._atm_files, args)[-1]
+        else:
+            self.atm_file = self._atm_files[0]
+        # Check for the latest atmosphere file
+        auxil_dir = os.path.abspath(
+            os.path.join(self._src_dir, '..', 'auxil'))
+        self._atm_log_file = os.path.join(auxil_dir, 'atm_log.txt')
+        if not os.path.isfile(self._atm_log_file):
+            self.log.err(
+                "No atmosphere log file found in %s. "
+                "Run 'git checkout %s' before running 'calcBolos.py."
+                % (auxil_dir, self._atm_log_file))
+        self._atm_entries = open(self._atm_log_file, 'r').readlines()
+        self._entries_str = '\n   * '.join(
+            ['--'.join(f.split('--')[:2]) for f in self._atm_entries])
+        self._latest_atm_file = self._atm_entries[0].split('--')[0].strip()
+        if self._latest_atm_file not in self.atm_file:
+            remind_date_str = self._atm_entries[0].split('--')[-1]
+            self._remind_atm(remind_date_str)
+
+    def _remind_atm(self, remind_date_str):
+        """ Remind the user to download the latest atm file """
+        ryear, rmonth, rday = (
+            remind_date_str.lstrip(' [').rstrip('] \n').split('-'))
+        now = dt.datetime.now()
+        cyear = now.year
+        cmonth = now.month
+        cday = now.day
+        # Remind the user if a reminder is due
+        while True:
+            if (cyear >= int(ryear) and cmonth >= int(rmonth) and
+               cday >= int(rday)):
+                inform_str = (
+                    "Your atmosphere profile file '%s' is out of date. "
+                    "Here is a record of 'atm.hdf5' files:\n"
+                    "   * %s" % (self.atm_file, self._entries_str))
+                options = (
+                    "Would you like to...\n"
+                    "   'D' -- download latest atmosphere file (~10 min)\n"
+                    "   'P' -- proceed with existing file and remind me "
+                    "again before next 'calcBolos.py' execution\n"
+                    "   'R' -- proceed with existing file and remind me "
+                    "again tomorrow\n")
+                out_str = inform_str + '\n' + options
+                sy.stdout.write(out_str)
+                answer = input("Your selection [D]:")
+                answer = answer.strip().upper()
+                if answer == 'D' or answer == '':
+                    os.system(os.path.join(
+                        self._src_dir, '..', 'update_atm.sh'))
+                    write_str = (
+                        "Updated to atmosphere file to %s"
+                        % (self._latest_atm_file))
+                    self.log.out(write_str)
+                    self.atm_file = os.path.join(
+                        self._src_dir, self._latest_atm_file)
+                elif answer == 'P':
+                    write_str = (
+                        "Using old atmosphere file %s. "
+                        "Update using update_atm.sh"
+                        % (self.atm_file))
+                    self.log.wrn(write_str)
+                elif answer == 'R':
+                    write_str = (
+                        "Using old atmosphere file %s. "
+                        "Update using update_atm.sh"
+                        % (self.atm_file))
+                    self.log.wrn(write_str)
+                    # Update the atm log file with a new reminder date
+                    new_date = now + dt.timedelta(days=1)
+                    date_str = (
+                        "[%04d-%02d-%02d]"
+                        % (new_date.year, new_date.month, new_date.day))
+                    self._atm_entries[0] = '--'.join(
+                        self._atm_entries[0].split('--')[:2]
+                        + [' '+date_str+'\n'])
+                    open(self._atm_log_file, 'w').writelines(self._atm_entries)
+                else:
+                    write_str = (
+                        "I could not understand your command %s"
+                        % (answer))
+                    sy.stdout.write(write_str)
+                    continue
+                break
+            else:
+                write_str = (
+                        "Using old atmosphere file %s. "
+                        "Update using update_atm.sh"
+                        % (self.atm_file))
+                self.log.wrn(write_str)
+                break
         return

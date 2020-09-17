@@ -39,5 +39,23 @@ then
 fi
 
 #Download atm files
-wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm.hdf5
-mv atm.hdf5 src/
+FILE=atm_20200916.hdf5
+wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/"$FILE"
+if [ -f "$FILE" ]
+then
+    if [ -d "src/" ]
+    then
+	mv "$FILE" src/
+	echo "Successfully downloaded atmosphere file $FILE"
+	echo "ADVICE: delete old atm files (~1 GB each) from BoloCalc/src/"
+    elif [ -f "simulation.py" ]
+    then
+	:
+    else
+	echo "Successfully downloaded atmosphere file $FILE"
+	echo "CRITICAL: move $FILE into the BoloCalc/src folder"
+	echo "ADVICE: delete old atm files (~1 GB each) from BoloCalc/src/"
+    fi
+else
+    echo "ERROR: $FILE not downloaded"
+fi
