@@ -102,10 +102,12 @@ class Sensitivity:
         # Store passed parameters
         self._pow_sky_side = []
         self._pow_det_side = []
+        self._eff_elem = []
         self._eff_det_side = []
         for i in range(len(ch.elem)):  # nobs
             pow_sky_side_1 = []
             pow_det_side_1 = []
+            eff_elem_1 = []
             eff_det_side_1 = []
             for j in range(len(ch.elem[i])):  # ndet
                 det_band = np.array(ch.det_arr.dets[j].band)
@@ -114,9 +116,12 @@ class Sensitivity:
                 pow_sky_side_2 = []
                 pow_det_side_2 = []
                 eff_sky_side_2 = []
+                eff_elem_2 = []
                 eff_det_side_2 = []
                 # Store efficiency towards sky and towards detector
                 for k in range(len(ch.elem[i][j])):  # nelem
+                    # Store efficiency
+                    eff_elem_2.append(ch.tran[i][j][k])
                     # Buffer the efficiency array
                     eff_arr = np.vstack([ch.tran[i][j],
                                          np.array([1. for f in ch.freqs])])
@@ -146,6 +151,13 @@ class Sensitivity:
                 for k in range(len(ch.elem[i][j])):
                     pow_out = np.trapz(pows[k] * eff_det_side_2[k], ch.freqs)
                     pow_det_side_2.append(pow_out)
+                    if k == len(ch.elem[i][j]) - 1:
+                        eff_elem_2[k] = np.trapz(eff_elem_2[k], ch.freqs) / bw
+                    else:
+                        eff_elem_2[k] = (
+                            np.trapz(
+                                eff_elem_2[k] * eff_elem_2[-1], ch.freqs) / 
+                            np.trapz(eff_elem_2[-1], ch.freqs))
                     eff_det_side_2[k] = (
                         np.trapz(eff_det_side_2[k], ch.freqs) / bw)
                     pow_in = sum([np.trapz(
@@ -157,9 +169,11 @@ class Sensitivity:
                 eff_det_side_2[-1] = 1.
                 pow_sky_side_1.append(pow_sky_side_2)
                 pow_det_side_1.append(pow_det_side_2)
+                eff_elem_1.append(eff_elem_2)
                 eff_det_side_1.append(eff_det_side_2)
             self._pow_sky_side.append(pow_sky_side_1)
             self._pow_det_side.append(pow_det_side_1)
+            self._eff_elem.append(eff_elem_1)
             self._eff_det_side.append(eff_det_side_1)
         # Build table of optical powers and efficiencies for each element
         return self._opt_table()
@@ -439,9 +453,11 @@ class Sensitivity:
         new_shape = (shape[0] * shape[1], shape[2])
         pow_sky_side = np.transpose(np.reshape(self._pow_sky_side, new_shape))
         pow_det_side = np.transpose(np.reshape(self._pow_det_side, new_shape))
+        eff_elem = np.transpose(np.reshape(self._eff_elem, new_shape))
         eff_det_side = np.transpose(np.reshape(self._eff_det_side, new_shape))
         return [pow_sky_side,
                 pow_det_side,
+                eff_elem,
                 eff_det_side]
 
     def _num_sky_elem(self, ch):

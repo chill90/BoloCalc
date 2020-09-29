@@ -181,12 +181,13 @@ class Display:
         # self._title_tel_d = (("%-9s "*3
         #                     % ("ArrNET", "ArrNETRJ", "MapDep"))+" | ")
         # Optical power files
-        self._title_opt = ("| %-15s | %-26s | %-23s | %-23s |\n"
+        self._title_opt = ("| %-15s | %-26s | %-23s | %-23s | %-23s |\n"
                            % ("Element", "Power from Sky",
-                              "Power to Detect", "Cumulative Eff"))
-        self._unit_opt = ("| %-15s | %-26s | %-23s | %-23s |\n"
-                          % ("", "[pW]", "[pW]", ""))
-        self._break_opt = "-"*100+"\n"
+                              "Power to Detector", "Efficiency",
+                              "Cumulative Efficiency"))
+        self._unit_opt = ("| %-15s | %-26s | %-23s | %-23s | %-23s |\n"
+                          % ("", "[pW]", "[pW]", "", ""))
+        self._break_opt = "-"*126+"\n"
         return
 
     def _init_exp_table(self):
@@ -292,14 +293,15 @@ class Display:
             elem_name = ch.elem[0][0][m]
             wstr = ("| %-15s | %-6.3f +/- (%-6.3f,%6.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) | "
+                    "%-5.3f +/- (%-5.3f,%5.3f) | "
                     "%-5.3f +/- (%-5.3f,%5.3f) |\n"
                     % (elem_name,
                        *self._spread(
                            opt[0][m], self._sim.std_params["POPT"].unit),
                        *self._spread(
                            opt[1][m], self._sim.std_params["POPT"].unit),
-                       *self._spread(
-                           opt[2][m])))
+                       *self._spread(opt[2][m]),
+                       *self._spread(opt[3][m])))
             self._opt_f.write(wstr)
             self._opt_f.write(self._break_opt)
         self._opt_f.write("\n\n")

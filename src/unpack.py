@@ -22,12 +22,14 @@ class Unpack:
         self._txt = '.txt'
         self._sens_file = 'sensitivity.txt'
         self._out_file = 'output.txt'
+        self._pwr_file = 'optical_power.txt'
         self._exp_dir = 'Experiments'
         self._total_params = [
             'Num Det', 'Array NET_CMB', 'Array NET_RJ',
             'CMB Map Depth', 'RJ Map Depth']
         self._tot_str = 'Total'
         self._sens_str = 'Summary'
+        self._pwr_str = 'Summary'
         self._out_str = 'All'
         self._num_det_str = 'Num Det'
 
@@ -94,6 +96,18 @@ class Unpack:
             else:
                 sy.exit("BoloCalc Unpack error: key error in "
                         "unpack_vary()")
+        return
+
+    def unpack_optical_powers(self, inp_dir):
+        """
+        Generate self.sens_outputs from an input Experiment directory
+
+        Args:
+        inp_dir (str): input directory. Must be an absolute path, not relative
+        """
+        self.pwr_outputs = {}
+        self._inp_pwr_dir = inp_dir
+        self._gather_pwr_files()
         return
 
     def _gather_sens_files(self):
@@ -202,7 +216,38 @@ class Unpack:
             sy.exit("Error! Mistmatching number of varied bands in "
                     "Unpack._gather_vary_files()")
         return
-        
+
+    def _gather_pwr_files(self):
+        # Look for optical_power files in the defined directory and below
+        pwr_files = [f for f in gb.iglob(
+            os.path.join(self._inp_pwr_dir, '**'+os.sep+'*'), recursive=True)
+            if self._pwr_file in f]
+        # For each file, build a label from the filepath
+        # Start inspecting a the Experiments/ directory and below
+        pwr_loc_dirs = [f.split(self._exp_dir)[-1].split(os.sep)[1:]
+                        for f in pwr_files]
+        for i, pwr_dir in enumerate(pwr_loc_dirs):
+            pwr_dict = self._unpack_pwr_file(pwr_files[i])
+            key_exp = pwr_dir[-4]
+            key_tel = pwr_dir[-3]
+            key_cam = pwr_dir[-2]
+            dict_to_store = {self._pwr_str: pwr_dict}
+            if (key_exp not in self.pwr_outputs.keys()):
+                self.pwr_outputs.update(
+                    {key_exp: {key_tel: {key_cam:
+                        dict_to_store}}})
+            elif (key_tel not in
+                    self.pwr_outputs[key_exp].keys()):
+                self.pwr_outputs[key_exp].update(
+                    {key_tel: {key_cam: dict_to_store}})
+            elif (key_cam not in
+                    self.pwr_outputs[key_exp][key_tel].keys()):
+                self.pwr_outputs[key_exp][key_tel].update(
+                    {key_cam: dict_to_store})
+            else:
+                sy.exit("Camera-level storage error in "
+                        "Unpack._gather_pwr_files()")
+        return
     # Unpack sensitiviy files
     def _unpack_sens_file(self, fname):
         # Unpack the sensitiviy file
@@ -328,7 +373,56 @@ class Unpack:
         hist_dict.update({labs[i]: save_data[i]
                           for i in range(self.num_outputs)})
         return hist_dict
-        
+
+    def _unpack_pwr_file(self, fname):
+        # Unpack the sensitiviy file
+        with open(fname, 'r') as f:
+            fread = f.readlines()
+        out_dict = {}
+        ch_key = ''
+        # Loop over lines
+        for i, line in enumerate(fread):
+            # Skip hline
+            if '---' in line:
+                continue
+            # Skip the unit line
+            elif '[pW]' in line:
+                continue
+            # Skip empty lines
+            elif line.strip() == '':
+                continue
+            # Begnning a new channel
+            elif '*****' in line:
+                if ch_key is not '':
+                    out_dict[ch_key] = opt_dict
+                ch_key = line.strip().strip('*').strip()
+                opt_dict = {}
+                continue
+            # Parameter label line
+            elif 'Element' in line:
+                params = line.split('|')[1:-1]
+                param_names = [p.strip() for p in params]
+            # Otherwise, store data
+            else:
+                # Loop over columns
+                params = line.split('|')[1:-1]
+                meds = []
+                los = []
+                his = []
+                for j, param in enumerate(params):
+                    if self._pm in param:
+                        med, lo, hi = self._parse_spread(param)
+                        meds.append(med)
+                        los.append(lo)
+                        his.append(hi)
+                    else:
+                        opt_key = str(param).strip()
+                opt_dict[opt_key] = {
+                    pn: [meds[j], los[j], his[j]]
+                    for j, pn in enumerate(param_names[1:])}
+        out_dict[ch_key] = opt_dict
+        return out_dict
+
     # Store data with spreads
     def _parse_spreads(self, inp_arr):
         ret_arr = []
@@ -340,3 +434,8 @@ class Unpack:
             else:
                 ret_arr.append([float(inp.strip()), 0, 0])
         return ret_arr
+
+    def _parse_spread(self, inp):
+        mean, spread = inp.strip().split(self._pm)
+        lo, hi = spread.lstrip(' (').rstrip(' )').split(',')
+        return [float(mean), float(lo), float(hi)]
