@@ -143,7 +143,11 @@ class Detector:
                         self.band[:delta_ind] = self.band[delta_ind]
                     else:
                         self.band[delta_ind:] = self.band[delta_ind]
-
+            # Define a top-hat window function for optical power caclulations
+            flo, fhi = self._phys.band_edges(freqs, self.band)
+            # Define top-hat window for optical-power calculations
+            self.window = np.array([
+                1. if (f >= flo and f < fhi) else 0. for f in freqs])
         # Or store a top-hat band
         else:
             if top_hat is None:
@@ -154,6 +158,9 @@ class Detector:
             else:
                 # Default to top hat band
                 self.band = top_hat
+                # Define top-hat window for optical-power calculations
+                self.window = np.array([
+                    1. if b else 0. for b in self.band])
         return
 
     def _store_bw_bc(self, band=None):

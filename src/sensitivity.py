@@ -110,7 +110,7 @@ class Sensitivity:
             eff_elem_1 = []
             eff_det_side_1 = []
             for j in range(len(ch.elem[i])):  # ndet
-                det_band = np.array(ch.det_arr.dets[j].band)
+                window = np.array(ch.det_arr.dets[j].window)
                 bw = ch.det_arr.dets[j].param("bw")
                 pows = []
                 pow_sky_side_2 = []
@@ -162,8 +162,8 @@ class Sensitivity:
                         np.trapz(eff_det_side_2[k], ch.freqs) / bw)
                     pow_in = sum([np.trapz(
                         pows[m] * eff_sky_side_2[k][m] *
-                        det_band, ch.freqs)
-                        for m in range(k+1)])
+                        window, ch.freqs)
+                        for m in range(k)])
                     pow_sky_side_2.append(pow_in)
                 # Force the final efficiency to be 100%
                 eff_det_side_2[-1] = 1.

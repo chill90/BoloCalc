@@ -142,7 +142,7 @@ class Channel:
                 % (str(param)))
         # If the band center or bandwidth is changed, redefine frequencies
         if (param == "bc" or param == "fbw" or
-            param == "Band Center" or param == "Fractional BW"):
+           param == "Band Center" or param == "Fractional BW"):
             self._store_band()
         return ret_val
 
