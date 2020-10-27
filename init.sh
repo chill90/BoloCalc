@@ -1,3 +1,12 @@
+#Install python packages
+PYTHON_3=$(which python3)
+if [ -z "$PYTHON_3" ]
+then
+    python auxil/install_packages.py
+else
+    python3 auxil/install_packages.py
+fi
+
 #Check which operating system you are on
 if [ "$(uname)" == "Darwin" ]; then
     # Mac OSX
@@ -39,13 +48,14 @@ then
 fi
 
 #Download atm files
-if [ -d "src/atmFiles/" ]
-then
-    echo
-    echo "NOTE: src/atmFiles/ no longer used by BoloCalc. We suggest removing it."
-fi
-wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm.hdf5
-mv atm.hdf5 src/
+./update_atm.sh
+#if [ -d "src/atmFiles/" ]
+#then
+#    echo
+#    echo "NOTE: src/atmFiles/ no longer used by BoloCalc. We suggest removing it."
+#fi
+#wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm.hdf5
+#mv atm.hdf5 src/
 
 #Download example experiment
 if [ -d "Experiments/ExampleExperiment/" ]

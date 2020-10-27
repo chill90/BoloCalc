@@ -1,0 +1,51 @@
+{
+    "Dust Amplitude": {
+        "descr": "Amplitude of the modified blackbody dust spectrum at the scale frequency",
+        "name": "Dust Amplitude",
+        "range": "(0.0, 1e9)",
+        "type": "[float, pdf]",
+        "unit": "MJy / sr"
+    },
+    "Dust Scale Frequency": {
+        "descr": "Scale (or pivot) frequency for the modified blackbody dust spectrum",
+        "name": "Dust Scale Frequency",
+        "range": "(0.001, 1e6)",
+        "type": "[float, pdf]",
+        "unit": "GHz"
+    },
+    "Dust Spec Index": {
+        "descr": "Spectral index of the modified blackbody dust spectrum",
+        "name": "Dust Spectral Index",
+        "range": "(-10, 10)",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "Dust Temperature": {
+        "descr": "Modified dust blackbody temperature",
+        "name": "Dust Temperature",
+        "range": "(0.0, 1e3)",
+        "type": "[float, pdf]",
+        "unit": "K"
+    },
+    "Sync Scale Frequency": {
+        "descr": "Scale (or pivot) frequency for the synchrotron power law spectrum",
+        "name": "Synchrotron Scale Frequency",
+        "range": "(0.001, 1e6)",
+        "type": "[float, pdf]",
+        "unit": "GHz"
+    },
+    "Synchrotron Amplitude": {
+        "descr": "Amplitude of the synchrotron power law spectrum at the scale frequency inbrightness temperature",
+        "name": "Synchrotron Amplitude",
+        "range": "(0.0, 1e3)",
+        "type": "[float, pdf]",
+        "unit": "K"
+    },
+    "Synchrotron Spec Index": {
+        "descr": "Spectral index of the synchrotron power law spectrum",
+        "name": "Synchrotron Spectral Index",
+        "range": "(-10, 10)",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "Bath Temp": {
+        "descr": "Focal plane temperature",
+        "name": "Bath Temperature",
+        "range": "(0.001, 300)",
+        "type": "[float, pdf]",
+        "unit": "K"
+    },
+    "Boresight Elevation": {
+        "descr": "Camera boresight elevation with respect to the telescope boresight elevation",
+        "name": "Boresight Elevation",
+        "range": "(-40.0, 40.0)",
+        "type": "[float, pdf]",
+        "unit": "deg"
+    },
+    "F Number": {
+        "descr": "(Effective) F-number at the focal plane",
+        "name": "F-number",
+        "range": "(0.001, 10)",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "Optical Coupling": {
+        "descr": "An overall coupling factor for all detectors pixels in this camera",
+        "name": "Optical Coupling",
+        "range": "(0.001, 1.000)",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "boresight_pdf": {
+        "descr": "A PDF describing the distribution of pixels from boresight in elevation space",
+        "name": "Boresight PDF",
+        "range": "(-90.00, 90.000)",
+        "type": "[pdf]",
+        "unit": "deg"
+    }
+}

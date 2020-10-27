@@ -1,0 +1,18 @@
+{
+    "Band Center": {"range": "(0, inf)",
+                    "type": "[float, band]"},
+    "Fractional BW": {"range": "(0, 1.0]",
+                      "type": "[float, pdf]"},
+    "Pixel Size": {"range": "(0, inf)",
+                   "type": "[float, pdf]"},
+    "Num Det per Wafer": {"range": "(0, inf)",
+                          "type": "[int]"},
+    "Num Waf per OT": {"range": "(0, inf)",
+                       "type": "[int]"},
+    "Num OT": {"range": "(0, inf)",
+               "type": "[int]"},
+    "Waist Factor": {"range": "(0, inf)",
+                     "type": "[float, pdf]"},
+    "Det Eff": {"range": "[0, inf)",
+                "type": "[int, band]"}
+}

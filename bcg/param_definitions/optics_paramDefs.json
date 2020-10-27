@@ -1,0 +1,108 @@
+{
+    "Absorption": {
+        "descr": "Absorptance/emissivity of the optical element",
+        "name": "Absorptance",
+        "range": "[0.0, 1.0)",
+        "type": "[float, pdf, band, na]",
+        "unit": "NA"
+    },
+    "Conductivity": {
+        "descr": "Conductivity of the conductive optical element",
+        "name": "Conductivity",
+        "range": "(0.0, 1e3)",
+        "trumpedBy": [
+            "Absorption"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "S / um"
+    },
+    "Element": {
+        "descr": "Name of the optical element",
+        "name": "Element",
+        "range": "NA",
+        "type": "[str]",
+        "unit": "NA"
+    },
+    "Index": {
+        "descr": "Index of refraction of the dielectric optical element",
+        "name": "Refractive Index",
+        "range": "(0.001, 10)",
+        "trumpedBy": [
+            "Absorption"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    },
+    "Loss Tangent": {
+        "descr": "Loss tangent of the dielectric optical element",
+        "name": "Loss Tangent",
+        "range": "(0.0, 1e6)",
+        "trumpedBy": [
+            "Absorption"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "e-4"
+    },
+    "Reflection": {
+        "descr": "Reflectance of the optical element",
+        "name": "Reflectance",
+        "range": "[0.0, 1.0)",
+        "type": "[float, pdf, na, band]",
+        "unit": "NA"
+    },
+    "Scatter Frac": {
+        "descr": "Scattering loss at the optical element",
+        "name": "Scattering Fraction",
+        "range": "[0.0, 1.0]",
+        "type": "[float, pdf, na, band]",
+        "unit": "NA"
+    },
+    "Scatter Temp": {
+        "descr": "Effective temperature to which power is scattered from this optical element",
+        "name": "Scattering Temperature",
+        "range": "(0.1, 1e3)",
+        "type": "[float, pdf, na]",
+        "unit": "K"
+    },
+    "Spillover": {
+        "descr": "Spillover loss at the optical element",
+        "name": "Spillover Fraction",
+        "range": "[0.0, 1.0)",
+        "type": "[float, pdf, na, band]",
+        "unit": "NA"
+    },
+    "Spillover Temp": {
+        "descr": "Effective temperature to which power is spilled over this optical element",
+        "name": "Spillover Temperature",
+        "range": "(0.1, 1e3)",
+        "type": "[float, pdf, na]",
+        "unit": "K"
+    },
+    "Surface Rough": {
+        "descr": "RMS surface roughness of the optical element",
+        "name": "Surface Roughness",
+        "range": "(0.0, 1e6)",
+        "trumpedBy": [
+            "Scatter Frac"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "um RMS"
+    },
+    "Temperature": {
+        "descr": "Temperature of the optical element",
+        "name": "Temperature",
+        "range": "(0.1, 1e3)",
+        "type": "[float, pdf, na]",
+        "unit": "K"
+    },
+    "Thickness": {
+        "descr": "Optical thickness of the dielectric optical element",
+        "name": "Thickness",
+        "range": "(0.0, 1e3)",
+        "trumpedBy": [
+            "Absorption"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "mm"
+    }
+}

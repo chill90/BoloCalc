@@ -1,0 +1,307 @@
+{
+    "Band Center": {
+        "descr": "Band central frequency",
+        "name": "Band Center",
+        "range": "(0.001, 1e6)",
+        "req": "Yes",
+        "trumps": [
+            "Fractional BW"
+        ],
+        "trumpsSetting": [
+            "BAND"
+        ],
+        "type": "[float, pdf, band]",
+        "unit": "GHz"
+    },
+    "Band ID": {
+        "descr": "The ID for this frequency channel",
+        "name": "Channel ID",
+        "range": "NA",
+        "req": "Yes",
+        "type": "[str]",
+        "unit": "NA"
+    },
+    "Bolo Resistance": {
+        "descr": "Bolometer operating resistance",
+        "name": "Detector Resistance",
+        "range": "(0.001, 1e9)",
+        "req": "No",
+        "trumpedBy": [
+            "Read Noise Frac"
+        ],
+        "trumpedBySetting": [
+            "not NA"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "Ohm"
+    },
+    "Carrier Index": {
+        "descr": "Thermal carrier index for bolometer conductivity to the bath",
+        "name": "Thermal Carrier Index (n)",
+        "range": "(0.001, 10)",
+        "req": "No",
+        "trumpedBy": [
+            "G",
+            "Flink"
+        ],
+        "trumpedBySetting": [
+            "not NA",
+            "not NA"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    },
+    "Det Eff": {
+        "descr": "Band-averaged detector optical efficiency",
+        "name": "Detector Efficiency",
+        "range": "(0.001, 1.000)",
+        "req": "No",
+        "type": "[float, pdf]",
+        "unit": "NA",
+        "warnMsg": [
+            "Detector efficiency will override input band's efficiency"
+        ],
+        "warnedBy": [
+            "Band Center"
+        ],
+        "warnedBySetting": [
+            "BAND"
+        ]
+    },
+    "Flink": {
+        "canTrump": [
+            "Carrier Index",
+            "Tc"
+        ],
+        "canTrumpSetting": [
+            "not NA",
+            "not NA"
+        ],
+        "descr": "Numerical factor that depends on the thermal carrier index",
+        "name": "Thermal Link Factor (Flink)",
+        "range": "(0.001, 100)",
+        "req": "No",
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    },
+    "Fractional BW": {
+        "descr": "Band fractional arithmetic bandwidth",
+        "name": "Fractional Bandwidth",
+        "range": "(0.001, 2.000)",
+        "req": "No",
+        "trumpedBy": [
+            "Band Center"
+        ],
+        "trumpedBySetting": [
+            "BAND"
+        ],
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "G": {
+        "canTrump": [
+            "Psat",
+            "Carrier Index",
+            "Tc"
+        ],
+        "canTrumpSetting": [
+            "not NA",
+            "not NA",
+            "not NA"
+        ],
+        "descr": "Thermal conduction from the bolometer to the bath",
+        "name": "Thermal Conductance (G)",
+        "range": "(0.001, 1e6)",
+        "req": "No",
+        "type": "[float, pdf, na]",
+        "unit": "pW / K"
+    },
+    "Num Det per Wafer": {
+        "descr": "Number of detectors per detector wafer for this frequency channel",
+        "name": "Detectors per Wafer",
+        "range": "(0, 1e6)",
+        "req": "Yes",
+        "type": "[int]",
+        "unit": "NA"
+    },
+    "Num OT": {
+        "descr": "Number of optics tubes (cameras) which contain detector wafers that have detectors of this channel",
+        "name": "Optics Tubes",
+        "range": "(0, 1e3)",
+        "req": "Yes",
+        "type": "[int]",
+        "unit": "NA"
+    },
+    "Num Waf per OT": {
+        "descr": "Number of wafers per optics tube/camera",
+        "name": "Wafers per Optics Tube",
+        "range": "(0, 1e3)",
+        "req": "Yes",
+        "type": "[int]",
+        "unit": "NA"
+    },
+    "Pixel Size": {
+        "descr": "Detector pixel size (or equivalently, pixel spacing)",
+        "name": "Pixel Size",
+        "range": "(0.001, 1e3)",
+        "req": "Yes",
+        "type": "[float, pdf]",
+        "unit": "mm"
+    },
+    "Psat": {
+        "descr": "Total power on the bolometer during operation",
+        "name": "Saturation Power (Psat)",
+        "range": "(0.001, 1e3)",
+        "req": "No",
+        "trumpedBy": [
+            "G",
+            "Read Noise Frac"
+        ],
+        "trumpedBySetting": [
+            "not NA",
+            "not NA"
+        ],
+        "trumps": [
+            "Psat Factor"
+        ],
+        "trumpsSetting": [
+            "not NA"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "pW"
+    },
+    "Psat Factor": {
+        "descr": "Ratio of saturation power to optical  power",
+        "name": "Psat Factor",
+        "range": "(0.001, 1e3)",
+        "req": "No",
+        "trumpedBy": [
+            "Psat",
+            [
+                "G",
+                "Read Noise Frac"
+            ]
+        ],
+        "trumpedBySetting": [
+            "not NA",
+            [
+                "not NA",
+                "not NA"
+            ]
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "mm"
+    },
+    "Read Noise Frac": {
+        "canTrump": [
+            "Psat"
+        ],
+        "canTrumpSetting": [
+            "not NA"
+        ],
+        "descr": "Fraction of the total detector NEP that is due to readout noise",
+        "name": "Readout Noise Fraction",
+        "range": "(0.0, 1e3)",
+        "req": "No",
+        "trumps": [
+            "Bolo Resistance",
+            "Resp Factor",
+            "SQUID NEI"
+        ],
+        "trumpsSetting": [
+            "not NA",
+            "not NA",
+            "not NA"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    },
+    "Resp Factor": {
+        "descr": "Responsively factor, which is set by bolometer operating loop gain",
+        "name": "Responsivity Factor",
+        "range": "(0.001, 1e3)",
+        "req": "No",
+        "trumpedBy": [
+            "Read Noise Frac"
+        ],
+        "trumpedBySetting": [
+            "not NA"
+        ],
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "SQUID NEI": {
+        "descr": "Total contribution of readout noise",
+        "name": "Amplifier Noise (NEI)",
+        "range": "(0.001, 1e3)",
+        "req": "No",
+        "trumpedBy": [
+            "Read Noise Frac"
+        ],
+        "trumpedBySetting": [
+            "not NA"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "pA/rtHz"
+    },
+    "Tc": {
+        "descr": "Bolometer operating temperature",
+        "name": "Critical Temperature (Tc)",
+        "range": "(0.001, 300)",
+        "req": "No",
+        "trumpedBy": [
+            "G",
+            "Flink"
+        ],
+        "trumpedBySetting": [
+            "not NA",
+            "not NA"
+        ],
+        "trumps": [
+            "Tc Fraction"
+        ],
+        "trumpsSetting": [
+            "not NA"
+        ],
+        "type": "[float, pdf]",
+        "unit": "K"
+    },
+    "Tc Fraction": {
+        "descr": "Ratio of bolometer operating temperature to bath temperature",
+        "name": "Tc Fraction",
+        "range": "(0.001, 1e3)",
+        "req": "No",
+        "trumpedBy": [
+            "Tc",
+            [
+                "G",
+                "Flink"
+            ]
+        ],
+        "trumpedBySetting": [
+            "not NA",
+            [
+                "not NA",
+                "not NA"
+            ]
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    },
+    "Waist Factor": {
+        "descr": "Ratio of pixel diameter to pixel Gaussian beam waist",
+        "name": "Waist Factor (w_f)",
+        "range": "(2.0, 10)",
+        "req": "No",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "Yield": {
+        "descr": "Operational detector yield",
+        "name": "Detector Yield",
+        "range": "(0.001, 1.000)",
+        "req": "Yes",
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    }
+}

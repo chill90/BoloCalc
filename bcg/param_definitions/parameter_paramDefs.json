@@ -1,0 +1,58 @@
+{
+    "Camera": {
+        "descr": "Name of the camera to be swept",
+        "name": "Camera Name",
+        "range": "NA",
+        "type": "[str]",
+        "unit": "NA"
+    },
+    "Channel": {
+        "descr": "Name of the Channel to be swept",
+        "name": "Channel Name",
+        "range": "NA",
+        "type": "[str]",
+        "unit": "NA"
+    },
+    "Maximum": {
+        "descr": "End value of the sweep",
+        "name": "Maximum Value",
+        "range": "[-1e9, 1e9]",
+        "type": "[float, cust]",
+        "unit": "NA"
+    },
+    "Minimum": {
+        "descr": "Start value of the sweep",
+        "name": "Minumum Value",
+        "range": "[-1e9, 1e9]",
+        "type": "[float, cust]",
+        "unit": "NA"
+    },
+    "Optic": {
+        "descr": "Name of the Optical Element to be swept",
+        "name": "Optic Name",
+        "range": "NA",
+        "type": "[str]",
+        "unit": "NA"
+    },
+    "Parameter": {
+        "descr": "Name of the Parameter",
+        "name": "Parameter Name",
+        "range": "NA",
+        "type": "[str]",
+        "unit": "NA"
+    },
+    "Step Size": {
+        "descr": "Step size of the sweep",
+        "name": "Step Size Value",
+        "range": "[1e-9, 1e9]",
+        "type": "[float, cust]",
+        "unit": "NA"
+    },
+    "Telescope": {
+        "descr": "Name of the telescope to be swept",
+        "name": "Telescope Name",
+        "range": "NA",
+        "type": "[str]",
+        "unit": "NA"
+    }
+}

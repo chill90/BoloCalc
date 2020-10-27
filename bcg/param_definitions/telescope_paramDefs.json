@@ -1,0 +1,73 @@
+{
+    "Elevation": {
+        "descr": "elescope boresight elevation",
+        "name": "Elevation",
+        "range": "(20, 90)",
+        "trumpedBy": [
+            "Sky Temperature"
+        ],
+        "type": "[float, pdf]",
+        "unit": "deg"
+    },
+    "NET Margin": {
+        "descr": "Agnostic factor which multiplies all NETs for this telescope",
+        "name": "NET Margin",
+        "range": "(0.001, 1e3)",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "Observation Efficiency": {
+        "descr": "Fraction of the observation lifetime during which the telescope is making science observations",
+        "name": "Observation Efficiency",
+        "range": "(0.001, 1.000)",
+        "type": "[float, pdf]",
+        "unit": "NA"
+    },
+    "Observation Time": {
+        "descr": "For how long the telescope will operate",
+        "name": "Observation Time",
+        "range": "(0.001, 1e2)",
+        "type": "[float, pdf]",
+        "unit": "yr"
+    },
+    "PWV": {
+        "descr": "Precipitable water vapor of the atmosphere through which the telescope observes",
+        "name": "PWV",
+        "range": "(0.0, 8.0)",
+        "trumpedBy": [
+            "Sky Temperature"
+        ],
+        "type": "[float, pdf]",
+        "unit": "mm"
+    },
+    "Site": {
+        "descr": "Site at which the telescope observes, which defines the atmospheric profile\nSites: Atacama, Pole, McMurdo, Space, Cust",
+        "name": "Site",
+        "range": "(0.001, 4000)",
+        "trumpedBy": [
+            "Sky Temperature"
+        ],
+        "type": "[str, float]",
+        "unit": "NA"
+    },
+    "Sky Fraction": {
+        "descr": "(Effective) fraction of the full sky observed by this telescope",
+        "name": "Sky Fraction",
+        "range": "(0.001, 1.000)",
+        "type": "[float]",
+        "unit": "NA"
+    },
+    "Sky Temperature": {
+        "descr": "Effective brightness temperature of the sky",
+        "name": "Sky Temperature",
+        "range": "(0.001, 1000)",
+        "req": "No",
+        "trumps": [
+            "Site",
+            "PWV",
+            "Elevation"
+        ],
+        "type": "[float, pdf, na]",
+        "unit": "NA"
+    }
+}

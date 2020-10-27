@@ -1,0 +1,58 @@
+{
+    "Correlations": {
+        "descr": "A boolean value to specify whether or not to include white-noise correlations",
+        "name": "Include Correlations",
+        "range": "True/False",
+        "type": "[bool]",
+        "unit": "NA"
+    },
+    "Detectors": {
+        "descr": "Number of detector realizations in the Monte Carlo simulation",
+        "name": "Detector Realizations",
+        "range": "(0, 1e6)",
+        "type": "[int]",
+        "unit": "NA"
+    },
+    "Experiments": {
+        "descr": "Number of experiment realizations in the Monte Carlo simulation",
+        "name": "Experiment Realizations",
+        "range": "(0, 1e6)",
+        "type": "[int]",
+        "unit": "NA"
+    },
+    "Foregrounds": {
+        "descr": " A boolean value to specify whether or not to include foregrounds",
+        "name": "Include Foregrounds",
+        "range": "True/False",
+        "type": "[bool]",
+        "unit": "NA"
+    },
+    "Observations": {
+        "descr": "Number of observation realizations in the Monte Carlo simulation",
+        "name": "Observation Realizations",
+        "range": "(0, 1e6)",
+        "type": "[int]",
+        "unit": "NA"
+    },
+    "Percentile Hi": {
+        "descr": "High percentile to display on output parameter distributions",
+        "name": "Calculated High Percentiles",
+        "range": "[0, 100]",
+        "type": "[float]",
+        "unit": "%"
+    },
+    "Percentile Lo": {
+        "descr": "Low percentile to display on output parameter distributions",
+        "name": "Calculated Low Percentiles",
+        "range": "[0, 100]",
+        "type": "[float]",
+        "unit": "%"
+    },
+    "Resolution": {
+        "descr": "Frequency resolution used for the simulation",
+        "name": "Frequency Resolution",
+        "range": "(0.01, 1e6)",
+        "type": "[float]",
+        "unit": "GHz"
+    }
+}

@@ -1,0 +1,172 @@
+{
+    "Bottom": {},
+    "Left": {},
+    "Right": {
+        "01_Params": {
+            "01_Scroll Right": {
+                "IconSize": "25",
+                "Shortcut": "Right",
+                "StatusTip": "Scroll Right",
+                "ToolTip": "Scroll Right",
+                "function": "bcg_scroll_params",
+                "icon": "right_arrow.png"
+            },
+            "02_Scroll Left": {
+                "IconSize": "25",
+                "Shortcut": "Left",
+                "StatusTip": "Scroll Left",
+                "ToolTip": "Scroll Left",
+                "function": "bcg_scroll_params",
+                "icon": "left_arrow.png"
+            },
+            "03_Scroll Up": {
+                "IconSize": "25",
+                "Shortcut": "Up",
+                "StatusTip": "Scroll Up",
+                "ToolTip": "Scroll Up",
+                "function": "bcg_scroll_elements",
+                "icon": "up_arrow.png"
+            },
+            "04_Scroll Down": {
+                "IconSize": "25",
+                "Shortcut": "Down",
+                "StatusTip": "Scroll Down",
+                "ToolTip": "Scroll Down",
+                "function": "bcg_scroll_elements",
+                "icon": "down_arrow.png"
+            }
+        }
+    },
+    "Top": {
+        "01_File": {
+            "01_Quit": {
+                "Shortcut": "Ctrl+Q",
+                "StatusTip": "Quit",
+                "ToolTip": "Quit ",
+                "function": "bcg_close_hard",
+                "icon": "close.png"
+            },
+            "02_Load": {
+                "Shortcut": "Ctrl+L",
+                "StatusTip": "Load",
+                "ToolTip": "Load ",
+                "function": "bcg_load_experiment",
+                "icon": "load.png"
+            },
+            "03_Download": {
+                "Shortcut": "Ctrl+L",
+                "StatusTip": "Download Experiment",
+                "ToolTip": "Download Experiment",
+                "function": "bcg_download_experiment_popup",
+                "icon": "download.svg"
+            },
+            "04_Save": {
+                "Shortcut": "Ctrl+S",
+                "StatusTip": "Save",
+                "ToolTip": "Save ",
+                "function": "bcg_save_changes",
+                "icon": "save.png"
+            },
+            "05_New": {
+                "Shortcut": "Ctrl+N",
+                "StatusTip": "New",
+                "ToolTip": "New",
+                "function": "bcg_new",
+                "icon": "new_experiment.png"
+            },
+            "06_Delete": {
+                "Shortcut": "Del",
+                "StatusTip": "Delete",
+                "ToolTip": "Delete ",
+                "function": "bcg_delete_or_rename",
+                "icon": "delete.png"
+            },
+            "07_Rename": {
+                "StatusTip": "Rename",
+                "ToolTip": "Rename ",
+                "function": "bcg_delete_or_rename",
+                "icon": "rename.png"
+            },
+            "08_Run": {
+                "Shortcut": "Ctrl+R",
+                "StatusTip": "Run",
+                "ToolTip": "Run ",
+                "function": "bcg_get_bolo_calc_run_options",
+                "icon": "run.png"
+            },
+            "09_Verify": {
+                "Shortcut": "Ctrl+V",
+                "StatusTip": "Verify Input",
+                "ToolTip": "Verify Input ",
+                "function": "bcg_verify_popup",
+                "icon": "verify.png"
+            },
+            "10_Hide Descriptions": {
+                "StatusTip": "Hide Descriptions",
+                "ToolTip": "Verify Input ",
+                "function": "bcg_toggle_show_descr",
+                "icon": "hide.png"
+            }
+        },
+        "02_Analysis": {
+            "01_Analyze": {
+                "Shortcut": "ctrl+A",
+                "StatusTip": "Analyze Results",
+                "ToolTip": "Analyze Results",
+                "function": "bcg_analyze",
+                "icon": "analysis.png"
+            }
+        },
+        "02_Parameter": {
+            "01_Channels": {
+                "Shortcut": "1",
+                "StatusTip": "Configure Channels",
+                "ToolTip": "Configure Channels",
+                "function": "bcg_change_panel",
+                "icon": "channels.png"
+            },
+            "02_Optics": {
+                "Shortcut": "2",
+                "StatusTip": "Configure Optics",
+                "ToolTip": "Configure Optics",
+                "function": "bcg_change_panel",
+                "icon": "optics.png"
+            },
+            "03_Camera": {
+                "Shortcut": "3",
+                "StatusTip": "Configure Camera",
+                "ToolTip": "Configure Camera",
+                "function": "bcg_change_panel",
+                "icon": "camera.png"
+            },
+            "04_Telescope": {
+                "Shortcut": "4",
+                "StatusTip": "Configure Telescope",
+                "ToolTip": "Configure Telescope",
+                "function": "bcg_change_panel",
+                "icon": "telescope.png"
+            },
+            "05_Foregrounds": {
+                "Shortcut": "5",
+                "StatusTip": "Configure Foregrounds",
+                "ToolTip": "Configure Foregrounds",
+                "function": "bcg_change_panel",
+                "icon": "foregrounds.png"
+            },
+            "06_Simulation": {
+                "Shortcut": "6",
+                "StatusTip": "Configure Simulation",
+                "ToolTip": "Configure Simulation",
+                "function": "bcg_change_panel",
+                "icon": "simulations.png"
+            },
+            "07_Parameter Vary": {
+                "Shortcut": "7",
+                "StatusTip": "Configure ParamVary",
+                "ToolTip": "Configure ParamVary",
+                "function": "bcg_change_panel",
+                "icon": "parameters.png"
+            }
+        }
+    }
+}
