@@ -19,7 +19,7 @@ if os.path.exists(atm_file):
     sy.stdout.write(
         "\nSuccessfully downloaded atmosphere file %s." % (fname))
     sy.stdout.write(
-        ("\nADVICE: delete old atm files (~1 GB each) from BoloCalc" + 
+        ("\nADVICE: delete any old atm files (~1 GB each) from BoloCalc" + 
         os.sep + "src" + os.sep + "\n\n"))
     os.rename(atm_file, new_atm_file)
 else:

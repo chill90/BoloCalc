@@ -7,7 +7,12 @@ curr_dir = os.path.dirname(__file__)
 install_file = os.path.join(
     curr_dir, 'auxil', 'install_packages.py')
 if sy.version_info[0] == 3:
-    os.system("python %s" % (install_file))
+    if sy.version_info[1] >= 7:
+        os.system("python %s" % (install_file))
+    else:
+        sy.stdout.write("\n***** Python 3.7 or higher required for "
+                        "BoloCalc v0.10 (Sep 2019) and beyond *****\n\n")
+        sy.exit()
 else:
     sy.stdout.write("\n***** Python 2 is no longer supported for "
                     "BoloCalc v0.10 (Sep 2019) and beyond *****\n\n")
@@ -32,7 +37,7 @@ else:
     if os.path.exists(ex_zip):
         os.remove(ex_zip)
     os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/EX/ex.zip")
-    os.system(("unzip ex.zip -d Experiments", os.sep))
+    os.system(("unzip ex.zip -d Experiments" + os.sep))
     os.remove(ex_zip)
 
 # Download atmosphere files
