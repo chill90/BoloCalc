@@ -1,6 +1,3 @@
-import shutil as su
-import wget as wg
-import zipfile as zf
 import sys as sy
 import os
 
@@ -20,11 +17,9 @@ else:
                     "BoloCalc v0.10 (Sep 2019) and beyond *****\n\n")
     sy.exit()
 
-# Require wget
-#if su.which('wget') is None:
-#    sy.stdout.write(
-#        "\nERROR: wget needs to be installed to download auxiliary files\n\n")
-#    sy.exit()
+import shutil as su
+import wget as wg
+import zipfile as zf
 
 # Download example experiment
 example_dir = os.path.join(
@@ -38,12 +33,10 @@ else:
     ex_zip = os.path.join(curr_dir, "ex.zip")
     if os.path.exists(ex_zip):
         os.remove(ex_zip)
-    #os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/EX/ex.zip")
     wg.download("http://pbfs.physics.berkeley.edu/BoloCalc/EX/ex.zip")
     ex_dir = ("Experiments" + os.sep)
     with zf.ZipFile(ex_zip, "r") as ex_file:
         ex_file.extractall(ex_dir)
-    #os.system(("unzip ex.zip -d %s" % (zip_dir)))
     os.remove(ex_zip)
 
 # Download atmosphere files
