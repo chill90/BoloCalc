@@ -17,8 +17,8 @@ else:
                     "BoloCalc v0.10 (Sep 2019) and beyond *****\n\n")
     sy.exit()
 
+import urllib.request as ul
 import shutil as su
-import wget as wg
 import zipfile as zf
 
 # Download example experiment
@@ -33,7 +33,9 @@ else:
     ex_zip = os.path.join(curr_dir, "ex.zip")
     if os.path.exists(ex_zip):
         os.remove(ex_zip)
-    wg.download("http://pbfs.physics.berkeley.edu/BoloCalc/EX/ex.zip")
+    print("NOTE: Downloading example experiment data...")
+    ul.urlretrieve(
+        "http://pbfs.physics.berkeley.edu/BoloCalc/EX/ex.zip", ex_zip)
     ex_dir = ("Experiments" + os.sep)
     with zf.ZipFile(ex_zip, "r") as ex_file:
         ex_file.extractall(ex_dir)
