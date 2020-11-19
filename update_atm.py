@@ -6,17 +6,25 @@ import os
 
 # Progress monitor
 def reporthook(count, block_size, total_size):
+    # Percent finished
+    percent = int(count * block_size * 100 / total_size)
+    # Download speed
     global start_time
     if count == 0:
         start_time = tm.time()
         return
     duration = tm.time() - start_time
     progress_size = int(count * block_size)
-    speed = int(progress_size / (1024 * duration))
-    percent = int(count * block_size * 100 / total_size)
-    sy.stdout.write(
-        "\rDownloading atmosphere data: %d%%, %d MB, %d KB/s" %
-        (percent, progress_size / (1024 * 1024), speed))
+    if duration == 0:
+        msg = (
+            "\rDownloading atmosphere data: %d%%, %d MB" %
+            (percent, progress_size / (1024 * 1024)))
+    else:
+        speed = int(progress_size / (1024 * duration))
+        msg = (
+            "\rDownloading atmosphere data: %d%%, %d MB, %d kB/s" %
+            (percent, progress_size / (1024 * 1024), speed))
+    sy.stdout.write(msg)
     sy.stdout.flush()
 
 # Download atmosphere files
