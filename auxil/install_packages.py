@@ -12,16 +12,16 @@ if sy.version_info[0] < 3:
 print("Python 3 confirmed")
 
 # Check if using anaconda
-print("Checking python distribution")
-output = sp.check_output("which python", shell=True)
+#print("Checking python distribution")
+#output = sp.check_output("which python", shell=True)
 
 # Install package requirements
 req_file = os.path.join(os.path.dirname(__file__), 'requirements.txt')
-if 'conda' in str(output):
-    print("Using Anaconda")
+#if 'conda' in str(output):
+#    print("Using Anaconda")
     #os.system("conda install --file %s" % (req_file))
-    os.system("pip install -r %s" % (req_file))
-else:
-    print("Not using Anaconda")
-    os.system("pip install -r %s" % (req_file))
+os.system("pip install -r %s" % (req_file))
+#else:
+#    print("Not using Anaconda")
+#    os.system("pip install -r %s" % (req_file))
 print("Finished installing python packages")
