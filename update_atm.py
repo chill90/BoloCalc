@@ -1,12 +1,7 @@
 import shutil as su
+import wget as wg
 import sys as sy
 import os
-
-# Require wget
-if su.which('wget') is None:
-    sy.stdout.write(
-        "\nERROR: wget needs to be installed to download atmosphere files\n")
-    sy.exit()
 
 # Download atmosphere files
 fname = "atm_20200916.hdf5"
@@ -14,7 +9,7 @@ atm_file = os.path.join(
     os.path.dirname(__file__), fname)
 new_atm_file = os.path.join(
     os.path.dirname(__file__), "src", fname)
-os.system("wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/%s" % (fname))
+wg.download("wget http://pbfs.physics.berkeley.edu/BoloCalc/ATM/%s" % (fname))
 if os.path.exists(atm_file):
     sy.stdout.write(
         "\nSuccessfully downloaded atmosphere file %s." % (fname))
