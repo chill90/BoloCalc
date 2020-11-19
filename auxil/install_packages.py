@@ -20,7 +20,7 @@ req_file = os.path.join(os.path.dirname(__file__), 'requirements.txt')
 #if 'conda' in str(output):
 #    print("Using Anaconda")
     #os.system("conda install --file %s" % (req_file))
-os.system("pip install -r %s" % (req_file))
+os.system("pip3 install -r %s" % (req_file))
 #else:
 #    print("Not using Anaconda")
 #    os.system("pip install -r %s" % (req_file))
