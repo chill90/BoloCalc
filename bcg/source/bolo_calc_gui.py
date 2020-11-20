@@ -46,21 +46,22 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         '''
         super(BoloCalcGui, self).__init__()
+        self.bcg_home_dir = os.path.join(os.path.dirname(__file__), '..')
         self.qt_app = qt_app
         self.splash_screen = QtWidgets.QSplashScreen()
-        self.splash_screen_image = os.path.join(os.path.dirname(__file__), '..', 'bcg_gui_settings', 'SO_Site.jpeg')
+        self.splash_screen_image = os.path.join(self.bcg_home_dir, 'bcg_gui_settings', 'SO_Site.jpeg')
         q_splash_image = QtGui.QPixmap(self.splash_screen_image)
         self.splash_screen.setPixmap(q_splash_image)
         self.splash_screen.show()
-        if os.path.exists(os.path.join('..', 'AccessGoogleDrive')):
+        if os.path.exists(os.path.join(self.bcg_home_dir, 'AccessGoogleDrive')):
             from oauth2client.file import Storage
             from AccessGoogleDrive.access_google_drive import AccessGoogleDrive
-            self.credentials_file = os.path.join('bcg_gui_settings', 'google_api_credentials.dat')
+            self.credentials_file = os.path.join(self.bcg_home_dir, 'bcg_gui_settings', 'google_api_credentials.dat')
             self.google_drive = AccessGoogleDrive(credentials_file=self.credentials_file)
             self.credentials = Storage(self.credentials_file).get()
             self.google_drive.create_drive(self.credentials)
         self.splash_screen.showMessage('Connecting to Google', alignment=QtCore.Qt.AlignCenter, color=QtCore.Qt.white)
-        self.bc_dir = os.path.join('..', 'BoloCalc')
+        self.bolocalc_home_dir = os.path.join(self.bcg_home_dir, '..')
         self.today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
         self.count = 0
         self.row_start_index = 0
@@ -85,7 +86,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.setCentralWidget(self.central_widget)
         cw_main_parameters_panel_widget = QtWidgets.QWidget()
         self.cw_main_parameters_panel_widget = cw_main_parameters_panel_widget
-        self.tool_and_menu_bar_json_path = os.path.join(os.path.dirname(__file__), '..', 'bcg_gui_settings', 'tool_and_menu_bars.json')
+        self.tool_and_menu_bar_json_path = os.path.join(self.bcg_home_dir, 'bcg_gui_settings', 'tool_and_menu_bars.json')
         self.bcg_setup_template()
         self.bcg_setup_status_bar()
         self.gb_setup_menu_and_tool_bars(self.tool_and_menu_bar_json_path)
@@ -104,13 +105,13 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.unpack = Unpack()
         datetime_str = datetime.datetime.strftime(datetime.datetime.now(), '%H:%M')
         self.splash_screen.showMessage('Welcome to BoloCaluCui!\nSettings Up Templates', alignment=QtCore.Qt.AlignCenter, color=QtCore.Qt.white)
-        self.bolo_calc_dir = os.getcwd().replace('BoloCalcGui', 'BoloCalc')
-        self.blank_cust_txt_file = os.path.join('templates', 'blank_cust_file.txt')
-        self.blank_cust_csv_file = os.path.join('templates', 'blank_cust_file.csv')
-        self.blank_pdf_txt_file = os.path.join('templates', 'blank_pdf_file.txt')
-        self.blank_pdf_csv_file =  os.path.join('templates','blank_pdf_file.csv')
-        self.blank_band_txt_file =  os.path.join('templates','blank_band_file.txt')
-        self.blank_band_csv_file = os.path.join('templates', 'blank_band_file.csv')
+        self.bolocalc_home_dir = os.getcwd().replace('BoloCalcGui', 'BoloCalc')
+        self.blank_cust_txt_file = os.path.join(self.bcg_home_dir, 'templates', 'blank_cust_file.txt')
+        self.blank_cust_csv_file = os.path.join(self.bcg_home_dir, 'templates', 'blank_cust_file.csv')
+        self.blank_pdf_txt_file = os.path.join(self.bcg_home_dir, 'templates', 'blank_pdf_file.txt')
+        self.blank_pdf_csv_file =  os.path.join(self.bcg_home_dir, 'templates','blank_pdf_file.csv')
+        self.blank_band_txt_file =  os.path.join(self.bcg_home_dir, 'templates','blank_band_file.txt')
+        self.blank_band_csv_file = os.path.join(self.bcg_home_dir, 'templates', 'blank_band_file.csv')
         self.setWindowTitle('Welcome to BoloCalc!')
         self.setWindowIcon(QtGui.QIcon('../GuiBuilder/icons/bolo_calc.png'))
         self.splash_screen.showMessage('Welcome to BoloCaluCui!\nSettings Up Tabs',  alignment=QtCore.Qt.AlignCenter, color=QtCore.Qt.white)
@@ -132,13 +133,13 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.qt_app.processEvents()
         self.panel = 'channels'
         self.bcg_change_panel(panel=self.panel)
-        self.resize(self.screen_resolution.width(), self.minimumSizeHint().height())
+        #self.resize(self.screen_resolution.width(), self.minimumSizeHint().height())
         self.show_bc_warnings = True
         #self.bcg_verify()
         self.show_descriptions = True
-        show_descr_icon_path = os.path.join('..', 'GuiBuilder', 'icons', 'show_descr.png')
+        show_descr_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'show_descr.png')
         self.q_show_descr_icon = QtGui.QIcon(show_descr_icon_path)
-        hide_descr_icon_path = os.path.join('..', 'GuiBuilder', 'icons', 'hide.png')
+        hide_descr_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'hide.png')
         self.q_hide_descr_icon = QtGui.QIcon(hide_descr_icon_path)
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
         self.setWindowModality(QtCore.Qt.WindowModal)
@@ -383,7 +384,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         short_name = self.downloadable_experiment_dict[experiment]
         directory = experiment.replace(' ', '')
         file_name = '{0}.zip'.format(short_name).lower()
-        full_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', directory)
+        full_path = os.path.join(self.bolocalc_home_dir, 'Experiments', directory)
         if experiment == 'Example Experiment':
             self.q_username_lineedit.setDisabled(True)
             self.q_password_lineedit.setDisabled(True)
@@ -476,7 +477,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_load_experiment(self, clicked=True, experiment=None):
         '''
         '''
-        experiment_dir = os.path.join(self.bc_dir, 'Experiments')
+        experiment_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         if experiment is None:
             experiment_path = QtWidgets.QFileDialog.getExistingDirectory(self, 'Open Wafer Folder', experiment_dir)
             if len(experiment_path) == 0:
@@ -652,20 +653,20 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             response = None
         if response == QtWidgets.QMessageBox.Yes:
             if new_element == 'Experiment':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment)
-                new_path = os.path.join(self.bc_dir, 'Experiments', new_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment)
+                new_path = os.path.join(self.bolocalc_home_dir, 'Experiments', new_name)
                 self.experiment = new_name
             elif new_element == 'Version':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version)
-                new_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, new_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
+                new_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, new_name)
                 self.version = new_name
             elif new_element == 'Telescope':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version, self.telescope)
-                new_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version, new_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope)
+                new_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, new_name)
                 self.telescope = new_name
             elif new_element == 'Camera':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera)
-                new_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version, self.telescope, new_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera)
+                new_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope, new_name)
                 bands_path = os.path.join(new_path, 'config', 'Bands', 'Detectors')
             shutil.copytree(old_path, new_path)
             if new_element == 'Camera':
@@ -714,13 +715,13 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             response = None
         if response == QtWidgets.QMessageBox.Yes:
             if new_element == 'Experiment':
-                old_path = os.path.join(self.bc_dir, 'Experiments', new_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', new_name)
             elif new_element == 'Version':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, old_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, old_name)
             elif new_element == 'Telescope':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version, old_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, old_name)
             elif new_element == 'Camera':
-                old_path = os.path.join(self.bc_dir, 'Experiments', self.experiment, self.version, self.telescope, old_name)
+                old_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope, old_name)
             if action == 'delete':
                 shutil.rmtree(old_path, ignore_errors=True)
             elif action == 'rename':
@@ -1069,7 +1070,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.start_row = 0
         self.start_col = 4
         has_site = False
-        parameter_definition_path = os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
+        parameter_definition_path = os.path.join(self.bcg_home_dir, 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
         with open(parameter_definition_path, 'r') as parameter_definition_file_handle:
             parameter_definition_dict = json.load(parameter_definition_file_handle)
         multiband_dict = {}
@@ -1260,7 +1261,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             columns = np.append(np.asarray(['Element']), columns[self.col_start_index:self.col_end_index])
         else:
             columns = list(columns[self.col_start_index:self.col_end_index])
-        parameter_definition_path = os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
+        parameter_definition_path = os.path.join(self.bcg_home_dir, 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
         with open(parameter_definition_path, 'r') as parameter_definition_file_handle:
             parameter_definition_dict = json.load(parameter_definition_file_handle)
         with open(parameter_definition_path, 'w') as parameter_definition_file_handle:
@@ -1306,7 +1307,10 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
                 spread_dict = eval(value_spread_dict[1])
                 for i, channel_name in enumerate(self.channels):
                     if channel_name not in value_dict:
-                        import ipdb;ipdb.set_trace()
+                        if int(channel_name) not in value_dict:
+                            import ipdb;ipdb.set_trace()
+                        else:
+                            channel_name = int(channel_name)
                     if value_dict[channel_name] == 'BAND' or value_dict[channel_name] == 'PDF':
                         value_str = value_dict[channel_name]
                     else:
@@ -1501,13 +1505,13 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         # Cancel 
         q_cancel_action = QtWidgets.QAction('Cancel', BCG_set_to_popup)
         self.q_cancel_action = q_cancel_action
-        close_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'cancel.png')
+        close_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'cancel.png')
         q_cancel_icon = QtGui.QIcon(close_icon_path)
         q_cancel_action.setIcon(q_cancel_icon)
         q_set_to_popup_tool_bar.addAction(q_cancel_action)
         # Save
         q_save_action = QtWidgets.QAction('Save', BCG_set_to_popup)
-        save_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'save.png')
+        save_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'save.png')
         q_save_icon = QtGui.QIcon(save_icon_path)
         q_save_action.setShortcuts(['Return', 'ctrl+s'])
         q_save_action.setIcon(q_save_icon)
@@ -1522,7 +1526,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_set_to_popup_tool_bar.addAction(q_show_descr_action)
         # New
         q_new_action = QtWidgets.QAction('New', BCG_set_to_popup)
-        new_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'new.png')
+        new_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'new.png')
         q_new_icon = QtGui.QIcon(new_icon_path)
         q_new_action.setShortcut('N')
         q_new_action.setIcon(q_new_icon)
@@ -1531,7 +1535,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_set_to_popup_tool_bar.addAction(q_new_action)
         # Load 
         q_load_action = QtWidgets.QAction('Load', BCG_set_to_popup)
-        load_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'load.png')
+        load_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'load.png')
         q_load_icon = QtGui.QIcon(load_icon_path)
         q_load_action.setShortcut('L')
         q_load_action.setIcon(q_load_icon)
@@ -1540,7 +1544,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_set_to_popup_tool_bar.addAction(q_load_action)
         # Delete
         q_delete_action = QtWidgets.QAction('Delete', BCG_set_to_popup)
-        delete_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'delete.png')
+        delete_icon_path = os.path.join(self.bcg_home_dir, 'gui_builder', 'icons', 'delete.png')
         q_delete_icon = QtGui.QIcon(delete_icon_path)
         q_delete_action.setShortcut('N')
         q_delete_action.setIcon(q_delete_icon)
@@ -1551,14 +1555,14 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_edit_action = QtWidgets.QAction('Edit', BCG_set_to_popup)
         q_edit_action.setShortcut('E')
         self.q_edit_action = q_edit_action
-        edit_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'edit.png')
+        edit_icon_path = os.path.join(os.path.dirname(__file__), '..', 'GuiBuilder', 'icons', 'edit.png')
         q_edit_icon = QtGui.QIcon(edit_icon_path)
         q_edit_action.setIcon(q_edit_icon)
         q_set_to_popup_tool_bar.addAction(q_edit_action)
         # View PDF/Band
         q_view_action = QtWidgets.QAction('View', BCG_set_to_popup)
         self.q_view_action = q_view_action
-        view_icon_path = os.path.join(os.path.dirname(__file__), '..', 'gui_builder', 'icons', 'view.png')
+        view_icon_path = os.path.join(os.path.dirname(__file__), '..', 'GuiBuilder', 'icons', 'view.png')
         q_view_icon = QtGui.QIcon(view_icon_path)
         q_view_action.setIcon(q_view_icon)
         q_set_to_popup_tool_bar.addAction(q_view_action)
@@ -1568,7 +1572,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             parameter = self.sender().whatsThis().split('header_')[-1].replace('_combobox', '')
             current_index = self.sender().currentIndex()
             #import ipdb;ipdb.set_trace()
-        parameter_definition_path = os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
+        parameter_definition_path = os.path.join(self.bcg_home_dir, 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
         with open(parameter_definition_path, 'r') as parameter_definition_file_handle:
             parameter_definition_dict = json.load(parameter_definition_file_handle)
         if parameter in parameter_definition_dict:
@@ -1697,7 +1701,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             import ipdb;ipdb.set_trace()
             self.previous_value = self.sender().itemText(self.sender().currentIndex())
         for panel in ['channels', 'optics', 'camera', 'foregrounds', 'simulation', 'parameter',  'telescope']:
-            parameter_definition_path = os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '{0}_paramDefs.json'.format(panel))
+            parameter_definition_path = os.path.join(self.bcg_home_dir, 'param_definitions', '{0}_paramDefs.json'.format(panel))
             with open(parameter_definition_path, 'r') as parameter_definition_file_handle:
                 parameter_definition_dict = json.load(parameter_definition_file_handle)
             if sweep_param in parameter_definition_dict:
@@ -1741,7 +1745,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             self.q_show_descr_action.setDisabled(True)
             return None
         self.q_show_descr_action.setDisabled(False)
-        definition_svg_path = os.path.join(os.path.dirname(__file__), '..', 'templates', '{0}_definition.svg'.format(self.idn.replace(' ', '')))
+        definition_svg_path = os.path.join(self.bcg_home_dir, 'templates', '{0}_definition.svg'.format(self.idn.replace(' ', '')))
         if os.path.exists(definition_svg_path):
             self.convertSVG(definition_svg_path)
             self.q_information_svg_widget.load(definition_svg_path)
@@ -2041,7 +2045,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_update_set_to_validator(self, edit_type):
         '''
         '''
-        parameter_definition_path = os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
+        parameter_definition_path = os.path.join(self.bcg_home_dir, 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
         with open(parameter_definition_path, 'r') as parameter_definition_file_handle:
             parameter_definition_dict = json.load(parameter_definition_file_handle)
         param = self.set_to_widget.split('header_')[1].split('_')[0]
@@ -2143,7 +2147,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             pdf_path = self.bcg_load_telescope_pdf_file(parameter)
         elif panel == 'foregrounds':
             pdf_path = self.bcg_load_foregrounds_pdf_file(parameter)
-        pdf_path = os.path.join(self.bolo_calc_dir, 'Experiments', pdf_path)
+        pdf_path = os.path.join(self.bolocalc_home_dir, 'Experiments', pdf_path)
         return pdf_path
 
     def bcg_load_optics_pdf_file(self, element_name, parameter, channel_name=None):
@@ -2210,7 +2214,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             band_path = os.path.join(self.experiment, self.version, self.telescope, self.camera, 'config', 'Bands', 'Detectors', band_name)
         elif panel == 'optics':
             band_path = os.path.join(self.experiment, self.version, self.telescope, self.camera, 'config', 'Bands', 'Optics', band_name)
-        band_path = os.path.join(self.bolo_calc_dir, 'Experiments', band_path)
+        band_path = os.path.join(self.bolocalc_home_dir, 'Experiments', band_path)
         return band_path
 
     def bcg_load_pdf_or_band_file_from_computer(self):
@@ -2248,7 +2252,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         if parameter != '':
             names.append(parameter.replace(' ', ''))
         path = '_'.join(names)
-        path = os.path.join(self.bc_dir, 'config', 'customVary', path)
+        path = os.path.join(self.bolocalc_home_dir, 'config', 'customVary', path)
         return path
 
     def bcg_get_special_file_dict(self, file_type=None, element_name=None, parameter=None, channel_name=None, channel_row=None):
@@ -2282,7 +2286,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             path = self.bcg_load_band_file(element_name=element_name, parameter=parameter)
         elif self.set_to_widget is not None and 'boresight_pdf' in getattr(self, self.set_to_widget).whatsThis():
             path = os.path.join(self.experiment, self.version, self.telescope, self.camera, 'config', 'elevation')
-            path = os.path.join(self.bolo_calc_dir, 'Experiments', path)
+            path = os.path.join(self.bolocalc_home_dir, 'Experiments', path)
         elif file_type.lower() == 'pdf':
             path = self.bcg_load_pdf_file(element_name=element_name, parameter=parameter, channel_name=channel_name)
         return path
@@ -2539,12 +2543,20 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         panel_lines = []
         with open(self.panel_parameter_path, 'r') as panel_parameter_handle:
             valid_lines = 0
+            has_pixel_id = False
             for i, line in enumerate(panel_parameter_handle.readlines()):
-                if not line.startswith('#'):
+                if len(line.split('|')) <= 1:
+                    pass
+                elif not line.startswith('#'):
                     line_as_list = [x.strip() for x in line.split('|')]
                     if valid_lines > 0:
                         line_as_list = self.bcg_parse_line(line_as_list)
                     valid_lines += 1
+                    if 'Pixel ID' in line_as_list:
+                        pixel_id_index = line_as_list.index('Pixel ID')
+                        has_pixel_id = True
+                    if has_pixel_id:
+                        line_as_list.pop(pixel_id_index)
                     panel_lines.append(line_as_list)
         panel_dataframe = pd.DataFrame(panel_lines, columns=panel_lines[0])
         panel_dataframe = panel_dataframe[1:]
@@ -2561,6 +2573,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             return None
         self.bc_optics_order = optics_dataframe.keys()
         optics_dataframe = optics_dataframe[self.optics_column_order]
+        self.channels = self.channels_dataframe.T.keys()
         for parameter in self.multiband_optical_properties:
             for column in optics_dataframe.keys():
                 if parameter == column:
@@ -2704,7 +2717,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.experiment_dict = {}
         self.experiments = []
         #experiment_menu = self.main_menu.addMenu('Experiments')
-        bc_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'Experiments')
+        bc_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         for experiment in os.listdir(bc_dir):
             if os.path.isdir(os.path.join(bc_dir, experiment)):
                 self.experiment_dict[experiment] = {}
@@ -2714,7 +2727,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_get_experiment_versions(self, experiment):
         '''
         '''
-        bc_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'Experiments')
+        bc_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         experiment_dir = os.path.join(bc_dir, '{0}'.format(experiment))
         versions = os.listdir(experiment_dir)
         for version in versions:
@@ -2725,7 +2738,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_get_telescopes_in_version(self, experiment, version):
         '''
         '''
-        bc_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'Experiments')
+        bc_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         version_dir = os.path.join(bc_dir, '{0}'.format(experiment),
                                    '{0}'.format(version))
         telescopes = [x for x in os.listdir(version_dir)]
@@ -2738,7 +2751,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_get_cameras_in_telescope(self, experiment, version, telescope):
         '''
         '''
-        bc_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'Experiments')
+        bc_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         telescope_dir = os.path.join(bc_dir, '{0}'.format(experiment),
                                      '{0}'.format(version), '{0}'.format(telescope))
         cameras = [x for x in os.listdir(telescope_dir)]
@@ -2751,7 +2764,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         '''
         self.panel_parameter_path = None
-        bc_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'Experiments')
+        bc_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         if self.bcg_can_load():
             if self.panel is None:
                 panel_parameter_path = os.path.join(bc_dir, self.experiment)
@@ -2770,9 +2783,9 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
                     print('Experiment Name:\n', self.experiment, '\nTelescope Name:\n', self.telescope, '\nCamera Name:\n', self.camera)
                     print(len(self.camera), self.camera)
             elif self.panel == 'simulation':
-                panel_parameter_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'simulationInputs.txt')
+                panel_parameter_path = os.path.join(self.bolocalc_home_dir, 'config', 'simulationInputs.txt')
             elif self.panel == 'parameter':
-                panel_parameter_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'paramsToVary.txt')
+                panel_parameter_path = os.path.join(self.bolocalc_home_dir, 'config', 'paramsToVary.txt')
             self.panel_parameter_path = panel_parameter_path
             self.save_path_label.setText('Working file: {0} |'.format(self.panel_parameter_path))
 
@@ -2865,10 +2878,16 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         '''
         valid = False
-        override_parameter = override_parameter
-        override_value = panel_dataframe.loc[row, override_parameter]
+        if self.panel in ('optics', 'channels'):
+            override_parameter = override_parameter
+            override_value = panel_dataframe[override_parameter][row]
+            overridden_value = panel_dataframe.loc[row, parameter]
+        else:
+            override_parameter = override_parameter[0]
+            override_index = panel_dataframe['Value'][panel_dataframe['Parameter'] == override_parameter].keys()[0]
+            override_value = panel_dataframe['Value'][override_index]
+            overridden_value = panel_dataframe.loc[row, 'Parameter']
         overridden_parameter = parameter
-        overridden_value = panel_dataframe.loc[row, overridden_parameter]
         if override_value == 'NA' and overridden_value != 'NA':
             report = 'OVER RIDE WARNING!\n'
             report += '\tParameter: "{0}"\n'.format(overridden_parameter)
@@ -2898,7 +2917,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         '''
         panel_dataframe = getattr(self, '{0}_dataframe'.format(self.panel))
-        parameter_definition_path = os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
+        parameter_definition_path = os.path.join(self.bcg_home_dir, 'param_definitions', '{0}_paramDefs.json'.format(self.panel))
         with open(parameter_definition_path, 'r') as parameter_definition_file_handle:
             parameter_definition_dict = json.load(parameter_definition_file_handle)
         report = ''
@@ -2911,8 +2930,14 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
                     is_valid = True
                     element_name = panel_dataframe.loc[row, panel_dataframe.keys()[0]]
                     value = panel_dataframe.loc[row, parameter]
-                    valid_types = parameter_definition_dict[parameter]['type']
-                    valid_range = parameter_definition_dict[parameter]['range']
+                    if parameter in parameter_definition_dict:
+                        valid_types = parameter_definition_dict[parameter]['type']
+                        valid_range = parameter_definition_dict[parameter]['range']
+                    elif parameter == 'Pixel ID' and 'Band ID' in parameter_definition_dict:
+                        valid_types = parameter_definition_dict['Band ID']['type']
+                        valid_range = parameter_definition_dict['Band ID']['range']
+                    else:
+                        import ipdb;ipdb.set_trace()
                     if value in ('PDF', 'BAND'):
                         is_valid, valid_value = self.bcg_get_and_verify_special_file(value, element_name, parameter)
                     elif type(value[0]) == dict:
@@ -3147,8 +3172,8 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_update_run_command(self):
         '''
         '''
-        calc_bolos_path = os.path.join(self.bolo_calc_install_dir, 'calcBolos.py')
-        experiment_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version)
+        calc_bolos_path = os.path.join(self.bolocalc_home_dir, 'calcBolos.py')
+        experiment_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
         run_command = 'python '
         run_command += calc_bolos_path
         run_command += '  '
@@ -3185,10 +3210,10 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_run_bolo_calc(self):
         '''
         '''
-        calc_bolos_path = os.path.join(self.bolo_calc_install_dir, 'calcBolos.py')
-        experiment_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version)
+        calc_bolos_path = os.path.join(self.bolocalc_home_dir, 'calcBolos.py')
+        experiment_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
         if hasattr(self, 'vary_path'):
-            vary_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera, 'paramVary', self.vary_name)
+            vary_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera, 'paramVary', self.vary_name)
             if os.path.exists(vary_path):
                 msg = 'A paramVary folder named {0} exists!\nRunning calcBolos.py again will over write this data.\nDo you wish to continue?'.format(self.vary_name)
                 response = self.gb_quick_message(msg, add_yes=True, add_no=True)
@@ -3237,7 +3262,6 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         '''
         out = str(q_process.readAllStandardOutput())
-        print(out)
         if 'Looping' in out:
             self.bcg_step = 'Looping over parameters to vary'
         if 'Writing' in out:
@@ -3277,8 +3301,8 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         if hasattr(self, 'BCG_analyze_popup'):
             self.BCG_analyze_popup.close()
         # Check for analysis finished
-        experiment_dir = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version)
-        bc_dir = os.path.join('..', 'BoloCalc', 'Experiments')
+        experiment_dir = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
+        bc_dir = os.path.join(self.bolocalc_home_dir, 'Experiments')
         sensitivity_file_path = os.path.join(bc_dir, self.experiment, self.version, 'sensitivity.txt')
         self.data_exists = {
             'Histogram and Summary': {
@@ -3295,7 +3319,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             msg = '{0} does not exists.\nPlease Run Bolo Calc first (w/o vary options)'.format(sensitivity_file_path)
             self.data_exists['Histogram and Summary']['exists'] = False
             self.data_exists['Histogram and Summary']['msg'] = msg
-        param_vary_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera, 'paramVary')
+        param_vary_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera, 'paramVary')
         self.data_exists['Parameter Vary']['path'] = param_vary_path
         if not os.path.exists(param_vary_path):
             msg = '{0} does not exists.\nPlease Run Bolo Calc first (w/o vary options)'.format(param_vary_path)
@@ -3337,7 +3361,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             if not isinstance(widget, QtWidgets.QTabBar):
                 widget.setParent(None)
         analysis_type = tab_bar.tabText(tab_bar.currentIndex())
-        experiment_dir = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version)
+        experiment_dir = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
         if analysis_type == 'Histogram and Summary':
             self.unpack.sens_outputs = {}
             self.unpack.unpack_sensitivities(experiment_dir)
@@ -3409,7 +3433,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         hisotgram_type = self.sender().whatsThis()
         file_name = '{0}_definition.svg'.format(hisotgram_type.replace(' ', ''))
-        histogram_descr_path = os.path.join(os.path.dirname(__file__), '..', 'templates', file_name)
+        histogram_descr_path = os.path.join(self.bcg_home_dir, 'templates', file_name)
         self.old_size = (-1, -1)
         if os.path.exists(histogram_descr_path):
             self.convertSVG(histogram_descr_path)
@@ -3481,7 +3505,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             q_param_vary_select_combobox.addItem(param_vary)
             self.BCG_analyze_popup.centralWidget().layout().addWidget(q_param_vary_select_combobox, i + 1, 0, 1, 1)
         q_param_vary_select_combobox.activated.connect(self.bcg_configure_plot_param_vary)
-        experiment_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version)
+        experiment_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
         ########## scatter plot button
         q_run_param_vary_scatter_pushbutton = QtWidgets.QPushButton('Param Vary Scatter Plot')
         setattr(self, 'vary_scatter_pushubtton', q_run_param_vary_scatter_pushbutton)
@@ -3505,7 +3529,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     def bcg_configure_plot_param_vary(self):
         '''
         '''
-        param_vary_path = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera, 'paramVary')
+        param_vary_path = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version, self.telescope, self.camera, 'paramVary')
         ########## param panel
         if hasattr(self, 'analyze_param_vary_panel'):
             self.analyze_param_vary_panel.setParent(None)
@@ -3514,7 +3538,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_run_param_panel.setLayout(QtWidgets.QGridLayout())
         setattr(self, 'analyze_param_vary_panel', q_run_param_panel)
         self.BCG_analyze_popup.centralWidget().layout().addWidget(q_run_param_panel, 0, 1, len(os.listdir(param_vary_path)), 1)
-        experiment_dir = os.path.join(self.bolo_calc_install_dir, 'Experiments', self.experiment, self.version)
+        experiment_dir = os.path.join(self.bolocalc_home_dir, 'Experiments', self.experiment, self.version)
         vary_name = self.sender().currentText()
         self.unpack.vary_inputs = {}
         self.unpack.vary_outputs = {}
@@ -3698,7 +3722,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             # I can't plot this...
             return
         # Generate a dictionary of display names
-        def_files = glob.glob(os.path.join(os.path.dirname(__file__), '..', 'param_definitions', '*_paramDefs.json'))
+        def_files = glob.glob(os.path.join(self.bcg_home_dir, 'param_definitions', '*_paramDefs.json'))
         param_name_dict = {}
         for f in def_files:
             d = json.load(open(f, 'r'))
@@ -3868,7 +3892,8 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
 
     def bcg_get_atm(self, site, pwv, elev):
         # Load site
-        atm_file = os.path.join(self.bolo_calc_install_dir, "src", "atm.hdf5")
+        atm_files = glob.glob(os.path.join(self.bolocalc_home_dir, "src", "atm*.hdf5"))
+        atm_file = sorted(atm_files)[-1]
         site = site.strip().lower().capitalize()
         if pwv == 'PDF' or pwv[0] == 'PDF':
             pwv_median = self.bcg_load_pdf_median('pwv', 'telescope')
@@ -3926,7 +3951,6 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             freq = np.linspace(1, 600, 601) # GHz
             tran = np.zeros(len(freq))
             temp = np.ones(len(freq)) * sky_temp
-            
         return (freq, tran, temp)
 
     def bcg_get_live_foreground_model(self):

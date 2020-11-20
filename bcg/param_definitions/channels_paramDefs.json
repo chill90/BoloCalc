@@ -140,6 +140,14 @@
         "type": "[int]",
         "unit": "NA"
     },
+    "Pixel ID": {
+        "descr": "The ID for this frequency channel",
+        "name": "Channel ID",
+        "range": "NA",
+        "req": "Yes",
+        "type": "[str]",
+        "unit": "NA"
+    },
     "Pixel Size": {
         "descr": "Detector pixel size (or equivalently, pixel spacing)",
         "name": "Pixel Size",
