@@ -3480,12 +3480,20 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         '''
         parameter = self.sender().text()
+        changed = False
+        for (key, value) in self.preferred_output_names_dict.items():
+            if parameter == value:
+                parameter_id = key
+                changed = True
+                break
+        if changed is False:
+            parameter_id = parameter
         plt.close('all')
         for i, channel in enumerate(self.unpack.sens_outputs[self.version][self.telescope][self.camera]['All'].keys()):
             if getattr(self, '{0}_checkbox'.format(channel)).checkState():
                 label = '{0} {1}'.format(channel, parameter)
-                sns.distplot(self.unpack.sens_outputs[self.version][self.telescope][self.camera]['All'][channel][parameter], kde=False, label=label)
-        unit = self.unit_dict[parameter].replace('[', '').replace(']', '')
+                sns.distplot(self.unpack.sens_outputs[self.version][self.telescope][self.camera]['All'][channel][parameter_id], kde=False, label=label)
+        unit = self.unit_dict[parameter_id].replace('[', '').replace(']', '')
         if unit.upper() == 'NA':
             plt.xlabel('{0}'.format(parameter))
         else:
