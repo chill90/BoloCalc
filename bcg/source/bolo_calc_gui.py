@@ -156,6 +156,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         '''
         if tab_bar == 'experiment':
             experiment_tab_bar = QtWidgets.QTabBar()
+            experiment_tab_bar.setShape(QtWidgets.QTabBar().TriangularNorth)
             tab_bar_name = '{0}_experiment_tab_bar'.format(widget)
             setattr(self, tab_bar_name, experiment_tab_bar)
             getattr(self, tab_bar_name).setWhatsThis('{0}_experiment_tab_bar'.format(widget))
@@ -165,6 +166,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         #Versions
         if tab_bar == 'version':
             version_tab_bar = QtWidgets.QTabBar()
+            version_tab_bar.setShape(QtWidgets.QTabBar().TriangularNorth)
             tab_bar_name = '{0}_version_tab_bar'.format(widget)
             if hasattr(self, tab_bar_name):
                 getattr(self, tab_bar_name).setParent(None)
@@ -175,6 +177,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         #Telescopes
         if tab_bar == 'telescope':
             telescope_tab_bar = QtWidgets.QTabBar()
+            telescope_tab_bar.setShape(QtWidgets.QTabBar().TriangularNorth)
             tab_bar_name = '{0}_telescope_tab_bar'.format(widget)
             if hasattr(self, tab_bar_name):
                 getattr(self, tab_bar_name).setParent(None)
@@ -185,6 +188,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         #Cameras
         if tab_bar == 'camera':
             camera_tab_bar = QtWidgets.QTabBar()
+            camera_tab_bar.setShape(QtWidgets.QTabBar().TriangularNorth)
             tab_bar_name = '{0}_camera_tab_bar'.format(widget)
             if hasattr(self, tab_bar_name):
                 getattr(self, tab_bar_name).setParent(None)
@@ -194,6 +198,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             getattr(self, widget).layout().addWidget(getattr(self, tab_bar_name), 3, 0, 1, 1)
         if tab_bar == 'channel':
             channel_tab_bar = QtWidgets.QTabBar()
+            channel_tab_bar.setShape(QtWidgets.QTabBar().TriangularNorth)
             tab_bar_name = '{0}_channel_tab_bar'.format(widget)
             if hasattr(self, tab_bar_name):
                 getattr(self, tab_bar_name).setParent(None)
@@ -3390,21 +3395,23 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_experiment_table_pushbutton.setWhatsThis('Version Summary PushButton')
         q_experiment_table_pushbutton.clicked.connect(self.bcg_show_analysis_table)
         self.BCG_analyze_popup.centralWidget().layout().addWidget(q_experiment_table_pushbutton, 1, 0, 1, 4)
-        for i, telescope in enumerate(self.unpack.sens_outputs[self.version].keys()):
-            if telescope != 'Summary':
-                q_telescope_pushbutton = QtWidgets.QPushButton('Telescope: {0} Summary Table '.format(telescope))
-                q_telescope_pushbutton.setWhatsThis('Telescope {0} PushButton'.format(telescope))
-                q_telescope_pushbutton.clicked.connect(self.bcg_show_analysis_table)
-                self.BCG_analyze_popup.centralWidget().layout().addWidget(q_telescope_pushbutton, 2, i, 1, 4)
-        for i, camera in enumerate(self.unpack.sens_outputs[self.version][self.telescope].keys()):
-            if camera != 'Summary':
-                q_camera_pushbutton = QtWidgets.QPushButton('Camera: {0} Summary Table '.format(camera))
-                q_camera_pushbutton.setWhatsThis('Camera {0} PushButton'.format(camera))
-                q_camera_pushbutton.clicked.connect(self.bcg_show_analysis_table)
-                self.BCG_analyze_popup.centralWidget().layout().addWidget(q_camera_pushbutton, 3, i, 1, 4)
+        telescopes = self.unpack.sens_outputs[self.version].keys()
+        #for i, telescope in enumerate(telescopes):
+            #if telescope != 'Summary' and Telescope == self.Telescope
+        q_telescope_pushbutton = QtWidgets.QPushButton('Telescope: {0} Summary Table '.format(self.telescope))
+        q_telescope_pushbutton.setWhatsThis('Telescope {0} PushButton'.format(self.telescope))
+        q_telescope_pushbutton.clicked.connect(self.bcg_show_analysis_table)
+        self.BCG_analyze_popup.centralWidget().layout().addWidget(q_telescope_pushbutton, 2, 0, 1, 1)
+        #for i, camera in enumerate(self.unpack.sens_outputs[self.version][self.telescope].keys()):
+            #if camera != 'Summary':
+        q_camera_pushbutton = QtWidgets.QPushButton('Camera: {0}-{1} Summary Table '.format(self.telescope, self.camera))
+        q_camera_pushbutton.setWhatsThis('Camera {0} PushButton'.format(self.camera))
+        q_camera_pushbutton.clicked.connect(self.bcg_show_analysis_table)
+        self.BCG_analyze_popup.centralWidget().layout().addWidget(q_camera_pushbutton, 3, 0, 1, 1)
+        #for i, camera in enumerate(self.unpack.sens_outputs[self.version][self.telescope].keys()):
         for i, channel in enumerate(self.unpack.sens_outputs[self.version][self.telescope][self.camera]['All'].keys()):
-            q_channel_check_box = QtWidgets.QCheckBox(channel)
-            setattr(self, '{0}_checkbox'.format(channel), q_channel_check_box)
+            q_channel_check_box = QtWidgets.QCheckBox('{0}_{1}_checkbox'.format(self.telescope, channel))
+            setattr(self, '{0}_{1}_checkbox'.format(self.telescope, channel), q_channel_check_box)
             q_channel_check_box.setChecked(True)
             q_channel_check_box.setWhatsThis('Channel: {0} Analysis CheckBox'.format(channel))
             self.BCG_analyze_popup.centralWidget().layout().addWidget(q_channel_check_box, 4, i, 1, 1)
