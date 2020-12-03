@@ -52,13 +52,6 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         q_splash_image = QtGui.QPixmap(self.splash_screen_image)
         self.splash_screen.setPixmap(q_splash_image)
         self.splash_screen.show()
-        if os.path.exists(os.path.join('..', 'AccessGoogleDrive')):
-            from oauth2client.file import Storage
-            from AccessGoogleDrive.access_google_drive import AccessGoogleDrive
-            self.credentials_file = os.path.join('bcg_gui_settings', 'google_api_credentials.dat')
-            self.google_drive = AccessGoogleDrive(credentials_file=self.credentials_file)
-            self.credentials = Storage(self.credentials_file).get()
-            self.google_drive.create_drive(self.credentials)
         self.splash_screen.showMessage('Connecting to Google', alignment=QtCore.Qt.AlignCenter, color=QtCore.Qt.white)
         self.bc_dir = os.path.join('..', 'BoloCalc')
         self.today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
@@ -3305,7 +3298,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             BCG_analyze_popup = QtWidgets.QMainWindow(self)
             BCG_analyze_popup.setWindowTitle('Analyze')
             BCG_analyze_popup.setWindowModality(QtCore.Qt.WindowModal)
-            #BCG_analyze_popup.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+            BCG_analyze_popup.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, True)
             self.BCG_analyze_popup = BCG_analyze_popup
             BCG_analyze_cw = QtWidgets.QWidget()
             # Tool bar 
@@ -3423,6 +3416,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             self.histogram_svg_aspect_ratio = float(self.histogram_svg_size[1]) / float(self.histogram_svg_size[0])
             self.q_svg_widget.load(histogram_descr_path)
             #[import ipdb;ipdb.set_trace()
+            self.BCG_histogram_description.show()
             self.BCG_histogram_description.show()
 
     def bcg_resize_svg_event(self, event):
