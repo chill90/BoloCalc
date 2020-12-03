@@ -3124,6 +3124,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
     #################################################
 
     def bcg_get_bolo_calc_run_options(self):
+        self.aborted = False
         if hasattr(self, 'BCG_verify_popup'):
             self.BCG_verify_popup.close()
         if not hasattr(self, 'BCG_run_options_popup'):
@@ -3131,6 +3132,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         else:
             self.gb_initialize_panel('BCG_run_options_popup')
         if self.action_Run.text() == 'Abort':
+            self.aborted = True
             self.run_q_process.kill()
             self.action_Run.setText('Run')
             return None
@@ -3263,10 +3265,14 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         else:
             error = q_process.readAllStandardError()
             msgs = error.split('\n')
-            display_msg = 'Error with bolo calc'
-            for msg in msgs:
-                display_msg += '{0}\n'.format(msg)
-            self.gb_quick_message(display_msg)
+            if self.aborted:
+                display_msg = 'BoloCalc Aborted!'
+                self.aborted = True
+            else:
+                display_msg = 'Error with bolo calc\n'
+                for msg in msgs:
+                    display_msg += '{0}\n'.format(msg)
+            self.gb_quick_message(display_msg, msg_type="Warning")
             self.bc_error = True
         #self.action_Run.setDisabled(False)
         self.action_Run.setText('Run')
