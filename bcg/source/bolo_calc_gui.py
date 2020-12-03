@@ -2521,7 +2521,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
 
     #################################################
     #################################################
-    # ################# LOAIND DATA
+    # ################# LOADING DATA
     #################################################
     #################################################
 
@@ -3439,13 +3439,27 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             self.gb_create_popup_window('BCG_histogram_description', resize_overload=self.bcg_resize_svg_event)
             self.BCG_histogram_description.move(150, 150)
             self.q_svg_widget = QtSvg.QSvgWidget(self.BCG_histogram_description)
-            #self.q_svg_widget.resizeEvent = self.bcg_resize_svg_event
             self.BCG_histogram_description.layout().addWidget(self.q_svg_widget, 0, 0, 1, 1)
+            close_description_pushbutton = QtWidgets.QPushButton('Close', self.BCG_histogram_description)
+            close_description_pushbutton.clicked.connect(self.bcg_close_description_window)
+            self.BCG_histogram_description.layout().addWidget(close_description_pushbutton, 1, 0, 1, 1)
             self.histogram_svg_size = (self.q_svg_widget.size().width(), self.q_svg_widget.size().height())
             self.histogram_svg_aspect_ratio = float(self.histogram_svg_size[1]) / float(self.histogram_svg_size[0])
             self.q_svg_widget.load(histogram_descr_path)
-            #[import ipdb;ipdb.set_trace()
+            #height = 0.3 * self.screen_resolution.height()
+            #width = height / self.histogram_svg_aspect_ratio
+            print(self.histogram_svg_size)
+            print(self.histogram_svg_size[0], self.histogram_svg_size[1])
+            print(3 * self.histogram_svg_size[0], 3 * self.histogram_svg_size[1])
+            #self.BCG_histogram_description.setMinimumSize(10 * self.histogram_svg_size[1], 10 * self.histogram_svg_size[0])
+            self.BCG_histogram_description.resize(2 * self.BCG_histogram_description.sizeHint().width(), 2 * self.BCG_histogram_description.sizeHint().height())
+            self.BCG_histogram_description.setWindowModality(QtCore.Qt.WindowModal)
             self.BCG_histogram_description.show()
+
+    def bcg_close_description_window(self):
+        '''
+        '''
+        self.BCG_histogram_description.close()
 
     def bcg_resize_svg_event(self, event):
         '''
@@ -4165,34 +4179,6 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         getattr(self, '_cw_main_parameters_panel_row_0_col_8_{0}_special_plot_label'.format(self.panel)).setPixmap(q_pixmap)
         self.repaint()
         os.remove('temp.png')
-
-    #################################################
-    # Feedback
-    #################################################
-
-    def bcg_gather_feedback(self):
-        '''
-        '''
-        feedback_gather = self.gb_large_text_gather()
-        feedback_gather.showMaximized()
-        response = feedback_gather.exec_()
-        if response:
-            self.bcg_upload_feedback_to_drive()
-
-    def bcg_upload_feedback_to_drive(self):
-        '''
-        '''
-        feedback_str = str(self.large_text_gather_textedit.toPlainText())
-        now = datetime.datetime.now()
-        now_str = datetime.datetime.strftime(now, '%Y_%m_%d_%H_%M_%S')
-        save_name = 'feed_back_{0}.txt'.format(now_str)
-        with open(save_name, 'w') as feedback_handle:
-            feedback_handle.write(feedback_str)
-        self.google_drive.upload_file(save_name, wafer='New_BCG_Tickets', tool=None, fab_step=None,
-                                      upload_for_dies=False, duplicate_action=0,
-                                      infolder=True, is_image=False, wafer_type='BCG_Feedback',
-                                      status_bar=self.status_bar)
-        os.remove(save_name)
 
     #################################################
     # Remove Glyphs from SVG
