@@ -3328,8 +3328,6 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         if self.data_exists['Histogram and Summary']['exists'] or self.data_exists['Parameter Vary']['exists']:
             BCG_analyze_popup = QtWidgets.QMainWindow(self)
             BCG_analyze_popup.setWindowTitle('Analyze')
-            BCG_analyze_popup.setWindowModality(QtCore.Qt.WindowModal)
-            #BCG_analyze_popup.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
             self.BCG_analyze_popup = BCG_analyze_popup
             BCG_analyze_cw = QtWidgets.QWidget()
             # Tool bar 
