@@ -3130,6 +3130,10 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             self.gb_create_popup_window('BCG_run_options_popup')
         else:
             self.gb_initialize_panel('BCG_run_options_popup')
+        if self.action_Run.text() == 'Abort':
+            self.run_q_process.kill()
+            self.action_Run.setText('Run')
+            return None
         ########## vary tog
         q_vary_tog_checkbox = QtWidgets.QCheckBox('vary_tog', self)
         setattr(self, 'vary_tog_checkbox', q_vary_tog_checkbox)
@@ -3229,17 +3233,18 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.status_bar.showMessage('Running BoloCalc!')
         self.repaint()
         self.bcg_step = 'Simulating Realizations'
-        q_process = QtCore.QProcess()
+        self.run_q_process = QtCore.QProcess()
         self.run_type = 'Sim'
         self.sim_progress_bar.setValue(0)
         self.vary_progress_bar.setValue(0)
         self.write_progress_bar.setValue(0)
         self.bc_error = False
-        self.action_Run.setDisabled(True)
-        q_process.finished.connect(lambda: self.bcg_update_sim_finished(q_process))
-        q_process.readyReadStandardOutput.connect(lambda: self.bcg_update_run_status(q_process))
-        q_process.error.connect(lambda: self.bcg_bolo_calc_error(q_process))
-        q_process.start(run_command)
+        #self.action_Run.setDisabled(True)
+        self.action_Run.setText('Abort')
+        self.run_q_process.finished.connect(lambda: self.bcg_update_sim_finished(self.run_q_process))
+        self.run_q_process.readyReadStandardOutput.connect(lambda: self.bcg_update_run_status(self.run_q_process))
+        self.run_q_process.error.connect(lambda: self.bcg_bolo_calc_error(self.run_q_process))
+        self.run_q_process.start(run_command)
 
     def bcg_bolo_calc_error(self, q_process):
         '''
@@ -3263,7 +3268,8 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
                 display_msg += '{0}\n'.format(msg)
             self.gb_quick_message(display_msg)
             self.bc_error = True
-        self.action_Run.setDisabled(False)
+        #self.action_Run.setDisabled(False)
+        self.action_Run.setText('Run')
 
     def bcg_update_run_status(self, q_process):
         '''
