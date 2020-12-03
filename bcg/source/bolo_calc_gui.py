@@ -2460,9 +2460,15 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
                             for k, entry_dict in enumerate(entry):
                                 for channel_name in self.channels:
                                     if k == 0:
-                                        values.append(entry_dict[channel_name])
+                                        try:
+                                            values.append(entry_dict[channel_name])
+                                        except KeyError:
+                                            values.append(entry_dict[int(channel_name)])
                                     else:
-                                        spreads.append(entry_dict[channel_name])
+                                        try:
+                                            spreads.append(entry_dict[channel_name])
+                                        except KeyError:
+                                            spreads.append(entry_dict[int(channel_name)])
                             dat = '{0} +/- {1}'.format(str(values), str(spreads))
                             dat = dat.replace("'", '')
                             if 'PDF' in str(dat):
