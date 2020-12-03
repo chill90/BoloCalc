@@ -3235,6 +3235,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
         self.vary_progress_bar.setValue(0)
         self.write_progress_bar.setValue(0)
         self.bc_error = False
+        self.action_Run.setDisabled(True)
         q_process.finished.connect(lambda: self.bcg_update_sim_finished(q_process))
         q_process.readyReadStandardOutput.connect(lambda: self.bcg_update_run_status(q_process))
         q_process.error.connect(lambda: self.bcg_bolo_calc_error(q_process))
@@ -3262,6 +3263,7 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
                 display_msg += '{0}\n'.format(msg)
             self.gb_quick_message(display_msg)
             self.bc_error = True
+        self.action_Run.setDisabled(False)
 
     def bcg_update_run_status(self, q_process):
         '''
