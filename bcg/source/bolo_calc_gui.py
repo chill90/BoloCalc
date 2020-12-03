@@ -3446,12 +3446,6 @@ class BoloCalcGui(QtWidgets.QMainWindow, GuiBuilder):
             self.histogram_svg_size = (self.q_svg_widget.size().width(), self.q_svg_widget.size().height())
             self.histogram_svg_aspect_ratio = float(self.histogram_svg_size[1]) / float(self.histogram_svg_size[0])
             self.q_svg_widget.load(histogram_descr_path)
-            #height = 0.3 * self.screen_resolution.height()
-            #width = height / self.histogram_svg_aspect_ratio
-            print(self.histogram_svg_size)
-            print(self.histogram_svg_size[0], self.histogram_svg_size[1])
-            print(3 * self.histogram_svg_size[0], 3 * self.histogram_svg_size[1])
-            #self.BCG_histogram_description.setMinimumSize(10 * self.histogram_svg_size[1], 10 * self.histogram_svg_size[0])
             self.BCG_histogram_description.resize(2 * self.BCG_histogram_description.sizeHint().width(), 2 * self.BCG_histogram_description.sizeHint().height())
             self.BCG_histogram_description.setWindowModality(QtCore.Qt.WindowModal)
             self.BCG_histogram_description.show()
