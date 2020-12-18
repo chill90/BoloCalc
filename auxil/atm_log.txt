@@ -1,2 +1,3 @@
+atm_20201217.hdf5 -- eliminated an accidental double counting of CMB power in NEP_ph. Could non-negligibly improve channels below ~100 GHz -- [2020-12-15]
 atm_20200916.hdf5 -- updated South Pole atmosphere for a more accurate PWV impact. Previous iteration underestimated the load due to water by ~2x -- [2020-09-16]
 atm.hdf5 -- used from 09/25/2019 until 09/16/2020

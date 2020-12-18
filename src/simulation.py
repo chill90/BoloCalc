@@ -518,8 +518,8 @@ class Simulation:
                 answer = input("Your selection [D]:")
                 answer = answer.strip().upper()
                 if answer == 'D' or answer == '':
-                    os.system(os.path.join(
-                        self._src_dir, '..', 'update_atm.sh'))
+                    os.system('python3 %s' % (os.path.join(
+                        self._src_dir, '..', 'update_atm.py')))
                     write_str = (
                         "Updated to atmosphere file to %s"
                         % (self._latest_atm_file))
@@ -529,13 +529,13 @@ class Simulation:
                 elif answer == 'P':
                     write_str = (
                         "Using old atmosphere file %s. "
-                        "Update using update_atm.sh"
+                        "Update using update_atm.py"
                         % (self.atm_file))
                     self.log.wrn(write_str)
                 elif answer == 'R':
                     write_str = (
                         "Using old atmosphere file %s. "
-                        "Update using update_atm.sh"
+                        "Update using update_atm.py"
                         % (self.atm_file))
                     self.log.wrn(write_str)
                     # Update the atm log file with a new reminder date
@@ -557,7 +557,7 @@ class Simulation:
             else:
                 write_str = (
                         "Using old atmosphere file %s. "
-                        "Update using update_atm.sh"
+                        "Update using update_atm.py"
                         % (self.atm_file))
                 self.log.wrn(write_str)
                 break

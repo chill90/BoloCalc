@@ -28,7 +28,7 @@ def reporthook(count, block_size, total_size):
     sy.stdout.flush()
 
 # Download atmosphere files
-fname = "atm_20200916.hdf5"
+fname = "atm_20201217.hdf5"
 atm_file = os.path.join(
     os.path.dirname(__file__), fname)
 new_atm_file = os.path.join(

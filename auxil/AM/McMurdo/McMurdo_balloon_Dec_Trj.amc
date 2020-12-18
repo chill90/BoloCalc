@@ -1,0 +1,246 @@
+# File McMurdo_balloon_Dec.amc - Model for the atmosphere above a
+# balloon launched from McMurdo Station, at latitude 77.8 deg S, for the
+# month of December.
+#
+?
+? usage: am McMurdo_balloon_Dec.amc fmin fmax df zenith_angle
+?
+? where: fmin = minimum frequency
+?        fmax = maximum frequency
+?        df   = frequency grid interval
+?        za   = zenith angle
+?
+? example: am McMurdo_balloon_Dec.amc 325 GHz 425 GHz 0.2 MHz 0 deg
+? 
+? Setting df = 0.2 MHz will resolve all lines to the lowest-pressure level
+? (1 mbar) in this model.  Run time and output size can be considerably
+? reduced by setting df = 1 MHz, for which only a small fraction of line
+? cores will be unresolved.
+?
+? To use this file at a given flight pressure, comment out layers at
+? higher pressure.  The comments in this file indicating the altitude for
+? each pressure level follow the CIRA-86 reference atmosphere.
+?
+? Because Doppler broadening is neglected, it is recommended to use this
+? file for frequencies fmax < 1000 GHz.
+?
+#
+#
+# Layer pressures and temperatures here are interpolated from the CIRA-86
+# reference atmosphere for December, for 77.8 deg S latitude.
+#
+# Reference:
+#
+#   Committee on Space Research (COSPAR). The COSPAR International Atmosphere
+#   (CIRA-86), [Internet]. NCAS British Atmospheric Data Centre, 2006-2011.
+#   Available from
+#     http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_CIRA .
+#
+#
+# Ozone mixing ratios are interpolated from the Fortuin-Kelder ozone
+# climatology for December, for 77.8 deg S latitude.
+#
+# Reference:
+#
+#   J. Paul F. Fortuin and Hennie Kelder 1998, "An ozone climatology based
+#   on ozonesonde and satellite measurements."  JGR 103:31709.
+#   Available from
+#     http://www.knmi.nl/research/climate_chemistry/Data/FKClimatology/
+#
+#
+# Water vapor mixing ratios are based on Fig. 5a in
+#
+#   K. H. Rosenlof, A. F. Tuck, K. K. Kelly, J. M. Russell III, and
+#   M. P. McCormick 1997, "Hemispheric asymmetries in water vapor and
+#   inferences about transport in the lower stratosphere."  JGR 102:13213
+#
+# Here, the h2o vmr has been approximated as linear in log(P) from 4 ppm at
+# 100 mbar to 6 ppm at 1 mbar, and constant at 6 ppm for P < 1 mbar.
+#
+#
+# Command-line input for frequency grid and zenith angle includes both
+# value and unit.
+#
+f %1 %2  %3 %4  %5 %6
+output f GHz  tau  Trj K tx
+za %7 %8
+tol 1.0e-4
+
+T0 0 K
+
+layer
+Pbase 1.000 mbar  # z = 50.60 km
+Tbase 287.047 K
+column dry_air vmr
+column o3 vmr 1.984e-06
+column h2o vmr 6.0e-06
+
+layer
+Pbase 2.000 mbar  # z = 44.73 km
+Tbase 285.887 K
+column dry_air vmr
+column o3 vmr 2.713e-06
+column h2o vmr 5.8e-06
+
+layer
+Pbase 3.000 mbar  # z = 41.39 km
+Tbase 279.883 K
+column dry_air vmr
+column o3 vmr 4.094e-06
+column h2o vmr 5.6e-06
+
+layer
+Pbase 4.000 mbar  # z = 39.03 km
+Tbase 273.956 K
+column dry_air vmr
+column o3 vmr 5.049e-06
+column h2o vmr 5.5e-06
+
+layer
+Pbase 5.000 mbar  # z = 37.26 km
+Tbase 269.190 K
+column dry_air vmr
+column o3 vmr 5.654e-06
+column h2o vmr 5.3e-06
+
+layer
+Pbase 6.000 mbar  # z = 35.84 km
+Tbase 265.244 K
+column dry_air vmr
+column o3 vmr 6.000e-06
+column h2o vmr 5.3e-06
+
+layer
+Pbase 7.000 mbar  # z = 34.61 km
+Tbase 261.737 K
+column dry_air vmr
+column o3 vmr 6.087e-06
+column h2o vmr 5.2e-06
+
+layer
+Pbase 8.000 mbar  # z = 33.63 km
+Tbase 258.890 K
+column dry_air vmr
+column o3 vmr 6.060e-06
+column h2o vmr 5.1e-06
+
+layer
+Pbase 9.000 mbar  # z = 32.70 km
+Tbase 256.076 K
+column dry_air vmr
+column o3 vmr 5.920e-06
+column h2o vmr 5.1e-06
+
+layer
+Pbase 10.000 mbar  # z = 31.96 km
+Tbase 253.369 K
+column dry_air vmr
+column o3 vmr 5.780e-06
+column h2o vmr 5.0e-06
+
+layer
+Pbase 11.000 mbar  # z = 31.21 km
+Tbase 250.663 K
+column dry_air vmr
+column o3 vmr 5.690e-06
+column h2o vmr 5.0e-06
+
+# layer
+# Pbase 12.000 mbar  # z = 30.61 km
+# Tbase 248.169 K
+# column dry_air vmr
+# column o3 vmr 5.651e-06
+# column h2o vmr 4.9e-06
+# 
+# layer
+# Pbase 13.000 mbar  # z = 30.04 km
+# Tbase 245.745 K
+# column dry_air vmr
+# column o3 vmr 5.612e-06
+# column h2o vmr 4.9e-06
+# 
+# layer
+# Pbase 14.000 mbar  # z = 29.48 km
+# Tbase 243.322 K
+# column dry_air vmr
+# column o3 vmr 5.572e-06
+# column h2o vmr 4.9e-06
+# 
+# layer
+# Pbase 15.000 mbar  # z = 28.99 km
+# Tbase 241.643 K
+# column dry_air vmr
+# column o3 vmr 5.533e-06
+# column h2o vmr 4.8e-06
+# 
+# layer
+# Pbase 16.000 mbar  # z = 28.56 km
+# Tbase 240.572 K
+# column dry_air vmr
+# column o3 vmr 5.493e-06
+# column h2o vmr 4.8e-06
+# 
+# layer
+# Pbase 17.000 mbar  # z = 28.14 km
+# Tbase 239.502 K
+# column dry_air vmr
+# column o3 vmr 5.454e-06
+# column h2o vmr 4.8e-06
+# 
+# layer
+# Pbase 18.000 mbar  # z = 27.71 km
+# Tbase 238.431 K
+# column dry_air vmr
+# column o3 vmr 5.415e-06
+# column h2o vmr 4.8e-06
+# 
+# layer
+# Pbase 19.000 mbar  # z = 27.32 km
+# Tbase 237.740 K
+# column dry_air vmr
+# column o3 vmr 5.375e-06
+# column h2o vmr 4.7e-06
+# 
+# layer
+# Pbase 20.000 mbar  # z = 27.00 km
+# Tbase 237.511 K
+# column dry_air vmr
+# column o3 vmr 5.336e-06
+# column h2o vmr 4.7e-06
+# 
+# layer
+# Pbase 21.000 mbar  # z = 26.67 km
+# Tbase 237.282 K
+# column dry_air vmr
+# column o3 vmr 5.284e-06
+# column h2o vmr 4.7e-06
+# 
+# layer
+# Pbase 22.000 mbar  # z = 26.34 km
+# Tbase 237.053 K
+# column dry_air vmr
+# column o3 vmr 5.218e-06
+# column h2o vmr 4.7e-06
+# 
+# layer
+# Pbase 23.000 mbar  # z = 26.01 km
+# Tbase 236.824 K
+# column dry_air vmr
+# column o3 vmr 5.153e-06
+# column h2o vmr 4.6e-06
+# 
+# layer
+# Pbase 24.000 mbar  # z = 25.69 km
+# Tbase 236.641 K
+# column dry_air vmr
+# column o3 vmr 5.088e-06
+# column h2o vmr 4.6e-06
+# 
+# layer
+# Pbase 25.000 mbar  # z = 25.44 km
+# Tbase 236.670 K
+# column dry_air vmr
+# column o3 vmr 5.023e-06
+# column h2o vmr 4.6e-06
+# 
+
