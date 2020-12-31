@@ -136,7 +136,7 @@ class Physics:
     def Trj_over_Tb(self, freq, Tb):
         """
         Brightness temperature [K_RJ] given a physical temperature [K]
-        and frequency [Hz]
+        and frequency [Hz]. dTrj / dTb
 
         Args:
         freq (float): frequencies [Hz]
@@ -198,8 +198,13 @@ class Physics:
         temp (float): blackbody temperature [K]
         """
         freq, temp = self._check_inputs(freq, [temp])
+        fact = (self.h * freq)/(self.kB * temp)
+        fact = np.where(fact > 100, 100, fact)
+        #args = np.argwhere(fact > 100)
+        #if len(args) > 0:
+        #    fact[args] = 100
         with np.errstate(divide='raise'):
-            return 1. / (np.exp((self.h * freq)/(self.kB * temp)) - 1.)
+            return 1. / (np.exp(fact) - 1.)
 
     def a_omega(self, freq):
         """

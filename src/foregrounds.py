@@ -17,8 +17,7 @@ class Foregrounds:
         emiss (float): emissivity of the galactic dust. Default to 1.
         """
         # Passed amplitude [W/(m^2 sr Hz)] converted from [MJy]
-        MJy_to_W = 1.e-20
-        amp = emiss * self._param("dust_amp") * MJy_to_W
+        amp = emiss * self._param("dust_amp")
         # Frequency scaling
         # (freq / scale_freq)**dust_ind
         if (str(self._param("dust_freq")) != "NA" and
