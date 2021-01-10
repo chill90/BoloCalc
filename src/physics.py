@@ -122,16 +122,17 @@ class Physics:
         freq, sigma = self._check_inputs(freq, [sigma])
         return 1. - 4. * np.sqrt(np.pi * freq * self.mu0 / sigma) / self.Z0
 
-    def brightness_temp(self, freq, spec_rad):
-        """
-        Brightness temperature [K_RJ] given a frequency [Hz] and
-        spectral radiance [W Hz^-1 sr^-1 m^-2]
-
-        Args:
-        freq (float): frequency [Hz]
-        spec_rad (float): spectral radiance [W Hz^-1 sr^-1 m^-2]
-        """
-        return spec_rad / (2 * self.kB * (freq / self.c)**2)
+    #def brightness_temp(self, freq, spec_rad):
+    #    """
+    #    Brightness temperature [K_RJ] given a frequency [Hz] and
+    #    spectral radiance [W Hz^-1 sr^-1 m^-2]
+    #
+    #    Args:
+    #    freq (float): frequency [Hz]
+    #    spec_rad (float): spectral radiance [W Hz^-1 sr^-1 m^-2]
+    #    """
+    #    #return spec_rad / (2 * self.kB * (freq / self.c)**2)
+    #    return spec_rad / (self.kB * (freq / self.c)**2)
 
     def Trj_over_Tb(self, freq, Tb):
         """
@@ -148,9 +149,14 @@ class Physics:
             (np.exp(x) - 1.), 2.) / (np.power(x, 2.) * np.exp(x))
         return 1. / thermo_fact
 
+    def Tb_from_spec_rad(self, freq, pow_spec):
+        return (
+            (self.h * freq / self.kB) / 
+            np.log((2 * self.h * (freq**3 / self.c**2) / pow_spec) + 1))
+
     def Tb_from_Trj(self, freq, Trj):
         alpha = (self.h * freq) / self.kB
-        return alpha / np.log((alpha / Trj) + 1)
+        return alpha / np.log((2 * alpha / Trj) + 1)
 
     def inv_var(self, err):
         """
@@ -200,9 +206,6 @@ class Physics:
         freq, temp = self._check_inputs(freq, [temp])
         fact = (self.h * freq)/(self.kB * temp)
         fact = np.where(fact > 100, 100, fact)
-        #args = np.argwhere(fact > 100)
-        #if len(args) > 0:
-        #    fact[args] = 100
         with np.errstate(divide='raise'):
             return 1. / (np.exp(fact) - 1.)
 

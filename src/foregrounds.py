@@ -8,7 +8,7 @@ class Foregrounds:
         self._phys = self._sky.tel.exp.sim.phys
 
     # ***** Public methods *****
-    def dust_temp(self, freq, emiss=1.0):
+    def dust_temp(self, freq, emiss=1.0): 
         """
         Return the galactic effective physical temperature
 
@@ -38,10 +38,9 @@ class Foregrounds:
         else:
             spec_scale = 1.
         # Convert [W/(m^2 sr Hz)] to brightness temperature [K_RJ]
-        scaled_spec_rad = (amp * freq_scale * spec_scale)
-        bright_temp = self._phys.brightness_temp(freq, scaled_spec_rad)
+        pow_spec_rad = (amp * freq_scale * spec_scale)
         # Convert brightness temperature [K_RJ] to physical temperature [K]
-        phys_temp = self._phys.Tb_from_Trj(freq, bright_temp)
+        phys_temp = self._phys.Tb_from_spec_rad(freq, pow_spec_rad)
         return phys_temp
 
     def sync_temp(self, freq, emiss=1.0):
